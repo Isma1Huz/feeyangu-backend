@@ -6,6 +6,8 @@ use App\Services\Payment\Contracts\PaymentProviderInterface;
 use App\Services\Payment\Providers\MpesaPaymentProvider;
 use App\Services\Payment\Providers\KcbPaymentProvider;
 use App\Services\Payment\Providers\EquityPaymentProvider;
+use App\Services\Payment\Providers\NcbaPaymentProvider;
+use App\Services\Payment\Providers\CooperativePaymentProvider;
 use InvalidArgumentException;
 
 /**
@@ -28,13 +30,13 @@ class PaymentProviderFactory
             'mpesa' => app(MpesaPaymentProvider::class),
             'kcb' => app(KcbPaymentProvider::class),
             'equity' => app(EquityPaymentProvider::class),
-            'ncba' => throw new InvalidArgumentException("NCBA payment provider not yet implemented"),
-            'cooperative' => throw new InvalidArgumentException("Co-operative Bank payment provider not yet implemented"),
+            'ncba' => app(NcbaPaymentProvider::class),
+            'cooperative' => app(CooperativePaymentProvider::class),
             'absa' => throw new InvalidArgumentException("Absa payment provider not yet implemented"),
             'stanbic' => throw new InvalidArgumentException("Stanbic payment provider not yet implemented"),
             'dtb' => throw new InvalidArgumentException("DTB payment provider not yet implemented"),
-            'family' => throw new InvalidArgumentException("Family Bank payment provider not yet implemented"),
-            'standard_chartered' => throw new InvalidArgumentException("Standard Chartered payment provider not yet implemented"),
+            'im_bank' => throw new InvalidArgumentException("I&M Bank payment provider not yet implemented"),
+            'family_bank' => throw new InvalidArgumentException("Family Bank payment provider not yet implemented"),
             default => throw new InvalidArgumentException("Unsupported payment provider: {$provider}"),
         };
     }
@@ -50,18 +52,18 @@ class PaymentProviderFactory
             'mpesa' => 'M-Pesa (Safaricom)',
             'kcb' => 'KCB Bank',
             'equity' => 'Equity Bank',
-            'ncba' => 'NCBA Bank (Coming Soon)',
-            'cooperative' => 'Co-operative Bank (Coming Soon)',
+            'ncba' => 'NCBA Bank',
+            'cooperative' => 'Co-operative Bank',
             'absa' => 'Absa Bank (Coming Soon)',
             'stanbic' => 'Stanbic Bank (Coming Soon)',
             'dtb' => 'DTB Bank (Coming Soon)',
-            'family' => 'Family Bank (Coming Soon)',
-            'standard_chartered' => 'Standard Chartered (Coming Soon)',
+            'im_bank' => 'I&M Bank (Coming Soon)',
+            'family_bank' => 'Family Bank (Coming Soon)',
         ];
     }
 
     /**
-     * Check if a provider is implemented.
+     * Check if a provider is fully implemented.
      *
      * @param string $provider
      * @return bool
@@ -69,5 +71,16 @@ class PaymentProviderFactory
     public function isProviderImplemented(string $provider): bool
     {
         return in_array($provider, ['mpesa', 'kcb', 'equity']);
+    }
+
+    /**
+     * Check if a provider is available (implemented or stub).
+     *
+     * @param string $provider
+     * @return bool
+     */
+    public function isProviderAvailable(string $provider): bool
+    {
+        return in_array($provider, ['mpesa', 'kcb', 'equity', 'ncba', 'cooperative']);
     }
 }

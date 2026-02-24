@@ -57,14 +57,26 @@ return [
     'kcb' => [
         'api_key' => env('KCB_API_KEY'),
         'api_secret' => env('KCB_API_SECRET'),
-        'base_url' => env('KCB_BASE_URL'),
+        'account_number' => env('KCB_ACCOUNT_NUMBER'),
+        'base_url' => env('KCB_BASE_URL', 'https://api.kcbgroup.com'),
     ],
 
     'equity' => [
         'merchant_code' => env('EQUITY_MERCHANT_CODE'),
         'api_key' => env('EQUITY_API_KEY'),
-        'api_secret' => env('EQUITY_API_SECRET'),
-        'base_url' => env('EQUITY_BASE_URL'),
+        'base_url' => env('EQUITY_BASE_URL', 'https://api.jengaapi.io'),
+    ],
+
+    'ncba' => [
+        'api_key' => env('NCBA_API_KEY'),
+        'account_number' => env('NCBA_ACCOUNT_NUMBER'),
+        'base_url' => env('NCBA_BASE_URL', 'https://api.ncbagroup.com'),
+    ],
+
+    'cooperative' => [
+        'api_key' => env('COOPERATIVE_API_KEY'),
+        'account_number' => env('COOPERATIVE_ACCOUNT_NUMBER'),
+        'base_url' => env('COOPERATIVE_BASE_URL', 'https://api.co-opbank.co.ke'),
     ],
 
 ];

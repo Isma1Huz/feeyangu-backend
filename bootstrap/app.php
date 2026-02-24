@@ -21,6 +21,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'role' => \App\Http\Middleware\EnsureRole::class,
             'school.access' => \App\Http\Middleware\EnsureSchoolAccess::class,
             'parent.access' => \App\Http\Middleware\EnsureParentAccess::class,
+            'payment.callback' => \App\Http\Middleware\VerifyPaymentCallback::class,
         ]);
 
         //
