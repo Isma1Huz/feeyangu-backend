@@ -5,9 +5,19 @@ use App\Http\Controllers\Admin\SchoolController as AdminSchoolController;
 use App\Http\Controllers\School\DashboardController as SchoolDashboardController;
 use App\Http\Controllers\School\StudentController as SchoolStudentController;
 use App\Http\Controllers\School\GradeController as SchoolGradeController;
+use App\Http\Controllers\School\GradeClassController as SchoolGradeClassController;
+use App\Http\Controllers\School\AcademicTermController as SchoolAcademicTermController;
+use App\Http\Controllers\School\FeeStructureController as SchoolFeeStructureController;
+use App\Http\Controllers\School\PaymentController as SchoolPaymentController;
+use App\Http\Controllers\School\ReceiptController as SchoolReceiptController;
+use App\Http\Controllers\Accountant\DashboardController as AccountantDashboardController;
+use App\Http\Controllers\Accountant\InvoiceController as AccountantInvoiceController;
+use App\Http\Controllers\Accountant\PaymentController as AccountantPaymentController;
+use App\Http\Controllers\Accountant\ReconciliationController as AccountantReconciliationController;
 use App\Http\Controllers\Parent\DashboardController as ParentDashboardController;
 use App\Http\Controllers\Parent\ChildrenController as ParentChildrenController;
 use App\Http\Controllers\Parent\PaymentController as ParentPaymentController;
+use App\Http\Controllers\Parent\ReceiptController as ParentReceiptController;
 use Illuminate\Support\Facades\Route;
 
 // Welcome/Landing page
@@ -22,8 +32,6 @@ Route::prefix('admin')
     ->group(function () {
         Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
         Route::resource('schools', AdminSchoolController::class);
-        
-        // Additional admin routes will be added here
     });
 
 // School Admin Routes
@@ -39,7 +47,22 @@ Route::prefix('school')
         // Grade management
         Route::resource('grades', SchoolGradeController::class);
         
-        // Additional school admin routes will be added here
+        // Class management
+        Route::resource('classes', SchoolGradeClassController::class);
+        
+        // Academic term management
+        Route::resource('terms', SchoolAcademicTermController::class);
+        
+        // Fee structure management
+        Route::resource('fee-structures', SchoolFeeStructureController::class);
+        
+        // Payment viewing
+        Route::get('/payments', [SchoolPaymentController::class, 'index'])->name('payments.index');
+        Route::get('/payments/{payment}', [SchoolPaymentController::class, 'show'])->name('payments.show');
+        
+        // Receipt viewing
+        Route::get('/receipts', [SchoolReceiptController::class, 'index'])->name('receipts.index');
+        Route::get('/receipts/{receipt}', [SchoolReceiptController::class, 'show'])->name('receipts.show');
     });
 
 // Accountant Routes
@@ -47,7 +70,19 @@ Route::prefix('accountant')
     ->middleware(['auth', 'verified', 'role:accountant', 'school.access'])
     ->name('accountant.')
     ->group(function () {
-        // Accountant routes will be added here
+        Route::get('/dashboard', [AccountantDashboardController::class, 'index'])->name('dashboard');
+        
+        // Invoice management
+        Route::resource('invoices', AccountantInvoiceController::class);
+        Route::post('/invoices/{invoice}/send', [AccountantInvoiceController::class, 'send'])->name('invoices.send');
+        
+        // Payment viewing
+        Route::get('/payments', [AccountantPaymentController::class, 'index'])->name('payments.index');
+        Route::get('/payments/{payment}', [AccountantPaymentController::class, 'show'])->name('payments.show');
+        
+        // Reconciliation
+        Route::get('/reconciliation', [AccountantReconciliationController::class, 'index'])->name('reconciliation.index');
+        Route::post('/reconciliation/match', [AccountantReconciliationController::class, 'match'])->name('reconciliation.match');
     });
 
 // Parent Routes
@@ -66,6 +101,11 @@ Route::prefix('parent')
         Route::get('/children/{student}/pay/{transaction}/status', [ParentPaymentController::class, 'status'])->name('payment.status');
         Route::post('/children/{student}/pay/confirm', [ParentPaymentController::class, 'confirm'])->name('payment.confirm');
         Route::get('/payments', [ParentPaymentController::class, 'index'])->name('payments.index');
+        
+        // Receipt routes
+        Route::get('/receipts', [ParentReceiptController::class, 'index'])->name('receipts.index');
+        Route::get('/receipts/{receipt}', [ParentReceiptController::class, 'show'])->name('receipts.show');
+        Route::get('/receipts/{receipt}/download', [ParentReceiptController::class, 'download'])->name('receipts.download');
     });
 
 // Fallback route - redirect to appropriate dashboard based on user role
