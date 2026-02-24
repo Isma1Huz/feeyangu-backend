@@ -6,6 +6,7 @@ use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\URL;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -42,9 +43,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // HTTPS enforcement in production
         if (app()->environment('production')) {
-            $middleware->redirectTo([
-                'http' => 'https',
-            ]);
+            URL::forceScheme('https');
         }
     })
     ->withExceptions(function (Exceptions $exceptions) {
