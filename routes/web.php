@@ -3,7 +3,11 @@
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\SchoolController as AdminSchoolController;
 use App\Http\Controllers\School\DashboardController as SchoolDashboardController;
+use App\Http\Controllers\School\StudentController as SchoolStudentController;
+use App\Http\Controllers\School\GradeController as SchoolGradeController;
 use App\Http\Controllers\Parent\DashboardController as ParentDashboardController;
+use App\Http\Controllers\Parent\ChildrenController as ParentChildrenController;
+use App\Http\Controllers\Parent\PaymentController as ParentPaymentController;
 use Illuminate\Support\Facades\Route;
 
 // Welcome/Landing page
@@ -29,6 +33,12 @@ Route::prefix('school')
     ->group(function () {
         Route::get('/dashboard', [SchoolDashboardController::class, 'index'])->name('dashboard');
         
+        // Student management
+        Route::resource('students', SchoolStudentController::class);
+        
+        // Grade management
+        Route::resource('grades', SchoolGradeController::class);
+        
         // Additional school admin routes will be added here
     });
 
@@ -47,7 +57,15 @@ Route::prefix('parent')
     ->group(function () {
         Route::get('/dashboard', [ParentDashboardController::class, 'index'])->name('dashboard');
         
-        // Additional parent routes will be added here
+        // Children management
+        Route::get('/children', [ParentChildrenController::class, 'index'])->name('children.index');
+        Route::get('/children/{student}', [ParentChildrenController::class, 'show'])->name('children.show');
+        
+        // Payment routes
+        Route::post('/children/{student}/pay', [ParentPaymentController::class, 'initiate'])->name('payment.initiate');
+        Route::get('/children/{student}/pay/{transaction}/status', [ParentPaymentController::class, 'status'])->name('payment.status');
+        Route::post('/children/{student}/pay/confirm', [ParentPaymentController::class, 'confirm'])->name('payment.confirm');
+        Route::get('/payments', [ParentPaymentController::class, 'index'])->name('payments.index');
     });
 
 // Fallback route - redirect to appropriate dashboard based on user role
