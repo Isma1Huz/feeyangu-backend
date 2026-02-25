@@ -160,7 +160,7 @@ class StudentController extends Controller
             'total_balance' => $student->invoices()->whereIn('status', ['sent', 'partial', 'overdue'])->sum('balance') / 100,
         ];
 
-        return Inertia::render('school/StudentShow', [
+        return Inertia::render('school/StudentDetail', [
             'student' => [
                 'id' => $student->id,
                 'admission_number' => $student->admission_number,

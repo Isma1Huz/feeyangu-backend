@@ -7,9 +7,19 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Validation\ValidationException;
+use Inertia\Inertia;
+use Inertia\Response as InertiaResponse;
 
 class PasswordResetLinkController extends Controller
 {
+    /**
+     * Display the forgot password view.
+     */
+    public function create(): InertiaResponse
+    {
+        return Inertia::render('auth/ForgotPassword');
+    }
+
     /**
      * Handle an incoming password reset link request.
      *

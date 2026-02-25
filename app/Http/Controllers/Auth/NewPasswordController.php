@@ -11,9 +11,22 @@ use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules;
 use Illuminate\Validation\ValidationException;
+use Inertia\Inertia;
+use Inertia\Response as InertiaResponse;
 
 class NewPasswordController extends Controller
 {
+    /**
+     * Display the password reset view.
+     */
+    public function create(Request $request): InertiaResponse
+    {
+        return Inertia::render('auth/ResetPassword', [
+            'email' => $request->query('email'),
+            'token' => $request->route('token'),
+        ]);
+    }
+
     /**
      * Handle an incoming new password request.
      *
