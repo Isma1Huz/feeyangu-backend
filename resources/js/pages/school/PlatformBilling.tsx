@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { Head, usePage } from '@inertiajs/react';
+import type { InertiaSharedProps } from '@/types/inertia';
 import { CreditCard, Check, Crown, Zap, Shield } from 'lucide-react';
 import { useT } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
@@ -37,23 +39,35 @@ const plans = [
   },
 ];
 
-const paymentHistory = [
-  { id: 1, date: '2026-02-01', amount: 5000, method: 'M-Pesa', status: 'completed' as const, reference: 'PLT-2026-002' },
-  { id: 2, date: '2026-01-01', amount: 5000, method: 'M-Pesa', status: 'completed' as const, reference: 'PLT-2026-001' },
-  { id: 3, date: '2025-12-01', amount: 5000, method: 'Bank Transfer', status: 'completed' as const, reference: 'PLT-2025-012' },
-];
+interface PaymentHistory {
+  id: number;
+  date: string;
+  amount: number;
+  method: string;
+  status: 'completed' | 'pending' | 'failed';
+  reference: string;
+}
+
+interface Props extends InertiaSharedProps {
+  currentPlan: string;
+  nextBillingDate: string;
+  paymentHistory: PaymentHistory[];
+}
 
 const PlatformBilling: React.FC = () => {
   const T = useT();
-  const [selectedPlan, setSelectedPlan] = useState('standard');
+  const { currentPlan, nextBillingDate, paymentHistory } = usePage<Props>().props;
+  const [selectedPlan, setSelectedPlan] = useState(currentPlan || 'standard');
   const [showPayment, setShowPayment] = useState(false);
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Platform Subscription</h1>
-        <p className="text-muted-foreground text-sm mt-1">Manage your Feeyangu platform subscription and billing</p>
-      </div>
+    <>
+      <Head title="Platform Subscription" />
+      <div className="space-y-6 animate-fade-in">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Platform Subscription</h1>
+          <p className="text-muted-foreground text-sm mt-1">Manage your Feeyangu platform subscription and billing</p>
+        </div>
 
       {/* Current Plan Status */}
       <Card className="border-primary/20 bg-primary/5">
@@ -62,11 +76,11 @@ const PlatformBilling: React.FC = () => {
             <div>
               <div className="flex items-center gap-2 mb-1">
                 <Crown className="h-5 w-5 text-primary" />
-                <h3 className="font-bold text-lg">Standard Plan</h3>
+                <h3 className="font-bold text-lg capitalize">{currentPlan} Plan</h3>
                 <Badge variant="outline" className="text-primary border-primary/30">Active</Badge>
               </div>
               <p className="text-sm text-muted-foreground">
-                Next billing date: <strong>March 1, 2026</strong> · {T.COMMON_TEXT.currency} 5,000/month
+                Next billing date: <strong>{nextBillingDate}</strong> · {T.COMMON_TEXT.currency} 5,000/month
               </p>
             </div>
             <Button variant="outline" size="sm" onClick={() => setShowPayment(true)}>
@@ -156,7 +170,8 @@ const PlatformBilling: React.FC = () => {
           </div>
         </CardContent>
       </Card>
-    </div>
+      </div>
+    </>
   );
 };
 

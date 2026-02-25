@@ -1,8 +1,8 @@
 import React, { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, Head, router, usePage } from '@inertiajs/react';
+import type { InertiaSharedProps } from '@/types/inertia';
 import { Plus, Eye, Pencil, Trash2, MoreHorizontal } from 'lucide-react';
 import { useT } from '@/contexts/LanguageContext';
-import { MOCK_STUDENTS, MOCK_GRADES } from '@/lib/mock-data';
 import type { Student } from '@/types';
 import StatusBadge from '@/components/StatusBadge';
 import DataTable, { type DataTableColumn, type DataTableFilter, type DataTableBulkAction } from '@/components/DataTable';
@@ -15,11 +15,21 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 
+interface Grade {
+  id: string;
+  name: string;
+}
+
+interface Props extends InertiaSharedProps {
+  students: Student[];
+  grades: Grade[];
+}
+
 const Students: React.FC = () => {
-  const navigate = useNavigate();
   const { toast } = useToast();
   const { STUDENTS_TEXT: t, COMMON_TEXT } = useT();
-  const [students, setStudents] = useState<Student[]>(MOCK_STUDENTS);
+  const { students: initialStudents, grades: allGrades } = usePage<Props>().props;
+  const [students, setStudents] = useState<Student[]>(initialStudents);
   const [search, setSearch] = useState('');
   const [gradeFilter, setGradeFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -35,8 +45,6 @@ const Students: React.FC = () => {
   const [formParent, setFormParent] = useState('');
   const [formParentEmail, setFormParentEmail] = useState('');
   const [formStatus, setFormStatus] = useState<'active' | 'inactive'>('active');
-
-  const grades = useMemo(() => [...new Set(MOCK_STUDENTS.map(s => s.grade))], []);
 
   const filtered = useMemo(() =>
     students.filter(s => {
@@ -136,7 +144,7 @@ const Students: React.FC = () => {
   ];
 
   const tableFilters: DataTableFilter[] = [
-    { key: 'grade', label: t.filters.grade, options: grades.map(g => ({ value: g, label: g })) },
+    { key: 'grade', label: t.filters.grade, options: allGrades.map(g => ({ value: g.name, label: g.name })) },
     { key: 'status', label: t.filters.status, options: [{ value: 'active', label: COMMON_TEXT.status.active }, { value: 'inactive', label: COMMON_TEXT.status.inactive }] },
   ];
 
@@ -145,13 +153,15 @@ const Students: React.FC = () => {
   ];
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">{t.title}</h1>
-          <p className="text-muted-foreground text-sm mt-1">{filtered.length} students total</p>
+    <>
+      <Head title={t.title} />
+      <div className="space-y-6 animate-fade-in">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">{t.title}</h1>
+            <p className="text-muted-foreground text-sm mt-1">{filtered.length} students total</p>
+          </div>
         </div>
-      </div>
 
       <DataTable
         data={filtered}
@@ -180,7 +190,7 @@ const Students: React.FC = () => {
           <DropdownMenu>
             <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem className="gap-2" onClick={() => navigate(`/school/students/${s.id}`)}><Eye className="h-3.5 w-3.5" />{COMMON_TEXT.actions.view}</DropdownMenuItem>
+              <DropdownMenuItem className="gap-2" onClick={() => router.visit(`/school/students/${s.id}`)}><Eye className="h-3.5 w-3.5" />{COMMON_TEXT.actions.view}</DropdownMenuItem>
               <DropdownMenuItem className="gap-2" onClick={() => openForm(s)}><Pencil className="h-3.5 w-3.5" />{COMMON_TEXT.actions.edit}</DropdownMenuItem>
               <DropdownMenuItem className="gap-2 text-destructive" onClick={() => { setDeleteId(s.id); setDeleteOpen(true); }}><Trash2 className="h-3.5 w-3.5" />{COMMON_TEXT.actions.delete}</DropdownMenuItem>
             </DropdownMenuContent>
@@ -206,7 +216,7 @@ const Students: React.FC = () => {
                 <Label>{t.form.grade}</Label>
                 <Select value={formGrade} onValueChange={setFormGrade}>
                   <SelectTrigger><SelectValue placeholder="Select grade" /></SelectTrigger>
-                  <SelectContent>{MOCK_GRADES.map(g => <SelectItem key={g.id} value={g.name}>{g.name}</SelectItem>)}</SelectContent>
+                  <SelectContent>{allGrades.map(g => <SelectItem key={g.id} value={g.name}>{g.name}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div className="space-y-2"><Label>{t.form.className}</Label><Input value={formClass} onChange={e => setFormClass(e.target.value)} /></div>
@@ -243,7 +253,8 @@ const Students: React.FC = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+      </div>
+    </>
   );
 };
 

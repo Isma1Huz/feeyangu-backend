@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
+import { Head, usePage } from '@inertiajs/react';
+import type { InertiaSharedProps } from '@/types/inertia';
 import { PAYMENT_PROVIDERS, type SchoolPaymentConfig, type PaymentProvider } from '@/types/payment.types';
-import { schoolPaymentConfigs } from '@/data/payment-config';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,9 +13,14 @@ import { useToast } from '@/hooks/use-toast';
 import { Smartphone, Building2, Pencil, CheckCircle2, XCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+interface Props extends InertiaSharedProps {
+  paymentConfigs: SchoolPaymentConfig[];
+}
+
 const PaymentMethods: React.FC = () => {
   const { toast } = useToast();
-  const [configs, setConfigs] = useState<SchoolPaymentConfig[]>(schoolPaymentConfigs);
+  const { paymentConfigs } = usePage<Props>().props;
+  const [configs, setConfigs] = useState<SchoolPaymentConfig[]>(paymentConfigs);
   const [editOpen, setEditOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formAccount, setFormAccount] = useState('');
@@ -136,11 +142,13 @@ const PaymentMethods: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Payment Methods</h1>
-        <p className="text-muted-foreground text-sm mt-1">Configure how parents can pay school fees. Enable payment methods and add your account details.</p>
-      </div>
+    <>
+      <Head title="Payment Methods" />
+      <div className="space-y-6 animate-fade-in">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Payment Methods</h1>
+          <p className="text-muted-foreground text-sm mt-1">Configure how parents can pay school fees. Enable payment methods and add your account details.</p>
+        </div>
 
       {/* Mobile Money */}
       <div className="space-y-3">
@@ -222,7 +230,8 @@ const PaymentMethods: React.FC = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+      </div>
+    </>
   );
 };
 

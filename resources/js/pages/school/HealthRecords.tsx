@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { MOCK_HEALTH_PROFILES, MOCK_STUDENTS } from '@/lib/mock-data';
+import { Link, Head, router, usePage } from '@inertiajs/react';
+import type { InertiaSharedProps } from '@/types/inertia';
+import type { HealthProfile, Student } from '@/types';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -16,12 +17,18 @@ const severityColors: Record<string, string> = {
   life_threatening: 'text-destructive font-bold',
 };
 
+interface Props extends InertiaSharedProps {
+  healthProfiles: HealthProfile[];
+  students: Student[];
+}
+
 const SchoolHealthRecords: React.FC = () => {
   const [search, setSearch] = useState('');
-  const navigate = useNavigate();
+  const { healthProfiles, students } = usePage<Props>().props;
 
   return (
     <div className="space-y-6 animate-fade-in">
+      <Head title="All Health Records" />
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">All Health Records</h1>
@@ -50,8 +57,8 @@ const SchoolHealthRecords: React.FC = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {MOCK_HEALTH_PROFILES.map(hp => {
-                const student = MOCK_STUDENTS.find(s => s.id === hp.studentId);
+              {healthProfiles.map(hp => {
+                const student = students.find(s => s.id === hp.studentId);
                 if (!student) return null;
                 const name = `${student.firstName} ${student.lastName}`;
                 if (search && !name.toLowerCase().includes(search.toLowerCase())) return null;
@@ -68,7 +75,7 @@ const SchoolHealthRecords: React.FC = () => {
                     <TableCell><Badge className={alertColors[alertLevel as keyof typeof alertColors]}>{alertLevel}</Badge></TableCell>
                     <TableCell className="text-sm text-muted-foreground">{hp.lastUpdatedAt.split('T')[0]}</TableCell>
                     <TableCell>
-                      <Button variant="ghost" size="sm" className="gap-1" onClick={() => navigate(`/school/health/records/${hp.studentId}`)}>
+                      <Button variant="ghost" size="sm" className="gap-1" onClick={() => router.visit(`/school/health/records/${hp.studentId}`)}>
                         <Eye className="h-3.5 w-3.5" />View
                       </Button>
                     </TableCell>

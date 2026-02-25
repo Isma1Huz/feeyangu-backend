@@ -1,4 +1,5 @@
 import React from 'react';
+import { Head } from '@inertiajs/react';
 import { useT } from '@/contexts/LanguageContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
@@ -12,6 +13,7 @@ const SchoolHealthSettings: React.FC = () => {
 
   return (
     <div className="space-y-6 animate-fade-in">
+      <Head title="Health Settings" />
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Health Settings</h1>
         <p className="text-muted-foreground text-sm mt-1">Configure medical record categories and access permissions.</p>

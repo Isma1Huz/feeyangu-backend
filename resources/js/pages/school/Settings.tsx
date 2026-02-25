@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { Head, usePage } from '@inertiajs/react';
+import type { InertiaSharedProps } from '@/types/inertia';
 import { useT } from '@/contexts/LanguageContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,27 +10,42 @@ import { Separator } from '@/components/ui/separator';
 import StatusBadge from '@/components/StatusBadge';
 import { useToast } from '@/hooks/use-toast';
 
+interface Props extends InertiaSharedProps {
+  school: {
+    name: string;
+    motto: string;
+    location: string;
+    email: string;
+    phone: string;
+    primaryColor: string;
+    secondaryColor: string;
+  };
+}
+
 const Settings: React.FC = () => {
   const { toast } = useToast();
   const { SCHOOL_SETTINGS_TEXT: t } = useT();
-  const [schoolName, setSchoolName] = useState('Green Valley Academy');
-  const [motto, setMotto] = useState('Excellence Through Knowledge');
-  const [location, setLocation] = useState('Nairobi, Kenya');
-  const [email, setEmail] = useState('info@greenvalleyacademy.co.ke');
-  const [phone, setPhone] = useState('+254 712 345 678');
-  const [primaryColor, setPrimaryColor] = useState('#3B82F6');
-  const [secondaryColor, setSecondaryColor] = useState('#10B981');
+  const { school } = usePage<Props>().props;
+  const [schoolName, setSchoolName] = useState(school.name);
+  const [motto, setMotto] = useState(school.motto);
+  const [location, setLocation] = useState(school.location);
+  const [email, setEmail] = useState(school.email);
+  const [phone, setPhone] = useState(school.phone);
+  const [primaryColor, setPrimaryColor] = useState(school.primaryColor);
+  const [secondaryColor, setSecondaryColor] = useState(school.secondaryColor);
 
   const handleSave = () => {
     toast({ title: t.savedMessage });
   };
 
   return (
-    <div className="space-y-6 animate-fade-in max-w-2xl">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">{t.title}</h1>
-        <p className="text-muted-foreground text-sm mt-1">{t.subtitle}</p>
-      </div>
+    <>
+      <Head title={t.title} />
+      <div className="space-y-6 animate-fade-in max-w-2xl">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">{t.title}</h1>
+          <p className="text-muted-foreground text-sm mt-1">{t.subtitle}</p>
+        </div>
 
       {/* School Profile */}
       <Card className="border-none shadow-sm">
@@ -113,7 +130,8 @@ const Settings: React.FC = () => {
       <div className="flex justify-end">
         <Button onClick={handleSave}>{t.saveButton}</Button>
       </div>
-    </div>
+      </div>
+    </>
   );
 };
 

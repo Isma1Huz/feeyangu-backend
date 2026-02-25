@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
+import { Head, usePage } from '@inertiajs/react';
+import type { InertiaSharedProps } from '@/types/inertia';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
 import { useT } from '@/contexts/LanguageContext';
-import { MOCK_TERMS } from '@/lib/mock-data';
 import type { AcademicTerm } from '@/types';
 import StatusBadge from '@/components/StatusBadge';
 import DataTable, { type DataTableColumn, type DataTableBulkAction } from '@/components/DataTable';
@@ -12,10 +13,15 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 
+interface Props extends InertiaSharedProps {
+  terms: AcademicTerm[];
+}
+
 const Terms: React.FC = () => {
   const { toast } = useToast();
   const { TERMS_TEXT: t, COMMON_TEXT } = useT();
-  const [terms, setTerms] = useState<AcademicTerm[]>(MOCK_TERMS);
+  const { terms: initialTerms } = usePage<Props>().props;
+  const [terms, setTerms] = useState<AcademicTerm[]>(initialTerms);
   const [formOpen, setFormOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [editing, setEditing] = useState<AcademicTerm | null>(null);
@@ -58,10 +64,12 @@ const Terms: React.FC = () => {
   ];
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div><h1 className="text-2xl font-bold tracking-tight">{t.title}</h1><p className="text-muted-foreground text-sm mt-1">{t.subtitle}</p></div>
-      </div>
+    <>
+      <Head title={t.title} />
+      <div className="space-y-6 animate-fade-in">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div><h1 className="text-2xl font-bold tracking-tight">{t.title}</h1><p className="text-muted-foreground text-sm mt-1">{t.subtitle}</p></div>
+        </div>
       <DataTable
         data={terms}
         columns={columns}
@@ -114,7 +122,8 @@ const Terms: React.FC = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+      </div>
+    </>
   );
 };
 
