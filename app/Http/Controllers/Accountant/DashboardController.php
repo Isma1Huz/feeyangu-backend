@@ -98,11 +98,11 @@ class DashboardController extends Controller
         ];
 
         return Inertia::render('accountant/Dashboard', [
-            'kpi' => $kpi,
+            'kpiData' => $kpi,
             'revenueByMonth' => $revenueByMonth,
             'recentInvoices' => $recentInvoices,
             'recentPayments' => $recentPayments,
-            'paymentStatusDistribution' => $paymentStatusDistribution,
+            'paymentMethodDistribution' => $paymentStatusDistribution,
         ]);
     }
 }

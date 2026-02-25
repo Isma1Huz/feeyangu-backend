@@ -44,7 +44,7 @@ const AccountantDashboard: React.FC = () => {
   const T = useT();
   const t = T.ACCOUNTANT_DASHBOARD_TEXT;
   const kpiEntries = [
-    { key: 'dailyCollections', value: kpiData.dailyCollections, change: '+12%', changeType: 'positive' as const },
+    // { key: 'dailyCollections', value: kpiData.dailyCollections, change: '+12%', changeType: 'positive' as const },
     { key: 'pendingReconciliation', value: String(kpiData.pendingReconciliation), change: '-3', changeType: 'positive' as const },
     { key: 'unmatchedTransactions', value: String(kpiData.unmatchedTransactions), change: '+2', changeType: 'negative' as const },
     { key: 'outstandingInvoices', value: String(kpiData.outstandingInvoices), change: '-8', changeType: 'positive' as const },
