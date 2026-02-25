@@ -46,7 +46,7 @@ class ReceiptController extends Controller
             });
 
         return Inertia::render('school/Receipts', [
-            'receipts' => $receipts,
+            'receipts' => $receipts->items(),
             'filters' => $request->only(['search']),
         ]);
     }

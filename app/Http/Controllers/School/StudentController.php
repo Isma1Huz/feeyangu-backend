@@ -68,7 +68,7 @@ class StudentController extends Controller
         $grades = $school->grades()->orderBy('sort_order')->get(['id', 'name']);
 
         return Inertia::render('school/Students', [
-            'students' => $students,
+            'students' => $students->items(),
             'grades' => $grades,
             'filters' => $request->only(['status', 'grade_id', 'search']),
         ]);

@@ -61,7 +61,7 @@ class PaymentController extends Controller
             });
 
         return Inertia::render('school/Payments', [
-            'payments' => $payments,
+            'payments' => $payments->items(),
             'filters' => $request->only(['status', 'provider', 'search']),
         ]);
     }
