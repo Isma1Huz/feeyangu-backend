@@ -1,6 +1,18 @@
 import type { SchoolPaymentConfig } from '@/types/payment.types';
 
-/** School-configured payment methods (will be replaced by Inertia props) */
+/** 
+ * DEPRECATED: School-configured payment methods 
+ * 
+ * This file contained mock/hardcoded payment configurations and should NOT be used.
+ * Payment configurations are now fetched from the backend database via Inertia props.
+ * 
+ * See: app/Http/Controllers/Parent/ChildrenController.php (show method, line 104-114)
+ * The backend passes real payment methods via the 'paymentMethods' prop.
+ * 
+ * DO NOT IMPORT THIS FILE IN ANY COMPONENTS.
+ */
+
+/* COMMENTED OUT - DO NOT USE MOCK DATA
 export const schoolPaymentConfigs: SchoolPaymentConfig[] = [
   {
     id: 'spc1',
@@ -44,3 +56,4 @@ export const schoolPaymentConfigs: SchoolPaymentConfig[] = [
     order: 5,
   },
 ];
+*/
