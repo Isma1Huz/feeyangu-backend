@@ -58,7 +58,7 @@ class InvoiceController extends Controller
                 ];
             });
 
-        return Inertia::render('accountant/Invoices', [
+        return Inertia::render('accountant/Invoicing', [
             'invoices' => $invoices,
             'filters' => $request->only(['status', 'search']),
         ]);
