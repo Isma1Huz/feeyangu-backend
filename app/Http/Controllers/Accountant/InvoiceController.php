@@ -40,7 +40,7 @@ class InvoiceController extends Controller
         }
 
         // Get all invoices with camelCase field names to match frontend
-        $invoices = $query->with(['student', 'items'])
+        $invoices = $query->with(['student', 'invoiceItems'])
             ->latest('issued_date')
             ->get()
             ->map(function ($invoice) {
@@ -57,7 +57,7 @@ class InvoiceController extends Controller
                     'status' => $invoice->status,
                     'dueDate' => $invoice->due_date->format('M d, Y'),
                     'issuedDate' => $invoice->issued_date->format('M d, Y'),
-                    'items' => $invoice->items->map(fn($item) => [
+                    'items' => $invoice->invoiceItems->map(fn($item) => [
                         'name' => $item->name,
                         'amount' => $item->amount / 100,
                     ]),

@@ -48,4 +48,10 @@ class PaymentTransaction extends Model
     {
         return $this->hasOne(Receipt::class);
     }
+
+    public function reconciliationItem(): HasOne
+    {
+        return $this->hasOne(ReconciliationItem::class, 'system_payment_id');
+    }
+
 }
