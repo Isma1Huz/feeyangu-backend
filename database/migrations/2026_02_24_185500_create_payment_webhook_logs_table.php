@@ -18,7 +18,7 @@ return new class extends Migration
             $table->text('headers')->nullable();
             $table->string('ip_address', 45)->nullable();
             $table->foreignId('transaction_id')->nullable()->constrained('payment_transactions');
-            $table->string('status', 50)->index(); // 'received', 'processed', 'failed', 'duplicate'
+            $table->string('status', 50); // 'received', 'processed', 'failed', 'duplicate'
             $table->timestamp('processed_at')->nullable();
             $table->text('error_message')->nullable();
             $table->timestamps();
