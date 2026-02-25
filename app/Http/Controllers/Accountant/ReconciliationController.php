@@ -20,8 +20,59 @@ class ReconciliationController extends Controller
     {
         $school = auth()->user()->school;
 
+        // Build reconciliation items array matching frontend ReconciliationItem type
+        $reconciliationItems = [];
+
+        // Get matched items
+        $matchedItems = ReconciliationItem::where('school_id', $school->id)
+            ->where('status', 'matched')
+            ->with(['bankTransaction', 'systemPayment.student'])
+            ->latest('matched_at')
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'id' => (string) $item->id,
+                    'status' => 'matched',
+                    'bankTransaction' => $item->bankTransaction ? [
+                        'reference' => $item->bankTransaction->reference,
+                        'description' => $item->bankTransaction->description,
+                        'amount' => $item->bankTransaction->amount / 100,
+                        'date' => $item->bankTransaction->date->format('M d, Y'),
+                    ] : null,
+                    'systemPaymentRef' => $item->systemPayment?->reference ?? null,
+                    'systemAmount' => $item->systemPayment ? $item->systemPayment->amount / 100 : null,
+                    'systemStudentName' => $item->systemPayment?->student?->full_name ?? null,
+                    'confidence' => $item->confidence ?? 'high',
+                    'matchedAt' => $item->matched_at?->format('M d, Y H:i'),
+                    'matchedBy' => $item->matched_by,
+                ];
+            });
+
+        // Get suggested matches
+        $suggestedItems = ReconciliationItem::where('school_id', $school->id)
+            ->where('status', 'suggested')
+            ->with(['bankTransaction', 'systemPayment.student'])
+            ->latest('created_at')
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'id' => (string) $item->id,
+                    'status' => 'suggested',
+                    'bankTransaction' => $item->bankTransaction ? [
+                        'reference' => $item->bankTransaction->reference,
+                        'description' => $item->bankTransaction->description,
+                        'amount' => $item->bankTransaction->amount / 100,
+                        'date' => $item->bankTransaction->date->format('M d, Y'),
+                    ] : null,
+                    'systemPaymentRef' => $item->systemPayment?->reference ?? null,
+                    'systemAmount' => $item->systemPayment ? $item->systemPayment->amount / 100 : null,
+                    'systemStudentName' => $item->systemPayment?->student?->full_name ?? null,
+                    'confidence' => $item->confidence ?? 'medium',
+                ];
+            });
+
         // Get unmatched system payments
-        $unmatchedSystemPayments = PaymentTransaction::where('school_id', $school->id)
+        $unmatchedSystemItems = PaymentTransaction::where('school_id', $school->id)
             ->where('status', 'completed')
             ->whereDoesntHave('reconciliationItem')
             ->with('student')
@@ -29,70 +80,61 @@ class ReconciliationController extends Controller
             ->take(50)
             ->get()
             ->map(fn($payment) => [
-                'id' => $payment->id,
-                'reference' => $payment->reference,
-                'student_name' => $payment->student->full_name,
-                'amount' => $payment->amount / 100,
-                'provider' => $payment->provider,
-                'completed_at' => $payment->completed_at?->format('M d, Y H:i'),
+                'id' => 'system-' . $payment->id,
+                'status' => 'unmatched_system',
+                'systemPaymentId' => (string) $payment->id,
+                'systemPaymentRef' => $payment->reference,
+                'systemAmount' => $payment->amount / 100,
+                'systemStudentName' => $payment->student->full_name,
             ]);
 
         // Get unmatched bank transactions
-        $unmatchedBankTransactions = BankTransaction::where('school_id', $school->id)
+        $unmatchedBankItems = BankTransaction::where('school_id', $school->id)
             ->whereDoesntHave('reconciliationItem')
             ->latest('date')
             ->take(50)
             ->get()
             ->map(fn($bank) => [
-                'id' => $bank->id,
-                'reference' => $bank->reference,
-                'description' => $bank->description,
-                'amount' => $bank->amount / 100,
-                'balance' => $bank->balance / 100,
-                'date' => $bank->date->format('M d, Y'),
+                'id' => 'bank-' . $bank->id,
+                'status' => 'unmatched_bank',
+                'bankTransaction' => [
+                    'reference' => $bank->reference,
+                    'description' => $bank->description,
+                    'amount' => $bank->amount / 100,
+                    'date' => $bank->date->format('M d, Y'),
+                ],
             ]);
 
-        // Get matched items
-        $matchedItems = ReconciliationItem::where('school_id', $school->id)
-            ->where('status', 'matched')
-            ->with(['bankTransaction', 'systemPayment'])
-            ->latest('matched_at')
-            ->paginate(20)
-            ->through(function ($item) {
-                return [
-                    'id' => $item->id,
-                    'bank_reference' => $item->bankTransaction->reference ?? 'N/A',
-                    'system_reference' => $item->systemPayment->reference ?? 'N/A',
-                    'amount' => $item->bankTransaction->amount ?? $item->systemPayment->amount ?? 0,
-                    'confidence' => $item->confidence,
-                    'matched_at' => $item->matched_at?->format('M d, Y H:i'),
-                    'matched_by' => $item->matched_by,
-                ];
-            });
+        // Combine all items
+        $reconciliationItems = array_merge(
+            $matchedItems->toArray(),
+            $suggestedItems->toArray(),
+            $unmatchedSystemItems->toArray(),
+            $unmatchedBankItems->toArray()
+        );
 
-        // Summary stats
-        $summary = [
-            'unmatched_system' => PaymentTransaction::where('school_id', $school->id)
-                ->where('status', 'completed')
-                ->whereDoesntHave('reconciliationItem')
-                ->count(),
-            'unmatched_bank' => BankTransaction::where('school_id', $school->id)
-                ->whereDoesntHave('reconciliationItem')
-                ->count(),
-            'matched' => ReconciliationItem::where('school_id', $school->id)
-                ->where('status', 'matched')
-                ->count(),
-            'suggested' => ReconciliationItem::where('school_id', $school->id)
-                ->where('status', 'suggested')
-                ->count(),
-        ];
+        // Get system payments for manual matching modal
+        $systemPayments = PaymentTransaction::where('school_id', $school->id)
+            ->where('status', 'completed')
+            ->with('student')
+            ->latest()
+            ->take(100)
+            ->get()
+            ->map(fn($payment) => [
+                'id' => (string) $payment->id,
+                'reference' => $payment->reference,
+                'studentName' => $payment->student->full_name,
+                'amount' => $payment->amount / 100,
+                'method' => $payment->provider,
+                'date' => $payment->completed_at?->format('M d, Y'),
+                'status' => 'completed',
+            ]);
 
         return Inertia::render('accountant/Reconciliation', [
-            'unmatchedSystemPayments' => $unmatchedSystemPayments,
-            'unmatchedBankTransactions' => $unmatchedBankTransactions,
-            'matchedItems' => $matchedItems,
-            'summary' => $summary,
+            'reconciliationItems' => $reconciliationItems,
+            'systemPayments' => $systemPayments,
         ]);
+    }
     }
 
     /**

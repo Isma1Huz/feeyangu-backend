@@ -48,37 +48,42 @@ class PaymentController extends Controller
             });
         }
 
+        // Get all payments with camelCase field names
         $payments = $query->with(['student', 'parent', 'receipt'])
             ->latest()
-            ->paginate(20)
-            ->through(function ($payment) {
+            ->get()
+            ->map(function ($payment) {
                 return [
-                    'id' => $payment->id,
+                    'id' => (string) $payment->id,
                     'reference' => $payment->reference,
-                    'student_name' => $payment->student->full_name,
-                    'parent_name' => $payment->parent->name,
+                    'studentId' => (string) $payment->student_id,
+                    'studentName' => $payment->student->full_name,
+                    'parentName' => $payment->parent->name,
                     'amount' => $payment->amount / 100,
+                    'method' => $payment->provider, // Frontend expects 'method' field
                     'provider' => $payment->provider,
                     'status' => $payment->status,
-                    'provider_reference' => $payment->provider_reference,
-                    'created_at' => $payment->created_at->format('M d, Y H:i'),
-                    'completed_at' => $payment->completed_at?->format('M d, Y H:i'),
-                    'has_receipt' => $payment->receipt !== null,
+                    'providerReference' => $payment->provider_reference,
+                    'date' => $payment->created_at->format('M d, Y'),
+                    'completedAt' => $payment->completed_at?->format('M d, Y H:i'),
+                    'hasReceipt' => $payment->receipt !== null,
+                    'notes' => $payment->notes ?? '',
                 ];
             });
 
-        // Summary statistics
-        $summary = [
-            'total_amount' => $query->sum('amount') / 100,
-            'completed_count' => $school->paymentTransactions()->where('status', 'completed')->count(),
-            'pending_count' => $school->paymentTransactions()->whereIn('status', ['initiating', 'processing'])->count(),
-            'failed_count' => $school->paymentTransactions()->where('status', 'failed')->count(),
-        ];
+        // Get active students
+        $students = $school->students()
+            ->where('status', 'active')
+            ->get(['id', 'first_name', 'last_name', 'admission_number'])
+            ->map(fn($s) => [
+                'id' => (string) $s->id,
+                'name' => $s->full_name,
+                'admissionNumber' => $s->admission_number,
+            ]);
 
         return Inertia::render('accountant/Payments', [
             'payments' => $payments,
-            'summary' => $summary,
-            'filters' => $request->only(['status', 'provider', 'search', 'from_date', 'to_date']),
+            'students' => $students,
         ]);
     }
 
