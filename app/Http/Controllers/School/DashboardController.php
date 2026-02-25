@@ -48,13 +48,13 @@ class DashboardController extends Controller
             ->map(function ($payment) {
                 return [
                     'id' => $payment->id,
-                    'student_name' => $payment->student->full_name,
-                    'parent_name' => $payment->parent->name,
+                    'studentName' => $payment->student->full_name,
+                    'parentName' => $payment->parent->name,
                     'amount' => $payment->amount / 100,
                     'provider' => $payment->provider,
                     'status' => $payment->status,
                     'reference' => $payment->reference,
-                    'created_at' => $payment->created_at->format('M d, Y H:i'),
+                    'createdAt' => $payment->created_at->format('M d, Y H:i'),
                 ];
             });
 
@@ -68,13 +68,13 @@ class DashboardController extends Controller
             ->map(function ($invoice) {
                 return [
                     'id' => $invoice->id,
-                    'invoice_number' => $invoice->invoice_number,
-                    'student_name' => $invoice->student->full_name,
-                    'total_amount' => $invoice->total_amount / 100,
-                    'paid_amount' => $invoice->paid_amount / 100,
+                    'invoiceNumber' => $invoice->invoice_number,
+                    'studentName' => $invoice->student->full_name,
+                    'totalAmount' => $invoice->total_amount / 100,
+                    'paidAmount' => $invoice->paid_amount / 100,
                     'balance' => $invoice->balance / 100,
-                    'due_date' => $invoice->due_date->format('M d, Y'),
-                    'days_overdue' => now()->diffInDays($invoice->due_date, false),
+                    'dueDate' => $invoice->due_date->format('M d, Y'),
+                    'daysOverdue' => now()->diffInDays($invoice->due_date, false),
                 ];
             });
 
@@ -98,11 +98,11 @@ class DashboardController extends Controller
             ->map(function ($student) {
                 return [
                     'id' => $student->id,
-                    'full_name' => $student->full_name,
-                    'admission_number' => $student->admission_number,
+                    'fullName' => $student->full_name,
+                    'admissionNumber' => $student->admission_number,
                     'grade' => $student->grade->name,
                     'class' => $student->class->name,
-                    'enrolled_at' => $student->created_at->format('M d, Y'),
+                    'enrolledAt' => $student->created_at->format('M d, Y'),
                 ];
             });
 

@@ -47,10 +47,10 @@ class StudentController extends Controller
             ->through(function ($student) {
                 return [
                     'id' => $student->id,
-                    'admission_number' => $student->admission_number,
-                    'full_name' => $student->full_name,
-                    'first_name' => $student->first_name,
-                    'last_name' => $student->last_name,
+                    'admissionNumber' => $student->admission_number,
+                    'fullName' => $student->full_name,
+                    'firstName' => $student->first_name,
+                    'lastName' => $student->last_name,
                     'grade' => [
                         'id' => $student->grade->id,
                         'name' => $student->grade->name,
@@ -60,7 +60,7 @@ class StudentController extends Controller
                         'name' => $student->class->name,
                     ],
                     'status' => $student->status,
-                    'created_at' => $student->created_at->format('M d, Y'),
+                    'createdAt' => $student->created_at->format('M d, Y'),
                 ];
             });
 
@@ -68,7 +68,7 @@ class StudentController extends Controller
         $grades = $school->grades()->orderBy('sort_order')->get(['id', 'name']);
 
         return Inertia::render('school/Students', [
-            'students' => $students,
+            'students' => $students->items(),
             'grades' => $grades,
             'filters' => $request->only(['status', 'grade_id', 'search']),
         ]);
@@ -155,18 +155,18 @@ class StudentController extends Controller
 
         // Calculate financial summary
         $financialSummary = [
-            'total_invoiced' => $student->invoices()->sum('total_amount') / 100,
-            'total_paid' => $student->invoices()->sum('paid_amount') / 100,
-            'total_balance' => $student->invoices()->whereIn('status', ['sent', 'partial', 'overdue'])->sum('balance') / 100,
+            'totalInvoiced' => $student->invoices()->sum('total_amount') / 100,
+            'totalPaid' => $student->invoices()->sum('paid_amount') / 100,
+            'totalBalance' => $student->invoices()->whereIn('status', ['sent', 'partial', 'overdue'])->sum('balance') / 100,
         ];
 
         return Inertia::render('school/StudentDetail', [
             'student' => [
                 'id' => $student->id,
-                'admission_number' => $student->admission_number,
-                'full_name' => $student->full_name,
-                'first_name' => $student->first_name,
-                'last_name' => $student->last_name,
+                'admissionNumber' => $student->admission_number,
+                'fullName' => $student->full_name,
+                'firstName' => $student->first_name,
+                'lastName' => $student->last_name,
                 'grade' => [
                     'id' => $student->grade->id,
                     'name' => $student->grade->name,
@@ -176,7 +176,7 @@ class StudentController extends Controller
                     'name' => $student->class->name,
                 ],
                 'status' => $student->status,
-                'created_at' => $student->created_at->format('M d, Y'),
+                'createdAt' => $student->created_at->format('M d, Y'),
             ],
             'parents' => $student->parents->map(fn($parent) => [
                 'id' => $parent->id,
@@ -186,12 +186,12 @@ class StudentController extends Controller
             ]),
             'recentInvoices' => $student->invoices->map(fn($invoice) => [
                 'id' => $invoice->id,
-                'invoice_number' => $invoice->invoice_number,
-                'total_amount' => $invoice->total_amount / 100,
-                'paid_amount' => $invoice->paid_amount / 100,
+                'invoiceNumber' => $invoice->invoice_number,
+                'totalAmount' => $invoice->total_amount / 100,
+                'paidAmount' => $invoice->paid_amount / 100,
                 'balance' => $invoice->balance / 100,
                 'status' => $invoice->status,
-                'due_date' => $invoice->due_date->format('M d, Y'),
+                'dueDate' => $invoice->due_date->format('M d, Y'),
             ]),
             'recentPayments' => $student->paymentTransactions->map(fn($payment) => [
                 'id' => $payment->id,
@@ -199,7 +199,7 @@ class StudentController extends Controller
                 'provider' => $payment->provider,
                 'status' => $payment->status,
                 'reference' => $payment->reference,
-                'created_at' => $payment->created_at->format('M d, Y'),
+                'createdAt' => $payment->created_at->format('M d, Y'),
             ]),
             'financialSummary' => $financialSummary,
             'hasHealthProfile' => $student->healthProfile !== null,

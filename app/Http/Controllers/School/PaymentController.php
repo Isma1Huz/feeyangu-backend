@@ -47,21 +47,21 @@ class PaymentController extends Controller
                 return [
                     'id' => $payment->id,
                     'reference' => $payment->reference,
-                    'student_name' => $payment->student->full_name,
-                    'parent_name' => $payment->parent->name,
+                    'studentName' => $payment->student->full_name,
+                    'parentName' => $payment->parent->name,
                     'amount' => $payment->amount / 100,
                     'provider' => $payment->provider,
                     'status' => $payment->status,
-                    'phone_number' => $payment->phone_number,
-                    'provider_reference' => $payment->provider_reference,
-                    'created_at' => $payment->created_at->format('M d, Y H:i'),
-                    'completed_at' => $payment->completed_at?->format('M d, Y H:i'),
-                    'has_receipt' => $payment->receipt !== null,
+                    'phoneNumber' => $payment->phone_number,
+                    'providerReference' => $payment->provider_reference,
+                    'createdAt' => $payment->created_at->format('M d, Y H:i'),
+                    'completedAt' => $payment->completed_at?->format('M d, Y H:i'),
+                    'hasReceipt' => $payment->receipt !== null,
                 ];
             });
 
         return Inertia::render('school/Payments', [
-            'payments' => $payments,
+            'payments' => $payments->items(),
             'filters' => $request->only(['status', 'provider', 'search']),
         ]);
     }
@@ -85,7 +85,7 @@ class PaymentController extends Controller
                 'student' => [
                     'id' => $payment->student->id,
                     'name' => $payment->student->full_name,
-                    'admission_number' => $payment->student->admission_number,
+                    'admissionNumber' => $payment->student->admission_number,
                 ],
                 'parent' => [
                     'id' => $payment->parent->id,
@@ -96,15 +96,15 @@ class PaymentController extends Controller
                 'amount' => $payment->amount / 100,
                 'provider' => $payment->provider,
                 'status' => $payment->status,
-                'phone_number' => $payment->phone_number,
-                'provider_reference' => $payment->provider_reference,
-                'created_at' => $payment->created_at->format('M d, Y H:i'),
-                'completed_at' => $payment->completed_at?->format('M d, Y H:i'),
+                'phoneNumber' => $payment->phone_number,
+                'providerReference' => $payment->provider_reference,
+                'createdAt' => $payment->created_at->format('M d, Y H:i'),
+                'completedAt' => $payment->completed_at?->format('M d, Y H:i'),
             ],
             'receipt' => $payment->receipt ? [
                 'id' => $payment->receipt->id,
-                'receipt_number' => $payment->receipt->receipt_number,
-                'issued_at' => $payment->receipt->issued_at->format('M d, Y H:i'),
+                'receiptNumber' => $payment->receipt->receipt_number,
+                'issuedAt' => $payment->receipt->issued_at->format('M d, Y H:i'),
             ] : null,
         ]);
     }
