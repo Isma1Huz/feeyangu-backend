@@ -21,30 +21,37 @@ class FeeStructureController extends Controller
         $school = auth()->user()->school;
 
         $feeStructures = $school->feeStructures()
-            ->with(['grade', 'term'])
+            ->with(['grade', 'term', 'feeItems'])
             ->latest()
             ->paginate(20)
             ->through(function ($feeStructure) {
                 return [
                     'id' => $feeStructure->id,
                     'name' => $feeStructure->name,
-                    'grade' => [
-                        'id' => $feeStructure->grade->id,
-                        'name' => $feeStructure->grade->name,
-                    ],
-                    'term' => [
-                        'id' => $feeStructure->term->id,
-                        'name' => $feeStructure->term->name,
-                        'year' => $feeStructure->term->year,
-                    ],
-                    'total_amount' => $feeStructure->total_amount / 100,
+                    'grade' => $feeStructure->grade->name,
+                    'term' => $feeStructure->term->name . ' ' . $feeStructure->term->year,
+                    'totalAmount' => $feeStructure->total_amount / 100,
                     'status' => $feeStructure->status,
-                    'created_at' => $feeStructure->created_at->format('M d, Y'),
+                    'items' => $feeStructure->feeItems->map(function ($item) {
+                        return [
+                            'id' => $item->id,
+                            'name' => $item->name,
+                            'amount' => $item->amount / 100,
+                        ];
+                    })->toArray(),
                 ];
             });
 
+        $grades = $school->grades()->orderBy('sort_order')->get(['id', 'name']);
+        $terms = $school->academicTerms()
+            ->whereIn('status', ['active', 'upcoming'])
+            ->orderBy('year', 'desc')
+            ->get(['id', 'name', 'year']);
+
         return Inertia::render('school/FeeStructures', [
-            'feeStructures' => $feeStructures,
+            'structures' => $feeStructures->items(),
+            'grades' => $grades,
+            'terms' => $terms,
         ]);
     }
 

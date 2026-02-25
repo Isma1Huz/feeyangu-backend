@@ -35,13 +35,13 @@ class ReceiptController extends Controller
             ->through(function ($receipt) {
                 return [
                     'id' => $receipt->id,
-                    'receipt_number' => $receipt->receipt_number,
-                    'student_name' => $receipt->student->full_name,
+                    'receiptNumber' => $receipt->receipt_number,
+                    'studentName' => $receipt->student->full_name,
                     'amount' => $receipt->amount / 100,
-                    'payment_method' => $receipt->payment_method,
-                    'payment_reference' => $receipt->payment_reference,
-                    'issued_at' => $receipt->issued_at->format('M d, Y H:i'),
-                    'transaction_status' => $receipt->paymentTransaction->status ?? 'N/A',
+                    'paymentMethod' => $receipt->payment_method,
+                    'paymentReference' => $receipt->payment_reference,
+                    'issuedAt' => $receipt->issued_at->format('M d, Y H:i'),
+                    'transactionStatus' => $receipt->paymentTransaction->status ?? 'N/A',
                 ];
             });
 
@@ -66,16 +66,16 @@ class ReceiptController extends Controller
         return Inertia::render('school/ReceiptShow', [
             'receipt' => [
                 'id' => $receipt->id,
-                'receipt_number' => $receipt->receipt_number,
+                'receiptNumber' => $receipt->receipt_number,
                 'student' => [
                     'id' => $receipt->student->id,
                     'name' => $receipt->student->full_name,
-                    'admission_number' => $receipt->student->admission_number,
+                    'admissionNumber' => $receipt->student->admission_number,
                 ],
                 'amount' => $receipt->amount / 100,
-                'payment_method' => $receipt->payment_method,
-                'payment_reference' => $receipt->payment_reference,
-                'issued_at' => $receipt->issued_at->format('M d, Y H:i'),
+                'paymentMethod' => $receipt->payment_method,
+                'paymentReference' => $receipt->payment_reference,
+                'issuedAt' => $receipt->issued_at->format('M d, Y H:i'),
                 'transaction' => $receipt->paymentTransaction ? [
                     'id' => $receipt->paymentTransaction->id,
                     'status' => $receipt->paymentTransaction->status,
