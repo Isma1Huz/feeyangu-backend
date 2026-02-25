@@ -30,4 +30,9 @@ class ExpenseRecord extends Model
     {
         return $this->belongsTo(School::class);
     }
+
+    public function submitter(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'submitted_by');
+    }
 }
