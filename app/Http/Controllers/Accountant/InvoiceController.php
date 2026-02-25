@@ -39,28 +39,77 @@ class InvoiceController extends Controller
             });
         }
 
-        $invoices = $query->with(['student'])
+        // Get all invoices with camelCase field names to match frontend
+        $invoices = $query->with(['student', 'items'])
             ->latest('issued_date')
-            ->paginate(20)
-            ->through(function ($invoice) {
+            ->get()
+            ->map(function ($invoice) {
                 return [
-                    'id' => $invoice->id,
-                    'invoice_number' => $invoice->invoice_number,
-                    'student_name' => $invoice->student->full_name,
+                    'id' => (string) $invoice->id,
+                    'invoiceNumber' => $invoice->invoice_number,
+                    'studentId' => (string) $invoice->student_id,
+                    'studentName' => $invoice->student->full_name,
                     'grade' => $invoice->grade,
                     'term' => $invoice->term,
-                    'total_amount' => $invoice->total_amount / 100,
-                    'paid_amount' => $invoice->paid_amount / 100,
+                    'totalAmount' => $invoice->total_amount / 100,
+                    'paidAmount' => $invoice->paid_amount / 100,
                     'balance' => $invoice->balance / 100,
                     'status' => $invoice->status,
-                    'due_date' => $invoice->due_date->format('M d, Y'),
-                    'issued_date' => $invoice->issued_date->format('M d, Y'),
+                    'dueDate' => $invoice->due_date->format('M d, Y'),
+                    'issuedDate' => $invoice->issued_date->format('M d, Y'),
+                    'items' => $invoice->items->map(fn($item) => [
+                        'name' => $item->name,
+                        'amount' => $item->amount / 100,
+                    ]),
                 ];
             });
 
+        // Get active students
+        $students = $school->students()
+            ->where('status', 'active')
+            ->get(['id', 'first_name', 'last_name', 'admission_number', 'grade_id'])
+            ->map(fn($s) => [
+                'id' => (string) $s->id,
+                'name' => $s->full_name,
+                'admissionNumber' => $s->admission_number,
+                'grade' => $s->grade_id ? \App\Models\Grade::find($s->grade_id)?->name ?? '' : '',
+            ]);
+
+        // Get fee structures
+        $feeStructures = $school->feeStructures()
+            ->where('status', 'active')
+            ->with(['grade', 'term', 'feeItems'])
+            ->get()
+            ->map(fn($fs) => [
+                'id' => (string) $fs->id,
+                'name' => $fs->name,
+                'gradeId' => (string) $fs->grade_id,
+                'gradeName' => $fs->grade->name ?? '',
+                'termName' => $fs->term->name ?? '',
+                'totalAmount' => $fs->total_amount / 100,
+                'items' => $fs->feeItems->map(fn($item) => [
+                    'name' => $item->name,
+                    'amount' => $item->amount / 100,
+                ]),
+            ]);
+
+        // Get unique grades
+        $grades = $school->students()
+            ->where('status', 'active')
+            ->whereNotNull('grade_id')
+            ->pluck('grade_id')
+            ->unique()
+            ->map(fn($gradeId) => \App\Models\Grade::find($gradeId)?->name)
+            ->filter()
+            ->unique()
+            ->values()
+            ->toArray();
+
         return Inertia::render('accountant/Invoicing', [
             'invoices' => $invoices,
-            'filters' => $request->only(['status', 'search']),
+            'students' => $students,
+            'feeStructures' => $feeStructures,
+            'grades' => $grades,
         ]);
     }
 
