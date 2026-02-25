@@ -12,27 +12,20 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { useToast } from '@/hooks/use-toast';
 import AppLayout from '@/layouts/AppLayout';
 
-/**
- * ⚠️ WARNING: This page uses MOCK/HARDCODED data and is NOT connected to the backend.
- * 
- * Current Issues:
- * - No Inertia::render() call from backend controller
- * - Reports array is hardcoded (lines 30-38)
- * - Report generation is simulated/fake (line 56)
- * - CSV downloads contain fake data (line 71)
- * - Last generated dates are hardcoded
- * 
- * Required Backend Integration:
- * 1. Create backend route: accountant/reports
- * 2. Create controller method to render this page with real report metadata
- * 3. Create API endpoints for actual report generation
- * 4. Implement real PDF/Excel/CSV generation
- * 5. Store generated reports in database/storage
- */
+interface Report {
+  key: string;
+  icon: string;
+  description: string;
+  lastGenerated: string;
+  color: string;
+}
 
-interface Props extends InertiaSharedProps {}
+interface Props extends InertiaSharedProps {
+  reports: Report[];
+}
 
 const Reports: React.FC = () => {
+  const { reports } = usePage<Props>().props;
   const { toast } = useToast();
   const T = useT();
   const t = T.ACCOUNTANT_REPORTS_TEXT;
@@ -46,15 +39,14 @@ const Reports: React.FC = () => {
   const [reportGrade, setReportGrade] = useState('all');
   const [generating, setGenerating] = useState(false);
 
-  const reports = [
-    { key: 'incomeStatement', icon: TrendingUp, description: 'Revenue and expense summary for a given period.', lastGenerated: '2026-02-10', color: 'hsl(142, 72%, 35%)' },
-    { key: 'cashFlow', icon: BarChart3, description: 'Cash inflows and outflows analysis.', lastGenerated: '2026-02-08', color: 'hsl(200, 72%, 45%)' },
-    { key: 'feeCollection', icon: FileText, description: 'Detailed fee collection breakdown by grade and class.', lastGenerated: '2026-02-14', color: 'hsl(var(--primary))' },
-    { key: 'outstanding', icon: Clock, description: 'All outstanding and overdue fee balances.', lastGenerated: '2026-02-14', color: 'hsl(45, 90%, 50%)' },
-    { key: 'paymentMethod', icon: Calendar, description: 'Transaction breakdown by payment method with fees.', lastGenerated: '2026-02-12', color: 'hsl(280, 60%, 50%)' },
-    { key: 'aging', icon: BarChart3, description: 'Receivables categorized by age (30/60/90+ days).', lastGenerated: '2026-02-14', color: 'hsl(0, 72%, 45%)' },
-    { key: 'audit', icon: Shield, description: 'Complete audit trail of all financial actions.', lastGenerated: '2026-02-13', color: 'hsl(220, 60%, 50%)' },
-  ];
+  const iconMap: Record<string, React.ComponentType<any>> = {
+    TrendingUp,
+    BarChart3,
+    FileText,
+    Clock,
+    Calendar,
+    Shield,
+  };
 
   const openGenerate = (reportKey: string) => {
     setSelectedReport(reportKey);
@@ -71,30 +63,46 @@ const Reports: React.FC = () => {
       return;
     }
     setGenerating(true);
-    // Simulate report generation
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    setGenerating(false);
 
-    const label = (t.reports as Record<string, string>)[selectedReport] || selectedReport;
-    toast({
-      title: `${label} Generated`,
-      description: `Report for ${reportDateFrom} to ${reportDateTo} ready for download as ${reportFormat.toUpperCase()}.`,
+    const data = {
+      reportType: selectedReport,
+      dateFrom: reportDateFrom,
+      dateTo: reportDateTo,
+      format: reportFormat,
+      grade: reportGrade,
+    };
+
+    router.post('/accountant/reports/generate', data, {
+      onSuccess: () => {
+        const label = (t.reports as Record<string, string>)[selectedReport] || selectedReport;
+        toast({
+          title: `${label} Generated`,
+          description: `Report for ${reportDateFrom} to ${reportDateTo} ready for download as ${reportFormat.toUpperCase()}.`,
+        });
+        setGenerating(false);
+        setGenerateOpen(false);
+      },
+      onError: () => {
+        toast({ title: 'Error', description: 'Failed to generate report.', variant: 'destructive' });
+        setGenerating(false);
+      },
     });
-    setGenerateOpen(false);
   };
 
   const handleDownload = (reportKey: string) => {
     const label = (t.reports as Record<string, string>)[reportKey] || reportKey;
-    // Generate a simple CSV as downloadable content
-    const header = 'Category,Amount,Date\n';
-    const rows = 'Tuition Fees,2400000,2026-02-14\nLunch Fees,480000,2026-02-14\nActivity Fees,120000,2026-02-14\nTransport,96000,2026-02-14\n';
-    const blob = new Blob([header + rows], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${reportKey}-report.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    
+    // Trigger CSV download via backend
+    const params = new URLSearchParams({
+      reportType: reportKey,
+      dateFrom: '2026-01-01',
+      dateTo: new Date().toISOString().split('T')[0],
+      format: 'csv',
+      grade: 'all',
+    });
+
+    window.location.href = `/accountant/reports/generate?${params.toString()}`;
+    
     toast({ title: 'Downloaded', description: `${label} report downloaded.` });
   };
 
@@ -109,7 +117,7 @@ const Reports: React.FC = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {reports.map((report) => {
-          const Icon = report.icon;
+          const Icon = iconMap[report.icon] || FileText;
           const label = (t.reports as Record<string, string>)[report.key];
           return (
             <Card key={report.key} className="shadow-sm hover:shadow-md transition-shadow">

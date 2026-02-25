@@ -15,25 +15,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { useToast } from '@/hooks/use-toast';
 import AppLayout from '@/layouts/AppLayout';
 
-/**
- * ⚠️ WARNING: This page has LIMITED backend integration.
- * 
- * Current State:
- * - Backend provides initial expenses and categories via Inertia props ✅
- * - All CRUD operations (Create, Update, Delete, Approve, Reject) are CLIENT-SIDE ONLY ❌
- * - Changes are NOT persisted to the database ❌
- * - Data is lost on page refresh ❌
- * - Hardcoded submitter name: 'Mary Njoroge' (line 111) ❌
- * 
- * Required Backend Integration:
- * 1. POST /accountant/expenses - Create new expense
- * 2. PUT /accountant/expenses/{id} - Update expense
- * 3. DELETE /accountant/expenses/{id} - Delete expense
- * 4. POST /accountant/expenses/{id}/approve - Approve expense
- * 5. POST /accountant/expenses/{id}/reject - Reject expense
- * 6. Use router.post/put/delete for API calls instead of local state updates
- */
-
 interface Props extends InertiaSharedProps {
   expenses: ExpenseRecord[];
   categories: string[];
@@ -49,7 +30,6 @@ const Expenses: React.FC = () => {
   const { toast } = useToast();
   const T = useT();
   const t = T.ACCOUNTANT_EXPENSES_TEXT;
-  const [expenses, setExpenses] = useState<ExpenseRecord[]>(initialExpenses);
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
 
@@ -72,11 +52,11 @@ const Expenses: React.FC = () => {
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const filtered = useMemo(() =>
-    expenses.filter(e => {
+    initialExpenses.filter(e => {
       const matchSearch = !search || e.description.toLowerCase().includes(search.toLowerCase()) || e.vendor.toLowerCase().includes(search.toLowerCase());
       const matchCategory = categoryFilter === 'all' || e.category === categoryFilter;
       return matchSearch && matchCategory;
-    }), [search, categoryFilter, expenses]);
+    }), [search, categoryFilter, initialExpenses]);
 
   const totalExpenses = filtered.reduce((sum, e) => sum + e.amount, 0);
 
@@ -112,47 +92,73 @@ const Expenses: React.FC = () => {
       return;
     }
 
+    const data = {
+      date: formDate,
+      category: formCategory,
+      description: formDescription,
+      amount,
+      vendor: formVendor,
+      status: formStatus,
+    };
+
     if (editing) {
-      setExpenses(prev => prev.map(e => e.id === editing.id ? {
-        ...e, date: formDate, category: formCategory, description: formDescription,
-        amount, vendor: formVendor, status: formStatus,
-      } : e));
-      toast({ title: 'Expense Updated', description: `"${formDescription}" has been updated.` });
+      router.put(`/accountant/expenses/${editing.id}`, data, {
+        onSuccess: () => {
+          toast({ title: 'Expense Updated', description: `"${formDescription}" has been updated.` });
+          setFormOpen(false);
+        },
+        onError: () => {
+          toast({ title: 'Error', description: 'Failed to update expense.', variant: 'destructive' });
+        },
+      });
     } else {
-      const newExpense: ExpenseRecord = {
-        id: `exp${Date.now()}`,
-        date: formDate,
-        category: formCategory,
-        description: formDescription,
-        amount,
-        vendor: formVendor,
-        receiptUrl: '',
-        status: formStatus,
-        submittedBy: 'Mary Njoroge',
-      };
-      setExpenses(prev => [newExpense, ...prev]);
-      toast({ title: 'Expense Added', description: `"${formDescription}" — KES ${amount.toLocaleString()} recorded.` });
+      router.post('/accountant/expenses', data, {
+        onSuccess: () => {
+          toast({ title: 'Expense Added', description: `"${formDescription}" — KES ${amount.toLocaleString()} recorded.` });
+          setFormOpen(false);
+        },
+        onError: () => {
+          toast({ title: 'Error', description: 'Failed to create expense.', variant: 'destructive' });
+        },
+      });
     }
-    setFormOpen(false);
   };
 
   const handleDelete = () => {
     if (!deleteId) return;
-    const expense = expenses.find(e => e.id === deleteId);
-    setExpenses(prev => prev.filter(e => e.id !== deleteId));
-    toast({ title: 'Expense Deleted', description: `"${expense?.description}" has been removed.` });
-    setDeleteOpen(false);
-    setDeleteId(null);
+    const expense = initialExpenses.find(e => e.id === deleteId);
+    router.delete(`/accountant/expenses/${deleteId}`, {
+      onSuccess: () => {
+        toast({ title: 'Expense Deleted', description: `"${expense?.description}" has been removed.` });
+        setDeleteOpen(false);
+        setDeleteId(null);
+      },
+      onError: () => {
+        toast({ title: 'Error', description: 'Failed to delete expense.', variant: 'destructive' });
+      },
+    });
   };
 
   const handleApprove = (id: string) => {
-    setExpenses(prev => prev.map(e => e.id === id ? { ...e, status: 'approved' as const } : e));
-    toast({ title: 'Expense Approved' });
+    router.post(`/accountant/expenses/${id}/approve`, {}, {
+      onSuccess: () => {
+        toast({ title: 'Expense Approved' });
+      },
+      onError: () => {
+        toast({ title: 'Error', description: 'Failed to approve expense.', variant: 'destructive' });
+      },
+    });
   };
 
   const handleReject = (id: string) => {
-    setExpenses(prev => prev.map(e => e.id === id ? { ...e, status: 'rejected' as const } : e));
-    toast({ title: 'Expense Rejected' });
+    router.post(`/accountant/expenses/${id}/reject`, {}, {
+      onSuccess: () => {
+        toast({ title: 'Expense Rejected' });
+      },
+      onError: () => {
+        toast({ title: 'Error', description: 'Failed to reject expense.', variant: 'destructive' });
+      },
+    });
   };
 
   const columns: DataTableColumn<ExpenseRecord>[] = [

@@ -8,6 +8,7 @@ use App\Models\PTSession;
 use App\Models\PTSlot;
 use App\Models\Notification;
 use App\Models\User;
+use App\Models\ExpenseRecord;
 use Illuminate\Database\Seeder;
 use Carbon\Carbon;
 
@@ -18,6 +19,7 @@ class AdditionalDataSeeder extends Seeder
         $this->createSchoolPaymentConfigs();
         $this->createPTSessions();
         $this->createNotifications();
+        $this->createExpenseRecords();
     }
 
     private function createSchoolPaymentConfigs(): void
@@ -128,6 +130,60 @@ class AdditionalDataSeeder extends Seeder
                         'read' => rand(0, 1) === 1,
                     ]);
                 }
+            }
+        }
+    }
+
+    private function createExpenseRecords(): void
+    {
+        $schools = School::all();
+        
+        foreach ($schools as $school) {
+            // Get accountant user for this school
+            $accountant = User::where('school_id', $school->id)
+                ->whereHas('roles', function($q) {
+                    $q->where('name', 'accountant');
+                })
+                ->first();
+
+            if (!$accountant) {
+                continue;
+            }
+
+            $categories = ['Utilities', 'Supplies', 'Maintenance', 'Salaries', 'Transport', 'Food & Catering', 'Technology', 'Furniture'];
+            $vendors = ['Kenya Power', 'Nairobi Water', 'ABC Supplies Ltd', 'Tech Solutions', 'Food Masters', 'City Transport'];
+            $statuses = ['pending', 'approved', 'rejected'];
+
+            $expenseData = [
+                ['category' => 'Utilities', 'description' => 'Electricity bill for January 2026', 'vendor' => 'Kenya Power', 'amount' => 4500000],
+                ['category' => 'Utilities', 'description' => 'Water bill for January 2026', 'vendor' => 'Nairobi Water', 'amount' => 1200000],
+                ['category' => 'Supplies', 'description' => 'Office stationery and supplies', 'vendor' => 'ABC Supplies Ltd', 'amount' => 3500000],
+                ['category' => 'Maintenance', 'description' => 'Repair of broken windows in Block A', 'vendor' => 'Quick Fix Solutions', 'amount' => 2800000],
+                ['category' => 'Technology', 'description' => 'Purchase of 10 new computers', 'vendor' => 'Tech Solutions', 'amount' => 120000000],
+                ['category' => 'Food & Catering', 'description' => 'Food supplies for school cafeteria', 'vendor' => 'Food Masters', 'amount' => 8500000],
+                ['category' => 'Transport', 'description' => 'School bus fuel for January', 'vendor' => 'City Transport', 'amount' => 4200000],
+                ['category' => 'Furniture', 'description' => 'New desks and chairs for Grade 8', 'vendor' => 'Furniture World', 'amount' => 5600000],
+                ['category' => 'Salaries', 'description' => 'Teaching staff salaries - January 2026', 'vendor' => 'N/A', 'amount' => 450000000],
+                ['category' => 'Maintenance', 'description' => 'Painting of school hall', 'vendor' => 'Prime Painters', 'amount' => 7500000],
+                ['category' => 'Supplies', 'description' => 'Science lab equipment and chemicals', 'vendor' => 'Lab Supplies Co', 'amount' => 6800000],
+                ['category' => 'Technology', 'description' => 'Internet service for February 2026', 'vendor' => 'Safaricom Business', 'amount' => 2500000],
+            ];
+
+            foreach ($expenseData as $i => $data) {
+                $daysAgo = rand(1, 30);
+                $status = $i < 8 ? 'approved' : ($i < 10 ? 'pending' : 'rejected');
+                
+                ExpenseRecord::create([
+                    'school_id' => $school->id,
+                    'date' => Carbon::now()->subDays($daysAgo),
+                    'category' => $data['category'],
+                    'description' => $data['description'],
+                    'amount' => $data['amount'],
+                    'vendor' => $data['vendor'],
+                    'receipt_url' => null,
+                    'status' => $status,
+                    'submitted_by' => $accountant->id,
+                ]);
             }
         }
     }

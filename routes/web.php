@@ -16,6 +16,8 @@ use App\Http\Controllers\Accountant\DashboardController as AccountantDashboardCo
 use App\Http\Controllers\Accountant\InvoiceController as AccountantInvoiceController;
 use App\Http\Controllers\Accountant\PaymentController as AccountantPaymentController;
 use App\Http\Controllers\Accountant\ReconciliationController as AccountantReconciliationController;
+use App\Http\Controllers\Accountant\ExpenseController as AccountantExpenseController;
+use App\Http\Controllers\Accountant\ReportController as AccountantReportController;
 use App\Http\Controllers\Parent\DashboardController as ParentDashboardController;
 use App\Http\Controllers\Parent\ChildrenController as ParentChildrenController;
 use App\Http\Controllers\Parent\PaymentController as ParentPaymentController;
@@ -88,6 +90,15 @@ Route::prefix('accountant')
         // Reconciliation
         Route::get('/reconciliation', [AccountantReconciliationController::class, 'index'])->name('reconciliation.index');
         Route::post('/reconciliation/match', [AccountantReconciliationController::class, 'match'])->name('reconciliation.match');
+        
+        // Expense management
+        Route::resource('expenses', AccountantExpenseController::class)->only(['index', 'store', 'update', 'destroy']);
+        Route::post('/expenses/{expense}/approve', [AccountantExpenseController::class, 'approve'])->name('expenses.approve');
+        Route::post('/expenses/{expense}/reject', [AccountantExpenseController::class, 'reject'])->name('expenses.reject');
+        
+        // Reports
+        Route::get('/reports', [AccountantReportController::class, 'index'])->name('reports.index');
+        Route::post('/reports/generate', [AccountantReportController::class, 'generate'])->name('reports.generate');
     });
 
 // Parent Routes
