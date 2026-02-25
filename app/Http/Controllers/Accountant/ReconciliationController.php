@@ -135,7 +135,6 @@ class ReconciliationController extends Controller
             'systemPayments' => $systemPayments,
         ]);
     }
-    }
 
     /**
      * Match a bank transaction with a system payment.
