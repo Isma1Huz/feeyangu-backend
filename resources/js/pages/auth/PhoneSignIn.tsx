@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { Head, router, usePage, Link } from '@inertiajs/react';
 import { Phone, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,21 +7,18 @@ import { Label } from '@/components/ui/label';
 import feeyanguLogo from '@/assets/feeyangu-logo.png';
 
 const PhoneSignIn: React.FC = () => {
-  const navigate = useNavigate();
   const [step, setStep] = useState<'phone' | 'code'>('phone');
   const [phone, setPhone] = useState('');
   const [code, setCode] = useState(['', '', '', '', '', '']);
-  const [loading, setLoading] = useState(false);
+  const { processing } = usePage().props;
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   const handleSendCode = (e: React.FormEvent) => {
     e.preventDefault();
     if (phone.length < 10) return;
-    setLoading(true);
-    setTimeout(() => {
-      setStep('code');
-      setLoading(false);
-    }, 1000);
+    router.post('/send-phone-code', { phone }, {
+      onSuccess: () => setStep('code'),
+    });
   };
 
   const handleCodeChange = (index: number, value: string) => {
@@ -40,15 +37,13 @@ const PhoneSignIn: React.FC = () => {
 
   const handleVerify = (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    setTimeout(() => {
-      navigate('/school/dashboard');
-      setLoading(false);
-    }, 1000);
+    router.post('/verify-phone-code', { phone, code: code.join('') });
   };
 
   return (
     <div className="animate-fade-in">
+      <Head title="Sign In with Phone" />
+      
       <div className="flex items-center gap-3 mb-10">
         <img src={feeyanguLogo} alt="Feeyangu" className="h-10 w-10 rounded-xl object-contain" />
         <span className="font-bold text-xl tracking-tight">Feeyangu</span>
@@ -86,8 +81,8 @@ const PhoneSignIn: React.FC = () => {
             </div>
           </div>
 
-          <Button type="submit" className="w-full h-11 font-semibold text-base rounded-lg" disabled={loading || phone.length < 10}>
-            {loading ? 'Sending...' : 'Send code'}
+          <Button type="submit" className="w-full h-11 font-semibold text-base rounded-lg" disabled={processing || phone.length < 10}>
+            {processing ? 'Sending...' : 'Send code'}
           </Button>
         </form>
       ) : (
@@ -108,8 +103,8 @@ const PhoneSignIn: React.FC = () => {
             ))}
           </div>
 
-          <Button type="submit" className="w-full h-11 font-semibold text-base rounded-lg" disabled={loading}>
-            {loading ? 'Verifying...' : 'Verify & Sign in'}
+          <Button type="submit" className="w-full h-11 font-semibold text-base rounded-lg" disabled={processing}>
+            {processing ? 'Verifying...' : 'Verify & Sign in'}
           </Button>
 
           <button type="button" onClick={() => setStep('phone')} className="text-sm text-primary hover:underline w-full text-center">
@@ -119,7 +114,7 @@ const PhoneSignIn: React.FC = () => {
       )}
 
       <div className="mt-6 text-center">
-        <Link to="/login" className="text-sm text-primary font-medium hover:underline inline-flex items-center gap-1.5">
+        <Link href="/login" className="text-sm text-primary font-medium hover:underline inline-flex items-center gap-1.5">
           <ArrowLeft className="h-3.5 w-3.5" />
           Back to email sign in
         </Link>

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, Head, router, usePage } from '@inertiajs/react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -18,22 +18,22 @@ const ForgotPassword: React.FC = () => {
   const T = useT();
   const t = T.AUTH_TEXT.forgotPassword;
   const [sent, setSent] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const { processing } = usePage().props;
 
   const { register, handleSubmit, formState: { errors } } = useForm({
     resolver: zodResolver(schema),
   });
 
-  const onSubmit = () => {
-    setLoading(true);
-    setTimeout(() => {
-      setSent(true);
-      setLoading(false);
-    }, 1000);
+  const onSubmit = (data: any) => {
+    router.post('/forgot-password', data, {
+      onSuccess: () => setSent(true),
+    });
   };
 
   return (
     <div className="animate-fade-in">
+      <Head title="Forgot Password" />
+      
       <div className="flex items-center gap-3 mb-10">
         <img src={feeyanguLogo} alt="Feeyangu" className="h-10 w-10 rounded-xl object-contain" />
         <span className="font-bold text-xl tracking-tight">{T.APP_NAME}</span>
@@ -48,7 +48,7 @@ const ForgotPassword: React.FC = () => {
           </div>
           <h2 className="text-2xl font-bold tracking-tight mb-2">Check your email</h2>
           <p className="text-muted-foreground text-sm mb-6">{t.successMessage}</p>
-          <Link to="/login">
+          <Link href="/login">
             <Button variant="ghost" className="gap-2">
               <ArrowLeft className="h-4 w-4" />
               {t.backToLogin}
@@ -78,13 +78,13 @@ const ForgotPassword: React.FC = () => {
               {errors.email && <p className="text-xs text-destructive">{String(errors.email.message)}</p>}
             </div>
 
-            <Button type="submit" className="w-full h-11 font-semibold text-base rounded-lg" disabled={loading}>
-              {loading ? '...' : t.submitButton}
+            <Button type="submit" className="w-full h-11 font-semibold text-base rounded-lg" disabled={processing}>
+              {processing ? '...' : t.submitButton}
             </Button>
           </form>
 
           <div className="mt-6 text-center">
-            <Link to="/login" className="text-sm text-primary font-medium hover:underline inline-flex items-center gap-1.5">
+            <Link href="/login" className="text-sm text-primary font-medium hover:underline inline-flex items-center gap-1.5">
               <ArrowLeft className="h-3.5 w-3.5" />
               {t.backToLogin}
             </Link>

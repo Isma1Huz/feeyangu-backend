@@ -1,20 +1,26 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Head, router, usePage } from '@inertiajs/react';
 import { MailCheck, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import feeyanguLogo from '@/assets/feeyangu-logo.png';
 
 const VerifyEmail: React.FC = () => {
-  const navigate = useNavigate();
   const [resent, setResent] = useState(false);
+  const { processing } = usePage().props;
 
   const handleResend = () => {
-    setResent(true);
-    setTimeout(() => setResent(false), 3000);
+    router.post('/resend-verification-email', {}, {
+      onSuccess: () => {
+        setResent(true);
+        setTimeout(() => setResent(false), 3000);
+      }
+    });
   };
 
   return (
     <div className="animate-fade-in text-center">
+      <Head title="Verify Email" />
+      
       <div className="flex items-center gap-3 mb-10 justify-center lg:justify-start">
         <img src={feeyanguLogo} alt="Feeyangu" className="h-10 w-10 rounded-xl object-contain" />
         <span className="font-bold text-xl tracking-tight">Feeyangu</span>
@@ -32,11 +38,11 @@ const VerifyEmail: React.FC = () => {
       </p>
 
       <div className="space-y-3">
-        <Button onClick={handleResend} variant="outline" className="w-full h-11" disabled={resent}>
+        <Button onClick={handleResend} variant="outline" className="w-full h-11" disabled={resent || processing}>
           {resent ? 'Email sent!' : 'Resend verification email'}
         </Button>
 
-        <Button onClick={() => navigate('/login')} variant="ghost" className="w-full h-11 gap-2">
+        <Button onClick={() => router.visit('/login')} variant="ghost" className="w-full h-11 gap-2">
           <ArrowLeft className="h-4 w-4" />
           Back to sign in
         </Button>
