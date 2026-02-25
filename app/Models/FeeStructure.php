@@ -17,6 +17,13 @@ class FeeStructure extends Model
         'status',
     ];
 
+    protected function casts(): array
+    {
+        return [
+            'total_amount' => 'integer',
+        ];
+    }
+
     public function school(): BelongsTo
     {
         return $this->belongsTo(School::class);

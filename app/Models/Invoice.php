@@ -26,6 +26,9 @@ class Invoice extends Model
     protected function casts(): array
     {
         return [
+            'total_amount' => 'integer',
+            'paid_amount' => 'integer',
+            'balance' => 'integer',
             'due_date' => 'date',
             'issued_date' => 'date',
         ];

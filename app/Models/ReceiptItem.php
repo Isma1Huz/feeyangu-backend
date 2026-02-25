@@ -13,6 +13,13 @@ class ReceiptItem extends Model
         'amount',
     ];
 
+    protected function casts(): array
+    {
+        return [
+            'amount' => 'integer',
+        ];
+    }
+
     public function receipt(): BelongsTo
     {
         return $this->belongsTo(Receipt::class);
