@@ -9,7 +9,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import feeyanguLogo from '@/assets/feeyangu-logo.png';
 
 const loginSchema = z.object({
   email: z.string().email('Please enter a valid email').min(1, 'Email is required'),
@@ -38,7 +37,7 @@ const Login: React.FC = () => {
       <Head title="Login" />
       
       <div className="flex items-center gap-3 mb-10">
-        <img src={feeyanguLogo} alt="Feeyangu" className="h-10 w-10 rounded-xl object-contain" />
+        {/* <img src={feeyanguLogo} alt="Feeyangu" className="h-10 w-10 rounded-xl object-contain" /> */}
         <span className="font-bold text-xl tracking-tight">{T.APP_NAME}</span>
       </div>
 
@@ -76,7 +75,7 @@ const Login: React.FC = () => {
           </div>
         </div>
 
-        <Button type="submit" className="w-full h-11 font-semibold text-base rounded-lg" disabled={processing}>
+        <Button type="submit" className="w-full h-11 font-semibold text-base rounded-lg" >
           {processing ? '...' : t.submitButton}
         </Button>
       </form>
