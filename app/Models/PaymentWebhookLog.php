@@ -18,11 +18,14 @@ class PaymentWebhookLog extends Model
         'error_message',
     ];
 
-    protected $casts = [
-        'payload' => 'array',
-        'headers' => 'array',
-        'processed_at' => 'datetime',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'payload' => 'array',
+            'headers' => 'array',
+            'processed_at' => 'datetime',
+        ];
+    }
 
     public function transaction(): BelongsTo
     {

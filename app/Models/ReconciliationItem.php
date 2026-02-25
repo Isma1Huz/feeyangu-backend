@@ -38,4 +38,9 @@ class ReconciliationItem extends Model
     {
         return $this->belongsTo(PaymentTransaction::class, 'system_payment_id');
     }
+
+    public function matcher(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'matched_by');
+    }
 }

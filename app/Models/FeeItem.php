@@ -13,6 +13,13 @@ class FeeItem extends Model
         'amount',
     ];
 
+    protected function casts(): array
+    {
+        return [
+            'amount' => 'integer',
+        ];
+    }
+
     public function feeStructure(): BelongsTo
     {
         return $this->belongsTo(FeeStructure::class);

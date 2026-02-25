@@ -28,7 +28,7 @@ class PTSession extends Model
     {
         return [
             'dates' => 'array',
-            'booking_deadline' => 'datetime',
+            'booking_deadline' => 'date',
         ];
     }
 

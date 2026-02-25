@@ -13,6 +13,13 @@ class InvoiceItem extends Model
         'amount',
     ];
 
+    protected function casts(): array
+    {
+        return [
+            'amount' => 'integer',
+        ];
+    }
+
     public function invoice(): BelongsTo
     {
         return $this->belongsTo(Invoice::class);

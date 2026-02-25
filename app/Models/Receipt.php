@@ -22,6 +22,7 @@ class Receipt extends Model
     protected function casts(): array
     {
         return [
+            'amount' => 'integer',
             'issued_at' => 'datetime',
         ];
     }

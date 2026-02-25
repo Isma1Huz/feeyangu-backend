@@ -24,6 +24,7 @@ class PaymentTransaction extends Model
     protected function casts(): array
     {
         return [
+            'amount' => 'integer',
             'completed_at' => 'datetime',
         ];
     }
