@@ -6,7 +6,6 @@ import {
   Heart, ClipboardList, Megaphone, UserCheck, FolderOpen,
   Scale, ArrowLeftRight, BarChart3, Plug, ShieldCheck,
 } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
 import { useT } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import feeyanguLogo from '@/assets/feeyangu-logo.png';
@@ -26,7 +25,8 @@ interface SidebarNavItem { title: string; url: string; icon: string; }
 interface SidebarNavSection { label: string; items: SidebarNavItem[]; }
 
 const AppSidebar: React.FC = () => {
-  const { user } = useAuth();
+  const { auth } = usePage().props as { auth: { user: { name: string; role: string } } };
+  const user = auth?.user;
   const { state } = useSidebar();
   const collapsed = state === 'collapsed';
   const { url } = usePage();

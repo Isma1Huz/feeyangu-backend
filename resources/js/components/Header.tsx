@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { router, usePage } from '@inertiajs/react';
 import { Bell, LogOut, User, ChevronDown, Globe, ChevronRight, Moon, Sun, Settings } from 'lucide-react';
 import SteppedMenuIcon from '@/components/SteppedMenuIcon';
-import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import type { Language } from '@/lib/i18n';
@@ -40,7 +39,8 @@ import { cn } from '@/lib/utils';
 const langFlags: Record<Language, string> = { en: '🇬🇧', fr: '🇫🇷', de: '🇩🇪', nl: '🇳🇱', sw: '🇰🇪' };
 
 const Header: React.FC = () => {
-  const { user, logout, switchRole } = useAuth();
+  const { auth } = usePage().props as { auth: { user: { name: string; role: string; school?: { name: string } } } };
+  const user = auth?.user ? { ...auth.user, schoolName: auth.user.school?.name } : null;
   const { url } = usePage();
   const { language, setLanguage, t } = useLanguage();
   const { theme, toggleTheme } = useTheme();
@@ -49,8 +49,7 @@ const Header: React.FC = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const handleLogout = () => {
-    logout();
-    router.visit('/login');
+    router.post('/logout');
   };
 
   const brandLogo = user?.role === 'super_admin' ? feeyanguLogo : schoolLogo;
@@ -166,7 +165,7 @@ const Header: React.FC = () => {
                 ]).map(({ role, path }) => (
                   <DropdownMenuItem
                     key={role}
-                    onClick={() => { switchRole(role); router.visit(path); }}
+                    onClick={() => { router.visit(path); }}
                     className={user?.role === role ? 'bg-accent font-semibold' : ''}
                   >
                     {roleLabelMap[role]}
@@ -289,7 +288,7 @@ const Header: React.FC = () => {
                   ]).map(({ role, path }) => (
                     <button
                       key={role}
-                      onClick={() => { switchRole(role); router.visit(path); setMobileOpen(false); }}
+                      onClick={() => { router.visit(path); setMobileOpen(false); }}
                       className={cn(
                         'w-full flex items-center justify-between text-sm px-3 py-2.5 rounded-md transition-colors',
                         user?.role === role

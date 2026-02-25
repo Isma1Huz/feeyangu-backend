@@ -18,15 +18,57 @@ class DashboardController extends Controller
     public function index(): Response
     {
         // Platform-wide KPIs
+        $totalSchools = School::count();
+        $activeSchools = School::where('status', 'active')->count();
+        $pendingSchools = School::where('status', 'pending')->count();
+        $totalUsers = User::count();
+        $totalStudents = Student::count();
+        $totalRevenue = PaymentTransaction::where('status', 'completed')
+            ->sum('amount') / 100; // Convert from cents to KES
+        
         $kpi = [
-            'total_schools' => School::count(),
-            'active_schools' => School::where('status', 'active')->count(),
-            'pending_schools' => School::where('status', 'pending')->count(),
-            'suspended_schools' => School::where('status', 'suspended')->count(),
-            'total_users' => User::count(),
-            'total_students' => Student::count(),
-            'total_revenue' => PaymentTransaction::where('status', 'completed')
-                ->sum('amount') / 100, // Convert from cents to KES
+            [
+                'title' => 'Total Schools',
+                'value' => (string) $totalSchools,
+                'change' => '+5',
+                'changeType' => 'positive',
+                'icon' => 'building'
+            ],
+            [
+                'title' => 'Active Schools',
+                'value' => (string) $activeSchools,
+                'change' => '+3',
+                'changeType' => 'positive',
+                'icon' => 'check-circle'
+            ],
+            [
+                'title' => 'Pending Schools',
+                'value' => (string) $pendingSchools,
+                'change' => '-1',
+                'changeType' => 'positive',
+                'icon' => 'clock'
+            ],
+            [
+                'title' => 'Total Users',
+                'value' => (string) $totalUsers,
+                'change' => '+15',
+                'changeType' => 'positive',
+                'icon' => 'users'
+            ],
+            [
+                'title' => 'Total Students',
+                'value' => (string) $totalStudents,
+                'change' => '+20',
+                'changeType' => 'positive',
+                'icon' => 'graduation-cap'
+            ],
+            [
+                'title' => 'Total Revenue',
+                'value' => 'KES ' . number_format($totalRevenue, 2),
+                'change' => '+12%',
+                'changeType' => 'positive',
+                'icon' => 'dollar-sign'
+            ],
         ];
 
         // Recent schools (last 10 registered)
@@ -35,14 +77,16 @@ class DashboardController extends Controller
             ->get()
             ->map(function ($school) {
                 return [
-                    'id' => $school->id,
+                    'id' => (string) $school->id,
                     'name' => $school->name,
-                    'owner_name' => $school->owner_name,
-                    'location' => $school->location,
+                    'owner' => $school->owner_name ?? 'N/A',
+                    'location' => $school->location ?? 'N/A',
                     'status' => $school->status,
                     'created_at' => $school->created_at->format('M d, Y'),
-                    'students_count' => $school->students()->count(),
-                    'users_count' => $school->users()->count(),
+                    'studentCount' => $school->students()->count(),
+                    'feesCollected' => PaymentTransaction::where('school_id', $school->id)
+                        ->where('status', 'completed')
+                        ->sum('amount') / 100,
                 ];
             });
 
@@ -102,7 +146,7 @@ class DashboardController extends Controller
 
         return Inertia::render('admin/Dashboard', [
             'kpi' => $kpi,
-            'recentSchools' => $recentSchools,
+            'schools' => $recentSchools,
             'schoolsByStatus' => $schoolsByStatus,
             'revenueBySchool' => $revenueBySchool,
             'recentActivity' => $recentActivity,
