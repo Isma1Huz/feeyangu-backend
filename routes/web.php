@@ -12,12 +12,14 @@ use App\Http\Controllers\School\AcademicTermController as SchoolAcademicTermCont
 use App\Http\Controllers\School\FeeStructureController as SchoolFeeStructureController;
 use App\Http\Controllers\School\PaymentController as SchoolPaymentController;
 use App\Http\Controllers\School\ReceiptController as SchoolReceiptController;
+use App\Http\Controllers\School\PaymentMethodController as SchoolPaymentMethodController;
 use App\Http\Controllers\Accountant\DashboardController as AccountantDashboardController;
 use App\Http\Controllers\Accountant\InvoiceController as AccountantInvoiceController;
 use App\Http\Controllers\Accountant\PaymentController as AccountantPaymentController;
 use App\Http\Controllers\Accountant\ReconciliationController as AccountantReconciliationController;
 use App\Http\Controllers\Accountant\ExpenseController as AccountantExpenseController;
 use App\Http\Controllers\Accountant\ReportController as AccountantReportController;
+use App\Http\Controllers\Accountant\IntegrationController as AccountantIntegrationController;
 use App\Http\Controllers\Parent\DashboardController as ParentDashboardController;
 use App\Http\Controllers\Parent\ChildrenController as ParentChildrenController;
 use App\Http\Controllers\Parent\PaymentController as ParentPaymentController;
@@ -63,6 +65,9 @@ Route::prefix('school')
         // Fee structure management
         Route::resource('fee-structures', SchoolFeeStructureController::class);
         
+        // Payment method configuration
+        Route::get('/payment-methods', [SchoolPaymentMethodController::class, 'index'])->name('payment-methods.index');
+        
         // Payment viewing
         Route::get('/payments', [SchoolPaymentController::class, 'index'])->name('payments.index');
         Route::get('/payments/{payment}', [SchoolPaymentController::class, 'show'])->name('payments.show');
@@ -99,6 +104,15 @@ Route::prefix('accountant')
         // Reports
         Route::get('/reports', [AccountantReportController::class, 'index'])->name('reports.index');
         Route::post('/reports/generate', [AccountantReportController::class, 'generate'])->name('reports.generate');
+        
+        // Fee Structures (uses School controller)
+        Route::get('/fee-structures', [SchoolFeeStructureController::class, 'index'])->name('fee-structures.index');
+        
+        // Payment Gateway/Methods (uses School controller)
+        Route::get('/payment-gateway', [SchoolPaymentMethodController::class, 'index'])->name('payment-gateway.index');
+        
+        // Integrations
+        Route::get('/integrations', [AccountantIntegrationController::class, 'index'])->name('integrations.index');
     });
 
 // Parent Routes
