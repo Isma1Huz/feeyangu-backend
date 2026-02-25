@@ -11,6 +11,24 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 
+/**
+ * ⚠️ WARNING: This page uses MOCK/HARDCODED data and is NOT connected to the backend.
+ * 
+ * Current Issues:
+ * - No Inertia::render() call from backend controller
+ * - Reports array is hardcoded (lines 30-38)
+ * - Report generation is simulated/fake (line 56)
+ * - CSV downloads contain fake data (line 71)
+ * - Last generated dates are hardcoded
+ * 
+ * Required Backend Integration:
+ * 1. Create backend route: accountant/reports
+ * 2. Create controller method to render this page with real report metadata
+ * 3. Create API endpoints for actual report generation
+ * 4. Implement real PDF/Excel/CSV generation
+ * 5. Store generated reports in database/storage
+ */
+
 interface Props extends InertiaSharedProps {}
 
 const Reports: React.FC = () => {

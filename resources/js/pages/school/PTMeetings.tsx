@@ -111,8 +111,10 @@ const SchoolPTMeetings: React.FC = () => {
                   const slot = slots.find(s => s.id === b.slotId);
                   return (
                     <TableRow key={b.id}>
+                      {/* TODO: Backend should provide parent name in booking object */}
                       <TableCell className="text-sm">{b.parentId === '3' ? 'David Ochieng' : `Parent ${b.parentId}`}</TableCell>
                       <TableCell className="text-sm">{b.studentId}</TableCell>
+                      {/* TODO: Backend should provide teacher name in booking/slot object */}
                       <TableCell className="text-sm">Jane Achieng</TableCell>
                       <TableCell className="text-sm font-mono">{slot?.date} {slot?.startTime}</TableCell>
                       <TableCell><Badge variant="outline">{b.status}</Badge></TableCell>
