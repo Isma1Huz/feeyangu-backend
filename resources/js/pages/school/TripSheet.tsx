@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import AppLayout from '@/layouts/AppLayout';
 import { FileText, Download } from 'lucide-react';
 
 interface Grade {
@@ -22,7 +23,7 @@ const SchoolTripSheet: React.FC = () => {
   const [selectedGrade, setSelectedGrade] = useState('');
 
   return (
-    <>
+    <AppLayout>
       <Head title="Trip Health Sheet Generator" />
       <div className="space-y-6 animate-fade-in">
         <div>
@@ -81,7 +82,7 @@ const SchoolTripSheet: React.FC = () => {
         </CardContent>
       </Card>
       </div>
-    </>
+    </AppLayout>
   );
 };
 

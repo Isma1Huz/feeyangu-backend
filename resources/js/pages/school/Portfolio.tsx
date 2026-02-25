@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import AppLayout from '@/layouts/AppLayout';
 import { Settings, Eye, Download } from 'lucide-react';
 
 interface StudentPortfolio {
@@ -46,7 +47,7 @@ const SchoolPortfolio: React.FC = () => {
   ];
 
   return (
-    <>
+    <AppLayout>
       <Head title={t.pageTitle} />
       <div className="space-y-6 animate-fade-in">
         <div className="flex items-center justify-between flex-wrap gap-4">
@@ -92,7 +93,7 @@ const SchoolPortfolio: React.FC = () => {
         </CardContent>
       </Card>
       </div>
-    </>
+    </AppLayout>
   );
 };
 

@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import AppLayout from '@/layouts/AppLayout';
 import { AlertTriangle, Heart, Shield, Syringe, Settings, FileText, Users } from 'lucide-react';
 
 const severityColors: Record<string, string> = {
@@ -55,8 +56,9 @@ const SchoolHealth: React.FC = () => {
   });
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <AppLayout>
       <Head title={t.pageTitle} />
+      <div className="space-y-6 animate-fade-in">
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">{t.pageTitle}</h1>
@@ -121,7 +123,8 @@ const SchoolHealth: React.FC = () => {
           </CardContent>
         </Card>
       )}
-    </div>
+      </div>
+    </AppLayout>
   );
 };
 

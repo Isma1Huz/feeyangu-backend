@@ -3,6 +3,7 @@ import { Head, Link, usePage, router } from '@inertiajs/react';
 import { useT } from '@/contexts/LanguageContext';
 import type { InertiaSharedProps } from '@/types/inertia';
 import type { School, KPIData } from '@/types';
+import AppLayout from '@/layouts/AppLayout';
 import adminBannerBg from '@/assets/admin-banner-bg.jpg';
 import KPICard from '@/components/KPICard';
 import StatusBadge from '@/components/StatusBadge';
@@ -23,7 +24,7 @@ const AdminDashboard: React.FC<Props> = () => {
   const { kpi = [], schools = [] } = usePage<Props>().props;
 
   return (
-    <>
+    <AppLayout>
       <Head title="Admin Dashboard" />
       <div className="space-y-6 animate-fade-in">
         <div>
@@ -81,7 +82,7 @@ const AdminDashboard: React.FC<Props> = () => {
           </CardContent>
         </Card>
       </div>
-    </>
+    </AppLayout>
   );
 };
 

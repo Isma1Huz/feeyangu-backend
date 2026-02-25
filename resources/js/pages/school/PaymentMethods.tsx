@@ -10,6 +10,7 @@ import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
+import AppLayout from '@/layouts/AppLayout';
 import { Smartphone, Building2, Pencil, CheckCircle2, XCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -142,7 +143,7 @@ const PaymentMethods: React.FC = () => {
   };
 
   return (
-    <>
+    <AppLayout>
       <Head title="Payment Methods" />
       <div className="space-y-6 animate-fade-in">
         <div>
@@ -231,7 +232,7 @@ const PaymentMethods: React.FC = () => {
         </DialogContent>
       </Dialog>
       </div>
-    </>
+    </AppLayout>
   );
 };
 

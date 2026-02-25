@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Separator } from '@/components/ui/separator';
+import AppLayout from '@/layouts/AppLayout';
 
 interface Props extends InertiaSharedProps {
   studentId: string;
@@ -40,7 +41,7 @@ const StudentDetail: React.FC = () => {
   const pct = Math.round((student.paidFees / student.totalFees) * 100);
 
   return (
-    <>
+    <AppLayout>
       <Head title={`${student.firstName} ${student.lastName}`} />
       <div className="space-y-6 animate-fade-in">
         <div className="flex items-center gap-3">
@@ -134,7 +135,7 @@ const StudentDetail: React.FC = () => {
         </CardContent>
       </Card>
       </div>
-    </>
+    </AppLayout>
   );
 };
 

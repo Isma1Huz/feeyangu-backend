@@ -38,20 +38,22 @@ class SchoolController extends Controller
             ->paginate(15)
             ->through(function ($school) {
                 return [
-                    'id' => $school->id,
+                    'id' => (string) $school->id,
                     'name' => $school->name,
-                    'owner_name' => $school->owner_name,
-                    'location' => $school->location,
+                    'owner' => $school->owner_name ?? 'N/A',
+                    'location' => $school->location ?? 'N/A',
                     'status' => $school->status,
                     'logo' => $school->logo,
-                    'students_count' => $school->students_count,
-                    'users_count' => $school->users_count,
+                    'studentCount' => $school->students_count,
+                    'feesCollected' => \App\Models\PaymentTransaction::where('school_id', $school->id)
+                        ->where('status', 'completed')
+                        ->sum('amount') / 100, // Convert cents to KES
                     'created_at' => $school->created_at->format('M d, Y'),
                 ];
             });
 
         return Inertia::render('admin/Schools', [
-            'schools' => $schools,
+            'schools' => $schools->items(), // Get just the data array, not pagination object
             'filters' => $request->only(['status', 'search']),
         ]);
     }

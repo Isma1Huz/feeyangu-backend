@@ -14,6 +14,7 @@ import StatusBadge from '@/components/StatusBadge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import AppLayout from '@/layouts/AppLayout';
 import {
   ArrowLeft, ArrowRight, CheckCircle2, Smartphone, Building2,
   Loader2, AlertTriangle, Download, Phone, Shield,
@@ -240,7 +241,7 @@ const ChildShow: React.FC = () => {
   );
 
   return (
-    <>
+    <AppLayout>
       <Head title={`${child.full_name} — Fee Statement`} />
       <div className="space-y-6 animate-fade-in">
         <div className="flex items-center gap-3">
@@ -627,7 +628,7 @@ const ChildShow: React.FC = () => {
         </DialogContent>
       </Dialog>
       </div>
-    </>
+    </AppLayout>
   );
 };
 

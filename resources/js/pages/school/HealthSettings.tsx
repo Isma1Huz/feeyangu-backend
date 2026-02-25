@@ -6,14 +6,16 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import AppLayout from '@/layouts/AppLayout';
 import { Plus } from 'lucide-react';
 
 const SchoolHealthSettings: React.FC = () => {
   const T = useT();
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <AppLayout>
       <Head title="Health Settings" />
+      <div className="space-y-6 animate-fade-in">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Health Settings</h1>
         <p className="text-muted-foreground text-sm mt-1">Configure medical record categories and access permissions.</p>
@@ -80,7 +82,8 @@ const SchoolHealthSettings: React.FC = () => {
       <div className="flex justify-end">
         <Button>Save Settings</Button>
       </div>
-    </div>
+      </div>
+    </AppLayout>
   );
 };
 

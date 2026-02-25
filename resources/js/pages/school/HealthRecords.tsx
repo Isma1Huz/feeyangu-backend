@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import AppLayout from '@/layouts/AppLayout';
 import { Search, Download, Eye } from 'lucide-react';
 
 const severityColors: Record<string, string> = {
@@ -27,8 +28,9 @@ const SchoolHealthRecords: React.FC = () => {
   const { healthProfiles, students } = usePage<Props>().props;
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <AppLayout>
       <Head title="All Health Records" />
+      <div className="space-y-6 animate-fade-in">
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">All Health Records</h1>
@@ -86,7 +88,8 @@ const SchoolHealthRecords: React.FC = () => {
           </Table>
         </CardContent>
       </Card>
-    </div>
+      </div>
+    </AppLayout>
   );
 };
 

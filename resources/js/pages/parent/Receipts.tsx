@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Eye, Download, Printer } from 'lucide-react';
 import type { Receipt } from '@/types';
+import AppLayout from '@/layouts/AppLayout';
 
 interface Child {
   studentId: string;
@@ -48,7 +49,7 @@ const ParentReceipts: React.FC = () => {
   ];
 
   return (
-    <>
+    <AppLayout>
       <Head title={t.title} />
       <div className="space-y-6 animate-fade-in">
         <div><h1 className="text-2xl font-bold tracking-tight">{t.title}</h1><p className="text-muted-foreground text-sm mt-1">{t.subtitle}</p></div>
@@ -96,7 +97,7 @@ const ParentReceipts: React.FC = () => {
           </DialogContent>
         </Dialog>
       </div>
-    </>
+    </AppLayout>
   );
 };
 

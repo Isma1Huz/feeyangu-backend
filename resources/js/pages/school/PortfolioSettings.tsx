@@ -8,6 +8,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Badge } from '@/components/ui/badge';
+import AppLayout from '@/layouts/AppLayout';
 import { Plus, Settings } from 'lucide-react';
 
 interface LearningArea {
@@ -26,7 +27,7 @@ const SchoolPortfolioSettings: React.FC = () => {
   const { learningAreas } = usePage<Props>().props;
 
   return (
-    <>
+    <AppLayout>
       <Head title="Portfolio Configuration" />
       <div className="space-y-6 animate-fade-in">
         <div>
@@ -89,7 +90,7 @@ const SchoolPortfolioSettings: React.FC = () => {
         </CardContent>
       </Card>
       </div>
-    </>
+    </AppLayout>
   );
 };
 

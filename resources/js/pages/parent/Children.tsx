@@ -6,6 +6,7 @@ import StatusBadge from '@/components/StatusBadge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
+import AppLayout from '@/layouts/AppLayout';
 import { Eye, CreditCard } from 'lucide-react';
 
 interface Child {
@@ -29,7 +30,7 @@ const ParentChildren: React.FC = () => {
   const COMMON_TEXT = T.COMMON_TEXT;
 
   return (
-    <>
+    <AppLayout>
       <Head title={t.title} />
       <div className="space-y-6 animate-fade-in">
         <div>
@@ -77,7 +78,7 @@ const ParentChildren: React.FC = () => {
         })}
         </div>
       </div>
-    </>
+    </AppLayout>
   );
 };
 

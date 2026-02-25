@@ -10,6 +10,7 @@ import { DollarSign, AlertTriangle, CheckCircle, Clock, TrendingUp, Wallet, Arro
 import StatusBadge from '@/components/StatusBadge';
 import type { Payment } from '@/types';
 import type { ReconciliationItem } from '@/types/accountant.types';
+import AppLayout from '@/layouts/AppLayout';
 
 interface Props extends InertiaSharedProps {
   kpiData: {
@@ -52,8 +53,9 @@ const AccountantDashboard: React.FC = () => {
   ];
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <AppLayout>
       <Head title={t.title} />
+      <div className="space-y-6 animate-fade-in">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">{t.title}</h1>
         <p className="text-muted-foreground text-sm mt-1">{t.subtitle}</p>
@@ -229,7 +231,8 @@ const AccountantDashboard: React.FC = () => {
           </div>
         </CardContent>
       </Card>
-    </div>
+      </div>
+    </AppLayout>
   );
 };
 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useAuth } from '@/contexts/AuthContext';
+import { usePage } from '@inertiajs/react';
 import { cn } from '@/lib/utils';
 
 interface TourStep {
@@ -33,7 +33,8 @@ const TOUR_STEPS: Record<string, TourStep[]> = {
 const TOUR_STORAGE_KEY = 'feeyangu_tour_completed';
 
 const OnboardingTour: React.FC = () => {
-  const { user } = useAuth();
+  const { auth } = usePage().props as { auth: { user: { role: string } } };
+  const user = auth?.user;
   const [currentStep, setCurrentStep] = useState(0);
   const [visible, setVisible] = useState(false);
   const [position, setPosition] = useState({ top: 0, left: 0 });

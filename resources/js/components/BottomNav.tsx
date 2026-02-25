@@ -6,7 +6,6 @@ import {
   BookOpen, ClipboardList, Heart, FolderOpen, Megaphone, UserCheck,
   ArrowLeftRight, BarChart3, Scale,
 } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
 import { useT } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 
@@ -24,7 +23,8 @@ interface NavItem {
 }
 
 const BottomNav: React.FC = () => {
-  const { user } = useAuth();
+  const { auth } = usePage().props as { auth: { user: { role: string } } };
+  const user = auth?.user;
   const { url } = usePage();
   const t = useT();
 

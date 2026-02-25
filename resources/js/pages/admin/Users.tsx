@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { MoreHorizontal, Trash2, UserCheck, UserX } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import AppLayout from '@/layouts/AppLayout';
 
 interface AdminUser extends User {
   school: string;
@@ -86,7 +87,7 @@ const AdminUsers: React.FC<Props> = () => {
   };
 
   return (
-    <>
+    <AppLayout>
       <Head title="Users" />
       <div className="space-y-6 animate-fade-in">
         <div><h1 className="text-2xl font-bold tracking-tight">{t.title}</h1><p className="text-muted-foreground text-sm mt-1">{t.subtitle}</p></div>
@@ -115,7 +116,7 @@ const AdminUsers: React.FC<Props> = () => {
           )}
         />
       </div>
-    </>
+    </AppLayout>
   );
 };
 

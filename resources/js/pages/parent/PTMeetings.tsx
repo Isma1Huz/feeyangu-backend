@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import AppLayout from '@/layouts/AppLayout';
 import { Calendar, Clock, Check, XCircle } from 'lucide-react';
 
 const bookingColors: Record<string, string> = { pending: 'bg-warning/10 text-warning', confirmed: 'bg-success/10 text-success', cancelled: 'bg-destructive/10 text-destructive', completed: 'bg-primary/10 text-primary', rescheduled: 'bg-muted text-muted-foreground' };
@@ -45,7 +46,7 @@ const ParentPTMeetings: React.FC = () => {
   const [bookingStep, setBookingStep] = useState(0);
 
   return (
-    <>
+    <AppLayout>
       <Head title={t.pageTitle} />
       <div className="space-y-6 animate-fade-in">
       <div>
@@ -114,7 +115,7 @@ const ParentPTMeetings: React.FC = () => {
         </CardContent>
       </Card>
       </div>
-    </>
+    </AppLayout>
   );
 };
 export default ParentPTMeetings;

@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import AppLayout from '@/layouts/AppLayout';
 import { Download, Flag, Heart, AlertTriangle } from 'lucide-react';
 
 const sevColors: Record<string, string> = { mild: 'bg-muted text-muted-foreground', moderate: 'bg-warning/10 text-warning', severe: 'bg-orange-500/10 text-orange-600', critical: 'bg-destructive/10 text-destructive', life_threatening: 'bg-destructive text-destructive-foreground' };
@@ -80,7 +81,7 @@ const ParentHealth: React.FC = () => {
   if (!student || !hp) return <div className="p-8 text-center text-muted-foreground">Health profile not available for this student.</div>;
 
   return (
-    <>
+    <AppLayout>
       <Head title={`${student.firstName}'s Health Profile`} />
       <div className="space-y-6 animate-fade-in">
       <div className="flex items-center justify-between flex-wrap gap-4">
@@ -162,7 +163,7 @@ const ParentHealth: React.FC = () => {
         </TabsContent>
       </Tabs>
       </div>
-    </>
+    </AppLayout>
   );
 };
 export default ParentHealth;

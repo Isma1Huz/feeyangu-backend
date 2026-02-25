@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import StatusBadge from '@/components/StatusBadge';
 import { useToast } from '@/hooks/use-toast';
+import AppLayout from '@/layouts/AppLayout';
 
 interface Props extends InertiaSharedProps {
   school: {
@@ -39,7 +40,7 @@ const Settings: React.FC = () => {
   };
 
   return (
-    <>
+    <AppLayout>
       <Head title={t.title} />
       <div className="space-y-6 animate-fade-in max-w-2xl">
         <div>
@@ -131,7 +132,7 @@ const Settings: React.FC = () => {
         <Button onClick={handleSave}>{t.saveButton}</Button>
       </div>
       </div>
-    </>
+    </AppLayout>
   );
 };
 

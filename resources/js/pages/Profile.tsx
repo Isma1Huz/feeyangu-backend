@@ -13,6 +13,7 @@ import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
+import AppLayout from '@/layouts/AppLayout';
 
 const PROFILE_TEXT = {
   title: 'Profile & Settings',
@@ -130,8 +131,9 @@ const Profile: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in max-w-3xl mx-auto">
+    <AppLayout>
       <Head title={pt.title} />
+      <div className="space-y-6 animate-fade-in max-w-3xl mx-auto">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">{pt.title}</h1>
         <p className="text-muted-foreground text-sm mt-1">{pt.subtitle}</p>
@@ -328,7 +330,8 @@ const Profile: React.FC = () => {
           </Card>
         </TabsContent>
       </Tabs>
-    </div>
+      </div>
+    </AppLayout>
   );
 };
 
