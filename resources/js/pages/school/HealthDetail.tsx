@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import AppLayout from '@/layouts/AppLayout';
 import { ArrowLeft, Plus, AlertTriangle, Heart, Syringe, Shield, Phone, FileText } from 'lucide-react';
 
 const sevColors: Record<string, string> = {
@@ -38,8 +39,9 @@ const SchoolHealthDetail: React.FC = () => {
   const hasSevereAllergy = hp.allergies.some(a => a.severity === 'life_threatening' || a.severity === 'severe');
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <AppLayout>
       <Head title={`${student.firstName} ${student.lastName} - Health Profile`} />
+      <div className="space-y-6 animate-fade-in">
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="icon" onClick={() => router.visit('/school/health/records')}><ArrowLeft className="h-4 w-4" /></Button>
         <div>
@@ -230,7 +232,8 @@ const SchoolHealthDetail: React.FC = () => {
           </Card>
         </TabsContent>
       </Tabs>
-    </div>
+      </div>
+    </AppLayout>
   );
 };
 

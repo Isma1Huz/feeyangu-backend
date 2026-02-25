@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
+import AppLayout from '@/layouts/AppLayout';
 import { Search, Download } from 'lucide-react';
 
 interface Student {
@@ -36,7 +37,7 @@ const SchoolPortfolioAll: React.FC = () => {
   );
 
   return (
-    <>
+    <AppLayout>
       <Head title="All Portfolios" />
       <div className="space-y-6 animate-fade-in">
         <div className="flex items-center justify-between flex-wrap gap-4">
@@ -79,7 +80,7 @@ const SchoolPortfolioAll: React.FC = () => {
           })}
         </div>
       </div>
-    </>
+    </AppLayout>
   );
 };
 

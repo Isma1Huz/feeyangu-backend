@@ -14,6 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
+import AppLayout from '@/layouts/AppLayout';
 
 interface Props extends InertiaSharedProps {
   reconciliationItems: ReconciliationItem[];
@@ -175,8 +176,9 @@ const Reconciliation: React.FC = () => {
   );
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <AppLayout>
       <Head title={t.title} />
+      <div className="space-y-6 animate-fade-in">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">{t.title}</h1>
@@ -353,7 +355,8 @@ const Reconciliation: React.FC = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+      </div>
+    </AppLayout>
   );
 };
 

@@ -14,6 +14,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
+import AppLayout from '@/layouts/AppLayout';
 
 interface Props extends InertiaSharedProps {
   invoices: Invoice[];
@@ -191,7 +192,9 @@ const Invoicing: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <AppLayout>
+      <Head title={t.title} />
+      <div className="space-y-6 animate-fade-in">
       <Head title={t.title} />
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
@@ -383,7 +386,8 @@ const Invoicing: React.FC = () => {
           )}
         </DialogContent>
       </Dialog>
-    </div>
+      </div>
+    </AppLayout>
   );
 };
 

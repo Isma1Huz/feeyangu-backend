@@ -8,6 +8,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
+import AppLayout from '@/layouts/AppLayout';
 
 interface Props extends InertiaSharedProps {
   integrations: Integration[];
@@ -43,8 +44,9 @@ const Integrations: React.FC = () => {
   ];
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <AppLayout>
       <Head title={t.title} />
+      <div className="space-y-6 animate-fade-in">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">{t.title}</h1>
         <p className="text-muted-foreground text-sm mt-1">{t.subtitle}</p>
@@ -123,7 +125,8 @@ const Integrations: React.FC = () => {
           );
         })}
       </div>
-    </div>
+      </div>
+    </AppLayout>
   );
 };
 

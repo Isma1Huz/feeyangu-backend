@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
 import { DollarSign, Users, TrendingUp, AlertTriangle } from 'lucide-react'
+import AppLayout from '@/layouts/AppLayout'
 
 interface KPI {
   total_students: number
@@ -62,7 +63,7 @@ export default function Dashboard() {
   const { auth } = usePage().props as { auth: { user: { name: string, school?: { name: string } } } }
 
   return (
-    <>
+    <AppLayout>
       <Head title="School Dashboard" />
       
       <div className="space-y-6 p-8">
@@ -258,6 +259,6 @@ export default function Dashboard() {
           </CardContent>
         </Card>
       </div>
-    </>
+    </AppLayout>
   )
 }

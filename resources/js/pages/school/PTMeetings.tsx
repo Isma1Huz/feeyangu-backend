@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import AppLayout from '@/layouts/AppLayout';
 import { Plus, Calendar, Users, Download } from 'lucide-react';
 
 interface PTSession {
@@ -53,7 +54,7 @@ const SchoolPTMeetings: React.FC = () => {
   const { sessions, slots, bookings } = usePage<Props>().props;
 
   return (
-    <>
+    <AppLayout>
       <Head title={t.pageTitle} />
       <div className="space-y-6 animate-fade-in">
         <div className="flex items-center justify-between flex-wrap gap-4">
@@ -126,7 +127,7 @@ const SchoolPTMeetings: React.FC = () => {
           </CardContent>
         </Card>
       </div>
-    </>
+    </AppLayout>
   );
 };
 

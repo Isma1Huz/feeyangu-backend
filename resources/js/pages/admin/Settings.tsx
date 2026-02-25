@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
+import AppLayout from '@/layouts/AppLayout';
 
 interface Props extends InertiaSharedProps {
   platformName?: string;
@@ -39,7 +40,7 @@ const AdminSettings: React.FC<Props> = (initialProps) => {
   };
 
   return (
-    <>
+    <AppLayout>
       <Head title="Settings" />
       <div className="space-y-6 animate-fade-in">
         <div>
@@ -102,7 +103,7 @@ const AdminSettings: React.FC<Props> = (initialProps) => {
           </TabsContent>
         </Tabs>
       </div>
-    </>
+    </AppLayout>
   );
 };
 

@@ -4,6 +4,7 @@ import type { InertiaSharedProps } from '@/types/inertia';
 import { useT } from '@/contexts/LanguageContext';
 import StatusBadge from '@/components/StatusBadge';
 import DataTable, { type DataTableColumn, type DataTableFilter } from '@/components/DataTable';
+import AppLayout from '@/layouts/AppLayout';
 
 interface Child {
   studentId: string;
@@ -61,7 +62,7 @@ const PaymentHistory: React.FC = () => {
   };
 
   return (
-    <>
+    <AppLayout>
       <Head title={t.title} />
       <div className="space-y-6 animate-fade-in">
         <div><h1 className="text-2xl font-bold tracking-tight">{t.title}</h1><p className="text-muted-foreground text-sm mt-1">{t.subtitle}</p></div>
@@ -80,7 +81,7 @@ const PaymentHistory: React.FC = () => {
           emptyDescription={t.emptyState.description}
         />
       </div>
-    </>
+    </AppLayout>
   );
 };
 

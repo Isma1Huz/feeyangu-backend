@@ -9,6 +9,7 @@ import DataTable, { type DataTableColumn, type DataTableFilter, type DataTableBu
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
+import AppLayout from '@/layouts/AppLayout';
 
 interface Props extends InertiaSharedProps {
   payments: Payment[];
@@ -85,7 +86,7 @@ const Payments: React.FC = () => {
   ];
 
   return (
-    <>
+    <AppLayout>
       <Head title={t.title} />
       <div className="space-y-6 animate-fade-in">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -141,7 +142,7 @@ const Payments: React.FC = () => {
         </DialogContent>
       </Dialog>
       </div>
-    </>
+    </AppLayout>
   );
 };
 

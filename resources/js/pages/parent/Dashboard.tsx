@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import AppLayout from '@/layouts/AppLayout';
 import { CreditCard, Eye, ArrowRight, GraduationCap } from 'lucide-react';
 
 interface Child {
@@ -56,7 +57,7 @@ const ParentDashboard: React.FC = () => {
   const { user } = useAuth();
 
   return (
-    <>
+    <AppLayout>
       <Head title={t.title} />
       <div className="space-y-6 animate-fade-in">
         <div>
@@ -225,7 +226,7 @@ const ParentDashboard: React.FC = () => {
         </CardContent>
       </Card>
       </div>
-    </>
+    </AppLayout>
   );
 };
 

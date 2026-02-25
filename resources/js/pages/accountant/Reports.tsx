@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
+import AppLayout from '@/layouts/AppLayout';
 
 /**
  * ⚠️ WARNING: This page uses MOCK/HARDCODED data and is NOT connected to the backend.
@@ -98,8 +99,9 @@ const Reports: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <AppLayout>
       <Head title={t.title} />
+      <div className="space-y-6 animate-fade-in">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">{t.title}</h1>
         <p className="text-muted-foreground text-sm mt-1">{t.subtitle}</p>
@@ -193,7 +195,8 @@ const Reports: React.FC = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+      </div>
+    </AppLayout>
   );
 };
 

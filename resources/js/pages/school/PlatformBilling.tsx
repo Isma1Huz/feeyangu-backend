@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import StatusBadge from '@/components/StatusBadge';
 import { cn } from '@/lib/utils';
+import AppLayout from '@/layouts/AppLayout';
 
 const plans = [
   {
@@ -61,7 +62,7 @@ const PlatformBilling: React.FC = () => {
   const [showPayment, setShowPayment] = useState(false);
 
   return (
-    <>
+    <AppLayout>
       <Head title="Platform Subscription" />
       <div className="space-y-6 animate-fade-in">
         <div>
@@ -171,7 +172,7 @@ const PlatformBilling: React.FC = () => {
         </CardContent>
       </Card>
       </div>
-    </>
+    </AppLayout>
   );
 };
 

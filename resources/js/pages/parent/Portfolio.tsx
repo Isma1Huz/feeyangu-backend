@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Progress } from '@/components/ui/progress';
+import AppLayout from '@/layouts/AppLayout';
 import { Download, Eye } from 'lucide-react';
 
 const ratingColors: Record<string, string> = { EE: 'bg-success/10 text-success', ME: 'bg-blue-500/10 text-blue-600', AE: 'bg-warning/10 text-warning', BE: 'bg-destructive/10 text-destructive' };
@@ -61,7 +62,7 @@ const ParentPortfolio: React.FC = () => {
   if (!student) return <div className="p-8 text-center text-muted-foreground">Student not found.</div>;
 
   return (
-    <>
+    <AppLayout>
       <Head title={`${student.firstName}'s Portfolio`} />
       <div className="space-y-6 animate-fade-in">
       <div className="flex items-center justify-between flex-wrap gap-4">
@@ -109,7 +110,7 @@ const ParentPortfolio: React.FC = () => {
         ))}
       </Tabs>
       </div>
-    </>
+    </AppLayout>
   );
 };
 export default ParentPortfolio;

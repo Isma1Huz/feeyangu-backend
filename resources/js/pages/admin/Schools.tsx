@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Plus, MoreHorizontal, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import AppLayout from '@/layouts/AppLayout';
 
 interface Props extends InertiaSharedProps {
   schools?: School[];
@@ -80,7 +81,7 @@ const AdminSchools: React.FC<Props> = () => {
   };
 
   return (
-    <>
+    <AppLayout>
       <Head title="Schools" />
       <div className="space-y-6 animate-fade-in">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -139,7 +140,7 @@ const AdminSchools: React.FC<Props> = () => {
           </DialogContent>
         </Dialog>
       </div>
-    </>
+    </AppLayout>
   );
 };
 
