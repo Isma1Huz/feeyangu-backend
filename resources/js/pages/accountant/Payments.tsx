@@ -1,8 +1,9 @@
 import React, { useState, useMemo } from 'react';
 import { CheckCircle, XCircle, Eye, Plus } from 'lucide-react';
+import { Link, Head, router, usePage } from '@inertiajs/react';
+import type { InertiaSharedProps } from '@/types/inertia';
 import { useT } from '@/contexts/LanguageContext';
-import { MOCK_PAYMENTS, MOCK_STUDENTS } from '@/lib/mock-data';
-import type { Payment } from '@/types';
+import type { Payment, Student } from '@/types';
 import StatusBadge from '@/components/StatusBadge';
 import DataTable, { type DataTableColumn, type DataTableFilter, type DataTableBulkAction } from '@/components/DataTable';
 import { Button } from '@/components/ui/button';
@@ -13,14 +14,20 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 
+interface Props extends InertiaSharedProps {
+  payments: Payment[];
+  students: Student[];
+}
+
 const AccountantPayments: React.FC = () => {
+  const { payments: initialPayments, students } = usePage<Props>().props;
   const { toast } = useToast();
   const T = useT();
   const t = T.ACCOUNTANT_PAYMENTS_TEXT;
   const pt = T.PAYMENTS_TEXT;
   const COMMON = T.COMMON_TEXT;
   const LABELS = T.PAYMENT_METHOD_LABELS;
-  const [payments, setPayments] = useState<Payment[]>(MOCK_PAYMENTS);
+  const [payments, setPayments] = useState<Payment[]>(initialPayments);
   const [search, setSearch] = useState('');
   const [methodFilter, setMethodFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -77,7 +84,7 @@ const AccountantPayments: React.FC = () => {
       return;
     }
 
-    const student = MOCK_STUDENTS.find(s => s.id === rpStudent);
+    const student = students.find(s => s.id === rpStudent);
     const prefixes: Record<string, string> = { mpesa: 'MPE', bank: 'BNK', cash: 'CSH', card: 'CRD' };
     const newPayment: Payment = {
       id: `p${Date.now()}`,
@@ -125,6 +132,7 @@ const AccountantPayments: React.FC = () => {
 
   return (
     <div className="space-y-6 animate-fade-in">
+      <Head title={t.title} />
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">{t.title}</h1>
@@ -174,7 +182,7 @@ const AccountantPayments: React.FC = () => {
               <Select value={rpStudent} onValueChange={setRpStudent}>
                 <SelectTrigger><SelectValue placeholder="Select student" /></SelectTrigger>
                 <SelectContent>
-                  {MOCK_STUDENTS.filter(s => s.status === 'active').map(s => (
+                  {students.filter(s => s.status === 'active').map(s => (
                     <SelectItem key={s.id} value={s.id}>{s.firstName} {s.lastName} — {s.grade} {s.className}</SelectItem>
                   ))}
                 </SelectContent>

@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { FileText, Download, Calendar, BarChart3, TrendingUp, Clock, Shield } from 'lucide-react';
+import { Link, Head, router, usePage } from '@inertiajs/react';
+import type { InertiaSharedProps } from '@/types/inertia';
 import { useT } from '@/contexts/LanguageContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,6 +10,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
+
+interface Props extends InertiaSharedProps {}
 
 const Reports: React.FC = () => {
   const { toast } = useToast();
@@ -77,6 +81,7 @@ const Reports: React.FC = () => {
 
   return (
     <div className="space-y-6 animate-fade-in">
+      <Head title={t.title} />
       <div>
         <h1 className="text-2xl font-bold tracking-tight">{t.title}</h1>
         <p className="text-muted-foreground text-sm mt-1">{t.subtitle}</p>

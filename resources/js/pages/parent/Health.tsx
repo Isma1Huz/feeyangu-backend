@@ -1,7 +1,7 @@
 import React from 'react';
-import { useParams } from 'react-router-dom';
+import { Head, usePage } from '@inertiajs/react';
+import type { InertiaSharedProps } from '@/types/inertia';
 import { useT } from '@/contexts/LanguageContext';
-import { MOCK_HEALTH_PROFILES, MOCK_STUDENTS } from '@/lib/mock-data';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -11,17 +11,78 @@ import { Download, Flag, Heart, AlertTriangle } from 'lucide-react';
 const sevColors: Record<string, string> = { mild: 'bg-muted text-muted-foreground', moderate: 'bg-warning/10 text-warning', severe: 'bg-orange-500/10 text-orange-600', critical: 'bg-destructive/10 text-destructive', life_threatening: 'bg-destructive text-destructive-foreground' };
 const vaccColors: Record<string, string> = { up_to_date: 'bg-success/10 text-success', due_soon: 'bg-warning/10 text-warning', overdue: 'bg-destructive/10 text-destructive' };
 
+interface Student {
+  id: string;
+  firstName: string;
+  grade: string;
+  className: string;
+}
+
+interface HealthCondition {
+  id: string;
+  name: string;
+  severity: string;
+  managementNotes: string;
+}
+
+interface Allergy {
+  id: string;
+  allergen: string;
+  severity: string;
+  reactionType: string;
+  emergencyProtocol: string;
+  epiPenAvailable: boolean;
+  epiPenLocation?: string;
+}
+
+interface Vaccination {
+  id: string;
+  vaccineName: string;
+  dateAdministered?: string;
+  status: string;
+}
+
+interface EmergencyContact {
+  id: string;
+  fullName: string;
+  relationship: string;
+  primaryPhone: string;
+}
+
+interface Incident {
+  id: string;
+  type: string;
+  incidentDate: string;
+  description: string;
+  actionTaken: string;
+  parentNotified: boolean;
+}
+
+interface HealthProfile {
+  studentId: string;
+  conditions: HealthCondition[];
+  allergies: Allergy[];
+  vaccinations: Vaccination[];
+  emergencyContacts: EmergencyContact[];
+  incidents: Incident[];
+}
+
+interface Props extends InertiaSharedProps {
+  student: Student;
+  healthProfile: HealthProfile;
+}
+
 const ParentHealth: React.FC = () => {
-  const { studentId } = useParams();
+  const { student, healthProfile: hp } = usePage<Props>().props;
   const T = useT();
   const t = T.HEALTH_TEXT;
-  const student = MOCK_STUDENTS.find(s => s.id === studentId);
-  const hp = MOCK_HEALTH_PROFILES.find(p => p.studentId === studentId);
 
   if (!student || !hp) return <div className="p-8 text-center text-muted-foreground">Health profile not available for this student.</div>;
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <>
+      <Head title={`${student.firstName}'s Health Profile`} />
+      <div className="space-y-6 animate-fade-in">
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">{student.firstName}'s Health Profile</h1>
@@ -100,7 +161,8 @@ const ParentHealth: React.FC = () => {
           </CardContent></Card>
         </TabsContent>
       </Tabs>
-    </div>
+      </div>
+    </>
   );
 };
 export default ParentHealth;

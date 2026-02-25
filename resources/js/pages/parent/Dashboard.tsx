@@ -1,7 +1,7 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, Head, router, usePage } from '@inertiajs/react';
+import type { InertiaSharedProps } from '@/types/inertia';
 import { useT } from '@/contexts/LanguageContext';
-import { PARENT_CHILDREN, MOCK_PAYMENTS, MOCK_RECEIPTS } from '@/lib/mock-data';
 import parentBannerBg from '@/assets/parent-banner-bg.jpg';
 import { useAuth } from '@/contexts/AuthContext';
 import StatusBadge from '@/components/StatusBadge';
@@ -11,23 +11,58 @@ import { Progress } from '@/components/ui/progress';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { CreditCard, Eye, ArrowRight, GraduationCap } from 'lucide-react';
 
+interface Child {
+  studentId: string;
+  name: string;
+  grade: string;
+  className: string;
+  status: string;
+  paidFees: number;
+  totalFees: number;
+}
+
+interface Payment {
+  id: string;
+  date: string;
+  amount: number;
+  method: string;
+  status: string;
+  reference: string;
+}
+
+interface Receipt {
+  id: string;
+  receiptNumber: string;
+  date: string;
+  amount: number;
+  studentId: string;
+}
+
+interface Props extends InertiaSharedProps {
+  children: Child[];
+  recentPayments: Payment[];
+  recentReceipts: Receipt[];
+  totalOutstanding: number;
+  totalFees: number;
+  totalPaid: number;
+}
+
 const ParentDashboard: React.FC = () => {
+  const { children, recentPayments, recentReceipts, totalOutstanding, totalFees, totalPaid } = usePage<Props>().props;
   const T = useT();
   const t = T.DASHBOARD_TEXT.parent;
   const COMMON_TEXT = T.COMMON_TEXT;
   const PAYMENT_METHOD_LABELS = T.PAYMENT_METHOD_LABELS;
   const { user } = useAuth();
-  const navigate = useNavigate();
-  const totalOutstanding = PARENT_CHILDREN.reduce((sum, c) => sum + (c.totalFees - c.paidFees), 0);
-  const totalFees = PARENT_CHILDREN.reduce((sum, c) => sum + c.totalFees, 0);
-  const totalPaid = PARENT_CHILDREN.reduce((sum, c) => sum + c.paidFees, 0);
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">{t.title}</h1>
-        <p className="text-muted-foreground text-sm mt-1">{t.subtitle}</p>
-      </div>
+    <>
+      <Head title={t.title} />
+      <div className="space-y-6 animate-fade-in">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">{t.title}</h1>
+          <p className="text-muted-foreground text-sm mt-1">{t.subtitle}</p>
+        </div>
 
       <div className="relative rounded-xl overflow-hidden text-primary-foreground p-6 sm:p-8">
         <img src={parentBannerBg} alt="" className="absolute inset-0 w-full h-full object-cover" />
@@ -37,7 +72,7 @@ const ParentDashboard: React.FC = () => {
             <h2 className="text-xl sm:text-2xl font-bold">{t.bannerTitle}</h2>
             <p className="text-sm sm:text-base text-primary-foreground/80 max-w-lg">{t.bannerDescription}</p>
           </div>
-          <Button variant="secondary" className="bg-primary-foreground text-primary hover:bg-primary-foreground/90 font-semibold gap-2 shrink-0" onClick={() => navigate('/parent/children')}>
+          <Button variant="secondary" className="bg-primary-foreground text-primary hover:bg-primary-foreground/90 font-semibold gap-2 shrink-0" onClick={() => router.visit('/parent/children')}>
             {t.bannerAction}
             <ArrowRight className="h-4 w-4" />
           </Button>
@@ -69,12 +104,12 @@ const ParentDashboard: React.FC = () => {
           <div>
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-base font-semibold">{t.childrenSection}</h2>
-              <Button variant="link" size="sm" className="text-primary gap-1" onClick={() => navigate('/parent/children')}>
+              <Button variant="link" size="sm" className="text-primary gap-1" onClick={() => router.visit('/parent/children')}>
                 {T.HEADER.viewAll} <ArrowRight className="h-3 w-3" />
               </Button>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {PARENT_CHILDREN.map((child) => {
+              {children.map((child) => {
                 const percentage = Math.round((child.paidFees / child.totalFees) * 100);
                 const balance = child.totalFees - child.paidFees;
                 return (
@@ -104,11 +139,11 @@ const ParentDashboard: React.FC = () => {
                         </div>
                       </div>
                       <div className="flex gap-2 mt-4">
-                        <Button variant="outline" size="sm" className="flex-1 gap-1" onClick={() => navigate(`/parent/children/${child.studentId}/fees`)}>
+                        <Button variant="outline" size="sm" className="flex-1 gap-1" onClick={() => router.visit(`/parent/children/${child.studentId}/fees`)}>
                           <Eye className="h-3.5 w-3.5" />{t.viewFees}
                         </Button>
                         {balance > 0 && (
-                          <Button size="sm" className="flex-1 gap-1" onClick={() => navigate(`/parent/children/${child.studentId}/fees`)}>
+                          <Button size="sm" className="flex-1 gap-1" onClick={() => router.visit(`/parent/children/${child.studentId}/fees`)}>
                             <CreditCard className="h-3.5 w-3.5" />{t.quickPay}
                           </Button>
                         )}
@@ -127,8 +162,8 @@ const ParentDashboard: React.FC = () => {
               <CardTitle className="text-sm font-semibold">{T.HEADER.childrenSummary}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {PARENT_CHILDREN.map((child) => (
-                <div key={child.studentId} className="flex items-center gap-3 p-2 rounded-md hover:bg-muted/50 cursor-pointer transition-colors" onClick={() => navigate(`/parent/children/${child.studentId}/fees`)}>
+              {children.map((child) => (
+                <div key={child.studentId} className="flex items-center gap-3 p-2 rounded-md hover:bg-muted/50 cursor-pointer transition-colors" onClick={() => router.visit(`/parent/children/${child.studentId}/fees`)}>
                   <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">{child.name.charAt(0)}</div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{child.name}</p>
@@ -144,11 +179,11 @@ const ParentDashboard: React.FC = () => {
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-sm font-semibold">{T.HEADER.recentReceipts}</CardTitle>
-                <Button variant="link" size="sm" className="text-primary text-xs p-0 h-auto" onClick={() => navigate('/parent/receipts')}>{T.HEADER.viewAll}</Button>
+                <Button variant="link" size="sm" className="text-primary text-xs p-0 h-auto" onClick={() => router.visit('/parent/receipts')}>{T.HEADER.viewAll}</Button>
               </div>
             </CardHeader>
             <CardContent className="space-y-2">
-              {MOCK_RECEIPTS.filter(r => r.studentId === 'st3' || r.studentId === 'st9').slice(0, 3).map((receipt) => (
+              {recentReceipts.map((receipt) => (
                 <div key={receipt.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
                   <div>
                     <p className="text-sm font-medium">{receipt.receiptNumber}</p>
@@ -176,7 +211,7 @@ const ParentDashboard: React.FC = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {MOCK_PAYMENTS.filter(p => p.studentId === 'st3').slice(0, 3).concat(MOCK_PAYMENTS.slice(0, 2)).slice(0, 4).map((p) => (
+              {recentPayments.map((p) => (
                 <TableRow key={p.id}>
                   <TableCell className="text-sm">{p.date}</TableCell>
                   <TableCell className="text-sm font-mono-amount">{COMMON_TEXT.currency} {p.amount.toLocaleString()}</TableCell>
@@ -189,7 +224,8 @@ const ParentDashboard: React.FC = () => {
           </Table>
         </CardContent>
       </Card>
-    </div>
+      </div>
+    </>
   );
 };
 

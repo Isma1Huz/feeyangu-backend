@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
+import { Head, Link, usePage, router } from '@inertiajs/react';
 import { useT } from '@/contexts/LanguageContext';
-import { MOCK_SCHOOLS } from '@/lib/mock-data';
+import type { InertiaSharedProps } from '@/types/inertia';
 import type { School } from '@/types';
 import StatusBadge from '@/components/StatusBadge';
 import DataTable, { type DataTableColumn, type DataTableFilter, type DataTableBulkAction } from '@/components/DataTable';
@@ -13,10 +14,16 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Plus, MoreHorizontal, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
-const AdminSchools: React.FC = () => {
+interface Props extends InertiaSharedProps {
+  schools?: School[];
+}
+
+const AdminSchools: React.FC<Props> = () => {
   const { toast } = useToast();
   const { ADMIN_SCHOOLS_TEXT: t, COMMON_TEXT } = useT();
-  const [schools, setSchools] = useState<School[]>(MOCK_SCHOOLS);
+  const { schools: initialSchools = [] } = usePage<Props>().props;
+  
+  const [schools, setSchools] = useState<School[]>(initialSchools);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [formOpen, setFormOpen] = useState(false);
@@ -73,63 +80,66 @@ const AdminSchools: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div><h1 className="text-2xl font-bold tracking-tight">{t.title}</h1><p className="text-muted-foreground text-sm mt-1">{t.subtitle}</p></div>
-      </div>
-      <DataTable
-        data={filtered}
-        columns={columns}
-        keyField="id"
-        searchPlaceholder={t.searchPlaceholder}
-        searchValue={search}
-        onSearchChange={setSearch}
-        filters={tableFilters}
-        filterValues={{ status: statusFilter }}
-        onFilterChange={(k, v) => { if (k === 'status') setStatusFilter(v); }}
-        bulkActions={bulkActions}
-        onExport={exportCsv}
-        headerActions={<Button onClick={openCreate} className="gap-2" size="sm"><Plus className="h-4 w-4" />{t.addSchool}</Button>}
-        emptyTitle={t.emptyState.title}
-        emptyDescription={t.emptyState.description}
-        rowActions={(s) => (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => openEdit(s)}>{COMMON_TEXT.actions.edit}</DropdownMenuItem>
-              {s.status !== 'active' && <DropdownMenuItem onClick={() => handleStatusChange(s.id, 'active')}>{t.actions.activate}</DropdownMenuItem>}
-              {s.status !== 'suspended' && <DropdownMenuItem onClick={() => handleStatusChange(s.id, 'suspended')}>{t.actions.suspend}</DropdownMenuItem>}
-              <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(s.id)}>{t.actions.delete}</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )}
-      />
-      <Dialog open={formOpen} onOpenChange={setFormOpen}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>{editing ? 'Edit School' : t.addSchool}</DialogTitle></DialogHeader>
-          <div className="space-y-4">
-            <div><Label>{t.form.name}</Label><Input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} placeholder={t.form.namePlaceholder} className="mt-1" /></div>
-            <div><Label>{t.form.owner}</Label><Input value={form.owner} onChange={e => setForm(p => ({ ...p, owner: e.target.value }))} placeholder={t.form.ownerPlaceholder} className="mt-1" /></div>
-            <div><Label>{t.form.location}</Label><Input value={form.location} onChange={e => setForm(p => ({ ...p, location: e.target.value }))} placeholder={t.form.locationPlaceholder} className="mt-1" /></div>
-            <div>
-              <Label>{t.form.status}</Label>
-              <Select value={form.status} onValueChange={v => setForm(p => ({ ...p, status: v as School['status'] }))}>
-                <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="active">{COMMON_TEXT.status.active}</SelectItem>
-                  <SelectItem value="pending">{COMMON_TEXT.status.pending}</SelectItem>
-                  <SelectItem value="suspended">{COMMON_TEXT.status.suspended}</SelectItem>
-                </SelectContent>
-              </Select>
+    <>
+      <Head title="Schools" />
+      <div className="space-y-6 animate-fade-in">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div><h1 className="text-2xl font-bold tracking-tight">{t.title}</h1><p className="text-muted-foreground text-sm mt-1">{t.subtitle}</p></div>
+        </div>
+        <DataTable
+          data={filtered}
+          columns={columns}
+          keyField="id"
+          searchPlaceholder={t.searchPlaceholder}
+          searchValue={search}
+          onSearchChange={setSearch}
+          filters={tableFilters}
+          filterValues={{ status: statusFilter }}
+          onFilterChange={(k, v) => { if (k === 'status') setStatusFilter(v); }}
+          bulkActions={bulkActions}
+          onExport={exportCsv}
+          headerActions={<Button onClick={openCreate} className="gap-2" size="sm"><Plus className="h-4 w-4" />{t.addSchool}</Button>}
+          emptyTitle={t.emptyState.title}
+          emptyDescription={t.emptyState.description}
+          rowActions={(s) => (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => openEdit(s)}>{COMMON_TEXT.actions.edit}</DropdownMenuItem>
+                {s.status !== 'active' && <DropdownMenuItem onClick={() => handleStatusChange(s.id, 'active')}>{t.actions.activate}</DropdownMenuItem>}
+                {s.status !== 'suspended' && <DropdownMenuItem onClick={() => handleStatusChange(s.id, 'suspended')}>{t.actions.suspend}</DropdownMenuItem>}
+                <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(s.id)}>{t.actions.delete}</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+        />
+        <Dialog open={formOpen} onOpenChange={setFormOpen}>
+          <DialogContent>
+            <DialogHeader><DialogTitle>{editing ? 'Edit School' : t.addSchool}</DialogTitle></DialogHeader>
+            <div className="space-y-4">
+              <div><Label>{t.form.name}</Label><Input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} placeholder={t.form.namePlaceholder} className="mt-1" /></div>
+              <div><Label>{t.form.owner}</Label><Input value={form.owner} onChange={e => setForm(p => ({ ...p, owner: e.target.value }))} placeholder={t.form.ownerPlaceholder} className="mt-1" /></div>
+              <div><Label>{t.form.location}</Label><Input value={form.location} onChange={e => setForm(p => ({ ...p, location: e.target.value }))} placeholder={t.form.locationPlaceholder} className="mt-1" /></div>
+              <div>
+                <Label>{t.form.status}</Label>
+                <Select value={form.status} onValueChange={v => setForm(p => ({ ...p, status: v as School['status'] }))}>
+                  <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="active">{COMMON_TEXT.status.active}</SelectItem>
+                    <SelectItem value="pending">{COMMON_TEXT.status.pending}</SelectItem>
+                    <SelectItem value="suspended">{COMMON_TEXT.status.suspended}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setFormOpen(false)}>{COMMON_TEXT.actions.cancel}</Button>
-            <Button onClick={handleSave}>{COMMON_TEXT.actions.save}</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setFormOpen(false)}>{COMMON_TEXT.actions.cancel}</Button>
+              <Button onClick={handleSave}>{COMMON_TEXT.actions.save}</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
+    </>
   );
 };
 

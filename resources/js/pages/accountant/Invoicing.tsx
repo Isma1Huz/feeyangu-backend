@@ -1,8 +1,10 @@
 import React, { useState, useMemo } from 'react';
 import { Eye, Send, Download, XCircle, CheckCircle, Plus } from 'lucide-react';
+import { Link, Head, router, usePage } from '@inertiajs/react';
+import type { InertiaSharedProps } from '@/types/inertia';
 import { useT } from '@/contexts/LanguageContext';
-import { MOCK_INVOICES, MOCK_STUDENTS, MOCK_FEE_STRUCTURES } from '@/lib/mock-data';
 import type { Invoice } from '@/types/accountant.types';
+import type { Student, FeeStructure } from '@/types';
 import StatusBadge from '@/components/StatusBadge';
 import DataTable, { type DataTableColumn, type DataTableFilter, type DataTableBulkAction } from '@/components/DataTable';
 import { Button } from '@/components/ui/button';
@@ -13,13 +15,21 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 
+interface Props extends InertiaSharedProps {
+  invoices: Invoice[];
+  students: Student[];
+  feeStructures: FeeStructure[];
+  grades: string[];
+}
+
 const statusMap: Record<string, 'active' | 'inactive' | 'pending' | 'completed' | 'failed' | 'overdue' | 'paid' | 'partial'> = { paid: 'paid', partial: 'partial', overdue: 'overdue', sent: 'pending', draft: 'inactive', void: 'inactive' };
 
 const Invoicing: React.FC = () => {
+  const { invoices: initialInvoices, students, feeStructures, grades } = usePage<Props>().props;
   const { toast } = useToast();
   const T = useT();
   const t = T.ACCOUNTANT_INVOICING_TEXT;
-  const [invoices, setInvoices] = useState<Invoice[]>(MOCK_INVOICES);
+  const [invoices, setInvoices] = useState<Invoice[]>(initialInvoices);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [gradeFilter, setGradeFilter] = useState('all');
@@ -47,15 +57,13 @@ const Invoicing: React.FC = () => {
       return matchSearch && matchStatus && matchGrade;
     }), [search, statusFilter, gradeFilter, invoices]);
 
-  const grades = [...new Set(MOCK_INVOICES.map(i => i.grade))];
-
   const eligibleStudents = useMemo(() => {
     const existingStudentIds = new Set(invoices.filter(i => i.term === genTerm).map(i => i.studentId));
-    return MOCK_STUDENTS.filter(s => {
+    return students.filter(s => {
       if (genGrade !== 'all' && s.grade !== genGrade) return false;
       return !existingStudentIds.has(s.id);
     });
-  }, [genGrade, genTerm, invoices]);
+  }, [genGrade, genTerm, invoices, students]);
 
   const openGenerate = () => {
     setGenGrade('all');
@@ -90,9 +98,9 @@ const Invoicing: React.FC = () => {
 
     const newInvoices: Invoice[] = [];
     genSelectedStudents.forEach(studentId => {
-      const student = MOCK_STUDENTS.find(s => s.id === studentId);
+      const student = students.find(s => s.id === studentId);
       if (!student) return;
-      const feeStructure = MOCK_FEE_STRUCTURES.find(fs => fs.grade === student.grade && fs.status === 'active');
+      const feeStructure = feeStructures.find(fs => fs.grade === student.grade && fs.status === 'active');
       const items = feeStructure?.items.map(i => ({ name: i.name, amount: i.amount })) || [{ name: 'Tuition', amount: 25000 }];
       const totalAmount = items.reduce((sum, i) => sum + i.amount, 0);
       newInvoices.push({
@@ -184,6 +192,7 @@ const Invoicing: React.FC = () => {
 
   return (
     <div className="space-y-6 animate-fade-in">
+      <Head title={t.title} />
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">{t.title}</h1>
@@ -293,7 +302,7 @@ const Invoicing: React.FC = () => {
                         <span className="text-xs text-muted-foreground ml-2">{s.grade} · {s.className}</span>
                       </div>
                       <span className="text-xs font-mono-amount text-muted-foreground">
-                        {(() => { const fs = MOCK_FEE_STRUCTURES.find(f => f.grade === s.grade && f.status === 'active'); return fs ? `KES ${fs.totalAmount.toLocaleString()}` : '—'; })()}
+                        {(() => { const fs = feeStructures.find(f => f.grade === s.grade && f.status === 'active'); return fs ? `KES ${fs.totalAmount.toLocaleString()}` : '—'; })()}
                       </span>
                     </div>
                   ))

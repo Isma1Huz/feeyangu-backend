@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { User, Lock, Bell, Shield, Moon, Sun, Camera } from 'lucide-react';
+import { Head, usePage } from '@inertiajs/react';
+import type { InertiaSharedProps } from '@/types/inertia';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useT } from '@/contexts/LanguageContext';
@@ -129,6 +131,7 @@ const Profile: React.FC = () => {
 
   return (
     <div className="space-y-6 animate-fade-in max-w-3xl mx-auto">
+      <Head title={pt.title} />
       <div>
         <h1 className="text-2xl font-bold tracking-tight">{pt.title}</h1>
         <p className="text-muted-foreground text-sm mt-1">{pt.subtitle}</p>
