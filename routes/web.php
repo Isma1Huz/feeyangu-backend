@@ -85,6 +85,7 @@ Route::prefix('accountant')
         Route::get('/dashboard', [AccountantDashboardController::class, 'index'])->name('dashboard');
         
         // Invoice management
+        Route::get('/invoicing', [AccountantInvoiceController::class, 'index'])->name('invoicing');
         Route::resource('invoices', AccountantInvoiceController::class);
         Route::post('/invoices/{invoice}/send', [AccountantInvoiceController::class, 'send'])->name('invoices.send');
         
