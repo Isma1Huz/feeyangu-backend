@@ -25,7 +25,7 @@ const Login: React.FC = () => {
 
   const { register, handleSubmit, formState: { errors } } = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
-    defaultValues: { email: 'sarah@greenacademy.co.ke', password: 'password123' },
+    defaultValues: { email: 'admin@feeyangu.com', password: 'password' },
   });
 
   const onSubmit = (data: LoginForm) => {
