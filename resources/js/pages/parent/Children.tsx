@@ -1,27 +1,43 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, Head, router, usePage } from '@inertiajs/react';
+import type { InertiaSharedProps } from '@/types/inertia';
 import { useT } from '@/contexts/LanguageContext';
-import { PARENT_CHILDREN } from '@/lib/mock-data';
 import StatusBadge from '@/components/StatusBadge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Eye, CreditCard } from 'lucide-react';
 
+interface Child {
+  studentId: string;
+  name: string;
+  grade: string;
+  className: string;
+  status: string;
+  paidFees: number;
+  totalFees: number;
+}
+
+interface Props extends InertiaSharedProps {
+  children: Child[];
+}
+
 const ParentChildren: React.FC = () => {
-  const navigate = useNavigate();
+  const { children } = usePage<Props>().props;
   const T = useT();
   const t = T.PARENT_CHILDREN_TEXT;
   const COMMON_TEXT = T.COMMON_TEXT;
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">{t.title}</h1>
-        <p className="text-muted-foreground text-sm mt-1">{t.subtitle}</p>
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {PARENT_CHILDREN.map((child) => {
+    <>
+      <Head title={t.title} />
+      <div className="space-y-6 animate-fade-in">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">{t.title}</h1>
+          <p className="text-muted-foreground text-sm mt-1">{t.subtitle}</p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {children.map((child) => {
           const percentage = Math.round((child.paidFees / child.totalFees) * 100);
           const balance = child.totalFees - child.paidFees;
           return (
@@ -46,11 +62,11 @@ const ParentChildren: React.FC = () => {
                   </div>
                 </div>
                 <div className="flex gap-2 mt-4">
-                  <Button variant="outline" size="sm" className="flex-1 gap-1" onClick={() => navigate(`/parent/children/${child.studentId}/fees`)}>
+                  <Button variant="outline" size="sm" className="flex-1 gap-1" onClick={() => router.visit(`/parent/children/${child.studentId}/fees`)}>
                     <Eye className="h-3.5 w-3.5" />{t.viewFees}
                   </Button>
                   {balance > 0 && (
-                    <Button size="sm" className="flex-1 gap-1" onClick={() => navigate(`/parent/children/${child.studentId}/fees`)}>
+                    <Button size="sm" className="flex-1 gap-1" onClick={() => router.visit(`/parent/children/${child.studentId}/fees`)}>
                       <CreditCard className="h-3.5 w-3.5" />{t.quickPay}
                     </Button>
                   )}
@@ -59,8 +75,9 @@ const ParentChildren: React.FC = () => {
             </Card>
           );
         })}
+        </div>
       </div>
-    </div>
+    </>
   );
 };
 

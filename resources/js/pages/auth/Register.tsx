@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, Head, router, usePage } from '@inertiajs/react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Eye, EyeOff, Mail, Lock, User, Building2, Phone } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
 import { useT } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -35,10 +34,8 @@ type RegisterForm = z.infer<typeof registerSchema>;
 const Register: React.FC = () => {
   const T = useT();
   const t = T.AUTH_TEXT.register;
-  const { login } = useAuth();
-  const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const { processing } = usePage().props;
 
   const { register: reg, handleSubmit, watch, setValue, formState: { errors } } = useForm<RegisterForm>({
     resolver: zodResolver(registerSchema),
@@ -47,19 +44,14 @@ const Register: React.FC = () => {
 
   const selectedRole = watch('role');
 
-  const onSubmit = async (data: RegisterForm) => {
-    setLoading(true);
-    try {
-      // Mock: auto-login after registration then navigate to verify email
-      await login(data.email, data.password);
-      navigate('/verify-email');
-    } finally {
-      setLoading(false);
-    }
+  const onSubmit = (data: RegisterForm) => {
+    router.post('/register', data);
   };
 
   return (
     <div className="animate-fade-in">
+      <Head title="Register" />
+      
       <div className="flex items-center gap-3 mb-8">
         <img src={feeyanguLogo} alt="Feeyangu" className="h-10 w-10 rounded-xl object-contain" />
         <span className="font-bold text-xl tracking-tight">{T.APP_NAME}</span>
@@ -166,19 +158,19 @@ const Register: React.FC = () => {
           />
           <Label htmlFor="terms" className="text-sm font-normal cursor-pointer leading-snug">
             {t.termsText}{' '}
-            <Link to="/terms" className="text-primary hover:underline font-medium">{t.termsLink}</Link>
+            <Link href="/terms" className="text-primary hover:underline font-medium">{t.termsLink}</Link>
           </Label>
         </div>
         {errors.agreeTerms && <p className="text-xs text-destructive">{errors.agreeTerms.message}</p>}
 
-        <Button type="submit" className="w-full h-11 font-semibold text-base rounded-lg" disabled={loading}>
-          {loading ? '...' : t.submitButton}
+        <Button type="submit" className="w-full h-11 font-semibold text-base rounded-lg" disabled={processing}>
+          {processing ? '...' : t.submitButton}
         </Button>
       </form>
 
       <p className="mt-6 text-center text-sm text-muted-foreground">
         {t.hasAccount}{' '}
-        <Link to="/login" className="text-primary font-semibold hover:underline">{t.loginLink}</Link>
+        <Link href="/login" className="text-primary font-semibold hover:underline">{t.loginLink}</Link>
       </p>
     </div>
   );

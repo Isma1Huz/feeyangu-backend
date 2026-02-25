@@ -3,10 +3,6 @@
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
-use Illuminate\Support\Facades\RateLimiter;
-use Illuminate\Cache\RateLimiting\Limit;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\URL;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -16,6 +12,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
+        $middleware->web(append: [
+            \App\Http\Middleware\HandleInertiaRequests::class,
+        ]);
+        
         $middleware->api(prepend: [
             \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
         ]);
@@ -27,24 +27,6 @@ return Application::configure(basePath: dirname(__DIR__))
             'parent.access' => \App\Http\Middleware\EnsureParentAccess::class,
             'payment.callback' => \App\Http\Middleware\VerifyPaymentCallback::class,
         ]);
-
-        // Rate limiting configuration
-        RateLimiter::for('auth', function (Request $request) {
-            return Limit::perMinute(5)->by($request->ip());
-        });
-
-        RateLimiter::for('payment', function (Request $request) {
-            return Limit::perMinute(3)->by($request->user()?->id ?: $request->ip());
-        });
-
-        RateLimiter::for('api', function (Request $request) {
-            return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
-        });
-
-        // HTTPS enforcement in production
-        if (app()->environment('production')) {
-            URL::forceScheme('https');
-        }
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

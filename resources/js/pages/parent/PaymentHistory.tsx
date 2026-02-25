@@ -1,21 +1,42 @@
 import React, { useState, useMemo } from 'react';
+import { Head, usePage } from '@inertiajs/react';
+import type { InertiaSharedProps } from '@/types/inertia';
 import { useT } from '@/contexts/LanguageContext';
-import { MOCK_PAYMENTS, PARENT_CHILDREN } from '@/lib/mock-data';
 import StatusBadge from '@/components/StatusBadge';
 import DataTable, { type DataTableColumn, type DataTableFilter } from '@/components/DataTable';
 
-const childIds = PARENT_CHILDREN.map(c => c.studentId);
+interface Child {
+  studentId: string;
+  name: string;
+}
+
+interface Payment {
+  id: string;
+  date: string;
+  studentId: string;
+  studentName: string;
+  amount: number;
+  method: string;
+  status: string;
+  reference: string;
+}
+
+interface Props extends InertiaSharedProps {
+  payments: Payment[];
+  children: Child[];
+}
 
 const PaymentHistory: React.FC = () => {
+  const { payments: allPayments, children } = usePage<Props>().props;
   const { PARENT_PAYMENTS_TEXT: t, COMMON_TEXT, PAYMENT_METHOD_LABELS } = useT();
   const [search, setSearch] = useState('');
   const [childFilter, setChildFilter] = useState('all');
 
   const payments = useMemo(() =>
-    MOCK_PAYMENTS.filter(p => childIds.includes(p.studentId))
+    allPayments
       .filter(p => childFilter === 'all' || p.studentId === childFilter)
       .filter(p => !search || p.reference.toLowerCase().includes(search.toLowerCase()) || p.studentName.toLowerCase().includes(search.toLowerCase())),
-    [search, childFilter]);
+    [allPayments, search, childFilter]);
 
   const columns: DataTableColumn<typeof payments[0]>[] = [
     { key: 'date', header: t.table.date, render: p => <span className="text-sm">{p.date}</span> },
@@ -27,7 +48,7 @@ const PaymentHistory: React.FC = () => {
   ];
 
   const tableFilters: DataTableFilter[] = [
-    { key: 'child', label: t.filterChild, options: PARENT_CHILDREN.map(c => ({ value: c.studentId, label: c.name })) },
+    { key: 'child', label: t.filterChild, options: children.map(c => ({ value: c.studentId, label: c.name })) },
   ];
 
   const exportCsv = (data: typeof payments) => {
@@ -40,23 +61,26 @@ const PaymentHistory: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div><h1 className="text-2xl font-bold tracking-tight">{t.title}</h1><p className="text-muted-foreground text-sm mt-1">{t.subtitle}</p></div>
-      <DataTable
-        data={payments}
-        columns={columns}
-        keyField="id"
-        searchPlaceholder={t.searchPlaceholder}
-        searchValue={search}
-        onSearchChange={setSearch}
-        filters={tableFilters}
-        filterValues={{ child: childFilter }}
-        onFilterChange={(k, v) => { if (k === 'child') setChildFilter(v); }}
-        onExport={exportCsv}
-        emptyTitle={t.emptyState.title}
-        emptyDescription={t.emptyState.description}
-      />
-    </div>
+    <>
+      <Head title={t.title} />
+      <div className="space-y-6 animate-fade-in">
+        <div><h1 className="text-2xl font-bold tracking-tight">{t.title}</h1><p className="text-muted-foreground text-sm mt-1">{t.subtitle}</p></div>
+        <DataTable
+          data={payments}
+          columns={columns}
+          keyField="id"
+          searchPlaceholder={t.searchPlaceholder}
+          searchValue={search}
+          onSearchChange={setSearch}
+          filters={tableFilters}
+          filterValues={{ child: childFilter }}
+          onFilterChange={(k, v) => { if (k === 'child') setChildFilter(v); }}
+          onExport={exportCsv}
+          emptyTitle={t.emptyState.title}
+          emptyDescription={t.emptyState.description}
+        />
+      </div>
+    </>
   );
 };
 

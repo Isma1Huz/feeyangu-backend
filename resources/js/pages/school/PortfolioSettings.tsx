@@ -1,6 +1,7 @@
 import React from 'react';
+import { Head, usePage } from '@inertiajs/react';
+import type { InertiaSharedProps } from '@/types/inertia';
 import { useT } from '@/contexts/LanguageContext';
-import { MOCK_LEARNING_AREAS } from '@/lib/mock-data';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
@@ -9,15 +10,29 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { Badge } from '@/components/ui/badge';
 import { Plus, Settings } from 'lucide-react';
 
+interface LearningArea {
+  id: string;
+  name: string;
+  code: string;
+  strands: any[];
+}
+
+interface Props extends InertiaSharedProps {
+  learningAreas: LearningArea[];
+}
+
 const SchoolPortfolioSettings: React.FC = () => {
   const T = useT();
+  const { learningAreas } = usePage<Props>().props;
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Portfolio Configuration</h1>
-        <p className="text-muted-foreground text-sm mt-1">Define CBC learning areas, strands, and evidence requirements.</p>
-      </div>
+    <>
+      <Head title="Portfolio Configuration" />
+      <div className="space-y-6 animate-fade-in">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Portfolio Configuration</h1>
+          <p className="text-muted-foreground text-sm mt-1">Define CBC learning areas, strands, and evidence requirements.</p>
+        </div>
 
       <Card className="shadow-sm">
         <CardHeader><CardTitle className="text-base">Settings</CardTitle></CardHeader>
@@ -46,7 +61,7 @@ const SchoolPortfolioSettings: React.FC = () => {
         </CardHeader>
         <CardContent>
           <Accordion type="multiple" className="space-y-2">
-            {MOCK_LEARNING_AREAS.map(la => (
+            {learningAreas.map(la => (
               <AccordionItem key={la.id} value={la.id} className="border rounded-lg px-4">
                 <AccordionTrigger className="hover:no-underline">
                   <div className="flex items-center gap-3">
@@ -73,7 +88,8 @@ const SchoolPortfolioSettings: React.FC = () => {
           </Accordion>
         </CardContent>
       </Card>
-    </div>
+      </div>
+    </>
   );
 };
 

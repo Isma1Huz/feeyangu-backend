@@ -1,8 +1,15 @@
 import React, { useState, useMemo } from 'react';
 import { Plus, Pencil, Trash2, Eye, Search } from 'lucide-react';
+import { Link, Head, usePage } from '@inertiajs/react';
+import type { InertiaSharedProps } from '@/types/inertia';
 import { useT } from '@/contexts/LanguageContext';
-import { MOCK_FEE_STRUCTURES, MOCK_GRADES, MOCK_TERMS } from '@/lib/mock-data';
-import type { FeeStructure, FeeItem } from '@/types';
+import type { FeeStructure, FeeItem, Grade, AcademicTerm } from '@/types';
+
+interface Props extends InertiaSharedProps {
+  structures: FeeStructure[];
+  grades: Grade[];
+  terms: AcademicTerm[];
+}
 import StatusBadge from '@/components/StatusBadge';
 import DataTable, { type DataTableColumn, type DataTableBulkAction } from '@/components/DataTable';
 import { Button } from '@/components/ui/button';
@@ -16,7 +23,8 @@ import { useToast } from '@/hooks/use-toast';
 const FeeStructures: React.FC = () => {
   const { toast } = useToast();
   const { FEE_STRUCTURES_TEXT: t, COMMON_TEXT } = useT();
-  const [structures, setStructures] = useState<FeeStructure[]>(MOCK_FEE_STRUCTURES);
+  const { structures: initialStructures, grades, terms } = usePage<Props>().props;
+  const [structures, setStructures] = useState<FeeStructure[]>(initialStructures);
   const [search, setSearch] = useState('');
   const [formOpen, setFormOpen] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
@@ -74,6 +82,7 @@ const FeeStructures: React.FC = () => {
 
   return (
     <div className="space-y-6 animate-fade-in">
+      <Head title={t.title} />
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div><h1 className="text-2xl font-bold tracking-tight">{t.title}</h1><p className="text-muted-foreground text-sm mt-1">{t.subtitle}</p></div>
       </div>
@@ -118,8 +127,8 @@ const FeeStructures: React.FC = () => {
           <div className="space-y-4 py-2">
             <div className="space-y-2"><Label>{t.form.name}</Label><Input placeholder={t.form.namePlaceholder} value={formName} onChange={e => setFormName(e.target.value)} /></div>
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2"><Label>{t.form.grade}</Label><Select value={formGrade} onValueChange={setFormGrade}><SelectTrigger><SelectValue placeholder="Select grade" /></SelectTrigger><SelectContent>{MOCK_GRADES.map(g => <SelectItem key={g.id} value={g.name}>{g.name}</SelectItem>)}</SelectContent></Select></div>
-              <div className="space-y-2"><Label>{t.form.term}</Label><Select value={formTerm} onValueChange={setFormTerm}><SelectTrigger><SelectValue placeholder="Select term" /></SelectTrigger><SelectContent>{MOCK_TERMS.map(tm => <SelectItem key={tm.id} value={tm.name}>{tm.name}</SelectItem>)}</SelectContent></Select></div>
+              <div className="space-y-2"><Label>{t.form.grade}</Label><Select value={formGrade} onValueChange={setFormGrade}><SelectTrigger><SelectValue placeholder="Select grade" /></SelectTrigger><SelectContent>{grades.map(g => <SelectItem key={g.id} value={g.name}>{g.name}</SelectItem>)}</SelectContent></Select></div>
+              <div className="space-y-2"><Label>{t.form.term}</Label><Select value={formTerm} onValueChange={setFormTerm}><SelectTrigger><SelectValue placeholder="Select term" /></SelectTrigger><SelectContent>{terms.map(tm => <SelectItem key={tm.id} value={tm.name}>{tm.name}</SelectItem>)}</SelectContent></Select></div>
             </div>
             <div className="space-y-2"><Label>{t.form.status}</Label><Select value={formStatus} onValueChange={v => setFormStatus(v as 'active' | 'inactive')}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="active">{COMMON_TEXT.status.active}</SelectItem><SelectItem value="inactive">{COMMON_TEXT.status.inactive}</SelectItem></SelectContent></Select></div>
             <div className="space-y-3">

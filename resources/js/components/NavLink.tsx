@@ -1,28 +1,37 @@
-import { NavLink as RouterNavLink, NavLinkProps } from "react-router-dom";
-import { forwardRef } from "react";
-import { cn } from "@/lib/utils";
+import { Link, usePage } from '@inertiajs/react';
+import { forwardRef } from 'react';
+import { cn } from '@/lib/utils';
 
-interface NavLinkCompatProps extends Omit<NavLinkProps, "className"> {
-  className?: string;
+interface NavLinkProps {
+  href: string;
+  className?: string | ((state: { isActive: boolean }) => string);
   activeClassName?: string;
-  pendingClassName?: string;
+  children?: React.ReactNode;
+  [key: string]: any;
 }
 
-const NavLink = forwardRef<HTMLAnchorElement, NavLinkCompatProps>(
-  ({ className, activeClassName, pendingClassName, to, ...props }, ref) => {
+const NavLink = forwardRef<HTMLAnchorElement, NavLinkProps>(
+  ({ className, activeClassName, href, children, ...props }, ref) => {
+    const { url } = usePage();
+    const isActive = url === href;
+    
+    const resolvedClassName = typeof className === 'function'
+      ? className({ isActive })
+      : cn(className, isActive && activeClassName);
+
     return (
-      <RouterNavLink
+      <Link
         ref={ref}
-        to={to}
-        className={({ isActive, isPending }) =>
-          cn(className, isActive && activeClassName, isPending && pendingClassName)
-        }
+        href={href}
+        className={resolvedClassName}
         {...props}
-      />
+      >
+        {children}
+      </Link>
     );
   },
 );
 
-NavLink.displayName = "NavLink";
+NavLink.displayName = 'NavLink';
 
 export { NavLink };

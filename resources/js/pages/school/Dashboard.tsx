@@ -1,266 +1,263 @@
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import { AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
-import { useT } from '@/contexts/LanguageContext';
-import { useAuth } from '@/contexts/AuthContext';
-import { SCHOOL_KPI, MONTHLY_REVENUE, MOCK_PAYMENTS, MOCK_FEE_STRUCTURES, MOCK_STUDENTS, ACCOUNTANT_KPI } from '@/lib/mock-data';
-import schoolBannerBg from '@/assets/school-banner-bg.jpg';
-import schoolLogo from '@/assets/school-logo.png';
-import KPICard from '@/components/KPICard';
-import StatusBadge from '@/components/StatusBadge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
-import { ArrowRight, TrendingUp, TrendingDown, DollarSign, AlertTriangle } from 'lucide-react';
+import { Head, usePage } from '@inertiajs/react'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
+import { DollarSign, Users, TrendingUp, AlertTriangle } from 'lucide-react'
 
-const COLLECTION_BY_METHOD = [
-  { name: 'M-Pesa', value: 1440000, color: 'hsl(142, 72%, 35%)' },
-  { name: 'Bank Transfer', value: 720000, color: 'hsl(200, 72%, 45%)' },
-  { name: 'Cash', value: 180000, color: 'hsl(45, 90%, 50%)' },
-  { name: 'Card', value: 60000, color: 'hsl(280, 60%, 50%)' },
-];
+interface KPI {
+  total_students: number
+  active_students: number
+  inactive_students: number
+  total_revenue: number
+  total_pending: number
+  total_overdue: number
+}
 
-const AGING_DATA = [
-  { range: '0-30 days', amount: 280000, students: 15 },
-  { range: '31-60 days', amount: 180000, students: 8 },
-  { range: '61-90 days', amount: 120000, students: 5 },
-  { range: '90+ days', amount: 100000, students: 3 },
-];
+interface Payment {
+  id: number
+  student_name: string
+  parent_name: string
+  amount: number
+  provider: string
+  status: string
+  reference: string
+  created_at: string
+}
 
-const SchoolDashboard: React.FC = () => {
-  const T = useT();
-  const { user } = useAuth();
-  const t = T.DASHBOARD_TEXT.school;
-  const COMMON_TEXT = T.COMMON_TEXT;
-  const PAYMENT_METHOD_LABELS = T.PAYMENT_METHOD_LABELS;
-  const navigate = useNavigate();
+interface Invoice {
+  id: number
+  invoice_number: string
+  student_name: string
+  total_amount: number
+  paid_amount: number
+  balance: number
+  due_date: string
+  days_overdue: number
+}
 
-  const totalStudents = MOCK_STUDENTS.length;
-  const totalFees = MOCK_STUDENTS.reduce((s, st) => s + st.totalFees, 0);
-  const totalPaid = MOCK_STUDENTS.reduce((s, st) => s + st.paidFees, 0);
-  const totalOutstanding = totalFees - totalPaid;
-  const collectionRate = Math.round((totalPaid / totalFees) * 100);
+interface GradeData {
+  grade: string
+  count: number
+}
 
-  const principalKPIs = [
-    { title: 'Total Revenue', value: `KES ${(totalPaid / 1000000).toFixed(1)}M`, change: '+8.2%', changeType: 'positive' as const, icon: 'DollarSign' },
-    { title: 'Outstanding Fees', value: `KES ${(totalOutstanding / 1000).toFixed(0)}K`, change: '-3.1%', changeType: 'positive' as const, icon: 'Clock' },
-    { title: 'Collection Rate', value: `${collectionRate}%`, change: '+2.4%', changeType: 'positive' as const, icon: 'TrendingUp' },
-    { title: 'Overdue Accounts', value: '23', change: '+5', changeType: 'negative' as const, icon: 'AlertTriangle' },
-  ];
+interface Student {
+  id: number
+  full_name: string
+  admission_number: string
+  grade: string
+  class: string
+  enrolled_at: string
+}
+
+interface Props {
+  kpi: KPI
+  recentPayments: Payment[]
+  overdueInvoices: Invoice[]
+  studentsByGrade: GradeData[]
+  recentStudents: Student[]
+}
+
+export default function Dashboard() {
+  const { kpi, recentPayments, overdueInvoices, studentsByGrade, recentStudents } = usePage<Props>().props
+  const { auth } = usePage().props as { auth: { user: { name: string, school?: { name: string } } } }
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Principal's Financial Overview</h1>
-        <p className="text-muted-foreground text-sm mt-1">{T.HEADER.welcomeBack}</p>
-      </div>
-
-      <div className="relative rounded-xl overflow-hidden text-primary-foreground p-6 sm:p-8">
-        <img src={schoolBannerBg} alt="" className="absolute inset-0 w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-primary/40" />
-        <div className="relative z-10 flex items-center justify-between gap-4">
-          <div>
-            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">{user?.schoolName || 'Your School'}</h2>
-            <p className="text-sm sm:text-base text-primary-foreground/80 mt-1 italic">Nurturing Excellence, Shaping Futures</p>
-          </div>
-          <div className="hidden sm:flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-white/90 backdrop-blur-sm border border-white/30 shrink-0 overflow-hidden p-1">
-            <img src={schoolLogo} alt="School Logo" className="w-full h-full object-contain" />
-          </div>
+    <>
+      <Head title="School Dashboard" />
+      
+      <div className="space-y-6 p-8">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">School Dashboard</h1>
+          <p className="text-muted-foreground mt-1">
+            Welcome back, {auth?.user?.name}
+          </p>
         </div>
-      </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {principalKPIs.map((kpi, i) => (<KPICard key={kpi.title} data={kpi} index={i} />))}
-      </div>
+        {/* KPI Cards */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Students</CardTitle>
+              <Users className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{kpi.total_students}</div>
+              <p className="text-xs text-muted-foreground">
+                {kpi.active_students} active, {kpi.inactive_students} inactive
+              </p>
+            </CardContent>
+          </Card>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Revenue Trend */}
-        <Card className="lg:col-span-2 shadow-sm">
-          <CardHeader className="pb-2"><CardTitle className="text-base font-semibold">{t.revenueChart}</CardTitle></CardHeader>
-          <CardContent>
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={MONTHLY_REVENUE}>
-                  <defs>
-                    <linearGradient id="revGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.2} />
-                      <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis dataKey="month" tick={{ fontSize: 12 }} stroke="hsl(var(--muted-foreground))" />
-                  <YAxis tick={{ fontSize: 12 }} stroke="hsl(var(--muted-foreground))" tickFormatter={(v) => `${(v / 1000000).toFixed(1)}M`} />
-                  <Tooltip formatter={(value: number) => [`${COMMON_TEXT.currency} ${value.toLocaleString()}`, '']} contentStyle={{ borderRadius: '8px', border: '1px solid hsl(var(--border))', fontSize: '12px' }} />
-                  <Area type="monotone" dataKey="revenue" stroke="hsl(var(--primary))" fill="url(#revGradient)" strokeWidth={2} name="Revenue" />
-                  <Area type="monotone" dataKey="target" stroke="hsl(142, 72%, 35%)" fill="transparent" strokeWidth={1.5} strokeDasharray="5 5" name="Target" />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Payment Method Breakdown */}
-        <Card className="shadow-sm">
-          <CardHeader className="pb-2"><CardTitle className="text-base font-semibold">Collections by Method</CardTitle></CardHeader>
-          <CardContent>
-            <div className="h-48">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie data={COLLECTION_BY_METHOD} cx="50%" cy="50%" innerRadius={40} outerRadius={70} paddingAngle={4} dataKey="value">
-                    {COLLECTION_BY_METHOD.map((entry) => (<Cell key={entry.name} fill={entry.color} />))}
-                  </Pie>
-                  <Tooltip formatter={(value: number) => [`KES ${value.toLocaleString()}`, '']} />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-            <div className="grid grid-cols-2 gap-2 mt-2">
-              {COLLECTION_BY_METHOD.map(m => (
-                <div key={m.name} className="flex items-center gap-2 text-xs">
-                  <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: m.color }} />
-                  <span className="text-muted-foreground">{m.name}</span>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Receivables Aging */}
-        <Card className="shadow-sm">
-          <CardHeader className="pb-2"><CardTitle className="text-base font-semibold">Receivables Aging</CardTitle></CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {AGING_DATA.map(a => (
-                <div key={a.range} className="space-y-1">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">{a.range} <span className="text-xs">({a.students} students)</span></span>
-                    <span className="font-mono-amount font-medium">{COMMON_TEXT.currency} {a.amount.toLocaleString()}</span>
-                  </div>
-                  <Progress value={(a.amount / 280000) * 100} className="h-2" />
-                </div>
-              ))}
-              <div className="pt-2 border-t flex justify-between text-sm font-semibold">
-                <span>Total Outstanding</span>
-                <span className="font-mono-amount text-destructive">{COMMON_TEXT.currency} {AGING_DATA.reduce((s, a) => s + a.amount, 0).toLocaleString()}</span>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+              <DollarSign className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                KES {(kpi.total_revenue / 1000).toFixed(1)}K
               </div>
-            </div>
-          </CardContent>
-        </Card>
+              <p className="text-xs text-muted-foreground">
+                Collected payments
+              </p>
+            </CardContent>
+          </Card>
 
-        {/* Overdue Alerts */}
-        <Card className="shadow-sm">
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-base font-semibold">{t.overdueAlert}</CardTitle>
-              <Button variant="link" size="sm" className="text-primary text-xs p-0 h-auto" onClick={() => navigate('/school/payments')}>View All</Button>
-            </div>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Pending Fees</CardTitle>
+              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                KES {(kpi.total_pending / 1000).toFixed(1)}K
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Outstanding balance
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Overdue Fees</CardTitle>
+              <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                KES {(kpi.total_overdue / 1000).toFixed(1)}K
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Requires attention
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="grid gap-6 md:grid-cols-2">
+          {/* Students by Grade Chart */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Students by Grade</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={studentsByGrade}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="grade" />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey="count" fill="#8884d8" />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
+          {/* Recent Payments */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Recent Payments</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Student</TableHead>
+                    <TableHead>Amount</TableHead>
+                    <TableHead>Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {recentPayments.slice(0, 5).map((payment) => (
+                    <TableRow key={payment.id}>
+                      <TableCell className="font-medium">{payment.student_name}</TableCell>
+                      <TableCell>KES {payment.amount.toLocaleString()}</TableCell>
+                      <TableCell>
+                        <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
+                          payment.status === 'completed' ? 'bg-green-50 text-green-700' : 'bg-yellow-50 text-yellow-700'
+                        }`}>
+                          {payment.status}
+                        </span>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Overdue Invoices */}
+        {overdueInvoices.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Overdue Invoices</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Invoice #</TableHead>
+                    <TableHead>Student</TableHead>
+                    <TableHead>Total</TableHead>
+                    <TableHead>Balance</TableHead>
+                    <TableHead>Due Date</TableHead>
+                    <TableHead>Days Overdue</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {overdueInvoices.map((invoice) => (
+                    <TableRow key={invoice.id}>
+                      <TableCell className="font-medium">{invoice.invoice_number}</TableCell>
+                      <TableCell>{invoice.student_name}</TableCell>
+                      <TableCell>KES {invoice.total_amount.toLocaleString()}</TableCell>
+                      <TableCell>KES {invoice.balance.toLocaleString()}</TableCell>
+                      <TableCell>{invoice.due_date}</TableCell>
+                      <TableCell>
+                        <span className="text-red-600 font-semibold">
+                          {Math.abs(invoice.days_overdue)} days
+                        </span>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Recent Students */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Recently Enrolled Students</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              {[
-                { name: 'Dennis Muthoni', grade: 'Grade 8', amount: 30000, days: 45 },
-                { name: 'Esther Nyambura', grade: 'Grade 5', amount: 38000, days: 60 },
-                { name: 'Gloria Wambui', grade: 'Grade 6', amount: 15000, days: 20 },
-                { name: 'Brian Kimani', grade: 'Grade 7', amount: 12000, days: 15 },
-              ].map((item) => (
-                <div key={item.name} className="flex items-center justify-between p-3 rounded-lg bg-destructive/5 border border-destructive/10">
-                  <div>
-                    <p className="text-sm font-medium">{item.name}</p>
-                    <p className="text-xs text-muted-foreground">{item.grade} · {item.days} {T.HEADER.daysOverdue}</p>
-                  </div>
-                  <p className="text-sm font-mono-amount font-semibold text-destructive">{COMMON_TEXT.currency} {item.amount.toLocaleString()}</p>
-                </div>
-              ))}
-            </div>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Admission #</TableHead>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Grade</TableHead>
+                  <TableHead>Class</TableHead>
+                  <TableHead>Enrolled</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {recentStudents.map((student) => (
+                  <TableRow key={student.id}>
+                    <TableCell className="font-medium">{student.admission_number}</TableCell>
+                    <TableCell>{student.full_name}</TableCell>
+                    <TableCell>{student.grade}</TableCell>
+                    <TableCell>{student.class}</TableCell>
+                    <TableCell>{student.enrolled_at}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </CardContent>
         </Card>
       </div>
-
-      {/* Fee Structure Summary */}
-      <Card className="shadow-sm">
-        <CardHeader className="pb-2">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-base font-semibold">Fee Collection by Grade</CardTitle>
-            <Button variant="link" size="sm" className="text-primary text-xs p-0 h-auto gap-1" onClick={() => navigate('/school/fee-structures')}>
-              View Structures <ArrowRight className="h-3 w-3" />
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Grade</TableHead>
-                <TableHead>Term</TableHead>
-                <TableHead className="text-right">Fee Amount</TableHead>
-                <TableHead>Collection Progress</TableHead>
-                <TableHead>Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {MOCK_FEE_STRUCTURES.filter(f => f.status === 'active').map(fs => {
-                const pct = Math.round(60 + Math.random() * 35);
-                return (
-                  <TableRow key={fs.id}>
-                    <TableCell className="font-medium">{fs.grade}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{fs.term}</TableCell>
-                    <TableCell className="text-right font-mono-amount">{COMMON_TEXT.currency} {fs.totalAmount.toLocaleString()}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Progress value={pct} className="h-2 w-20" />
-                        <span className="text-xs font-mono-amount">{pct}%</span>
-                      </div>
-                    </TableCell>
-                    <TableCell><StatusBadge status={fs.status} /></TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-
-      {/* Recent Payments */}
-      <Card className="shadow-sm">
-        <CardHeader className="pb-2">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-base font-semibold">{t.recentPayments}</CardTitle>
-            <Button variant="link" size="sm" className="text-primary text-xs p-0 h-auto gap-1" onClick={() => navigate('/school/payments')}>
-              {T.HEADER.viewAll} <ArrowRight className="h-3 w-3" />
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{T.PAYMENTS_TEXT.table.date}</TableHead>
-                <TableHead>{T.PAYMENTS_TEXT.table.student}</TableHead>
-                <TableHead>{T.PAYMENTS_TEXT.table.amount}</TableHead>
-                <TableHead>{T.PAYMENTS_TEXT.table.method}</TableHead>
-                <TableHead>{T.PAYMENTS_TEXT.table.status}</TableHead>
-                <TableHead>{T.PAYMENTS_TEXT.table.reference}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {MOCK_PAYMENTS.slice(0, 5).map((p) => (
-                <TableRow key={p.id}>
-                  <TableCell className="text-sm">{p.date}</TableCell>
-                  <TableCell className="text-sm font-medium">{p.studentName}</TableCell>
-                  <TableCell className="text-sm font-mono-amount">{COMMON_TEXT.currency} {p.amount.toLocaleString()}</TableCell>
-                  <TableCell className="text-sm">{PAYMENT_METHOD_LABELS[p.method]}</TableCell>
-                  <TableCell><StatusBadge status={p.status} /></TableCell>
-                  <TableCell className="text-sm text-muted-foreground font-mono-amount">{p.reference}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-    </div>
-  );
-};
-
-export default SchoolDashboard;
+    </>
+  )
+}

@@ -1,15 +1,14 @@
 import React, { useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Head, router, usePage } from '@inertiajs/react';
 import { ShieldCheck, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import feeyanguLogo from '@/assets/feeyangu-logo.png';
 
 const TwoFactorAuth: React.FC = () => {
-  const navigate = useNavigate();
   const [code, setCode] = useState(['', '', '', '', '', '']);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const { processing } = usePage().props;
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   const handleChange = (index: number, value: string) => {
@@ -47,16 +46,13 @@ const TwoFactorAuth: React.FC = () => {
       setError('Please enter the full 6-digit code');
       return;
     }
-    setLoading(true);
-    // Mock: accept any code
-    setTimeout(() => {
-      navigate('/school/dashboard');
-      setLoading(false);
-    }, 1000);
+    router.post('/verify-2fa', { code: fullCode });
   };
 
   return (
     <div className="animate-fade-in text-center">
+      <Head title="Two-Factor Authentication" />
+      
       <div className="flex items-center gap-3 mb-10 justify-center lg:justify-start">
         <img src={feeyanguLogo} alt="Feeyangu" className="h-10 w-10 rounded-xl object-contain" />
         <span className="font-bold text-xl tracking-tight">Feeyangu</span>
@@ -92,15 +88,15 @@ const TwoFactorAuth: React.FC = () => {
 
         {error && <p className="text-xs text-destructive">{error}</p>}
 
-        <Button type="submit" className="w-full h-11 font-semibold text-base rounded-lg" disabled={loading}>
-          {loading ? 'Verifying...' : 'Verify Code'}
+        <Button type="submit" className="w-full h-11 font-semibold text-base rounded-lg" disabled={processing}>
+          {processing ? 'Verifying...' : 'Verify Code'}
         </Button>
 
         <div className="space-y-2 text-sm">
           <button type="button" className="text-primary hover:underline font-medium">
             Resend code
           </button>
-          <Button onClick={() => navigate('/login')} variant="ghost" className="w-full h-11 gap-2">
+          <Button onClick={() => router.visit('/login')} variant="ghost" className="w-full h-11 gap-2">
             <ArrowLeft className="h-4 w-4" />
             Back to sign in
           </Button>

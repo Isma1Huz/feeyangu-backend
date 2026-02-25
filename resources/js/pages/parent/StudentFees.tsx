@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { Head, router, usePage } from '@inertiajs/react';
+import type { InertiaSharedProps } from '@/types/inertia';
 import { PAYMENT_PROVIDERS, type PaymentProvider, type PaymentTransaction } from '@/types/payment.types';
 import { schoolPaymentConfigs } from '@/data/payment-config';
-import { PARENT_CHILDREN, PARENT_FEE_ITEMS } from '@/lib/mock-data';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -23,13 +23,28 @@ type PaymentStep = 'select' | 'method' | 'pay' | 'processing' | 'success' | 'man
 
 const CURRENCY = 'KES';
 
+interface Child {
+  studentId: string;
+  name: string;
+  grade: string;
+  className: string;
+}
+
+interface FeeItem {
+  name: string;
+  amount: number;
+  paid: number;
+}
+
+interface Props extends InertiaSharedProps {
+  child: Child;
+  feeItems: FeeItem[];
+}
+
 const StudentFees: React.FC = () => {
-  const { studentId } = useParams<{ studentId: string }>();
-  const navigate = useNavigate();
+  const { child, feeItems } = usePage<Props>().props;
   const { toast } = useToast();
 
-  const child = PARENT_CHILDREN.find(c => c.studentId === studentId);
-  const feeItems = PARENT_FEE_ITEMS[studentId || ''] || [];
   const enabledConfigs = schoolPaymentConfigs.filter(c => c.enabled);
 
   const [payOpen, setPayOpen] = useState(false);
@@ -166,16 +181,18 @@ const StudentFees: React.FC = () => {
   );
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={() => navigate('/parent/children')}>
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">{child.name} — Fee Statement</h1>
-          <p className="text-muted-foreground text-sm mt-1">{child.grade} · {child.className}</p>
+    <>
+      <Head title={`${child.name} — Fee Statement`} />
+      <div className="space-y-6 animate-fade-in">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="icon" onClick={() => router.visit('/parent/children')}>
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">{child.name} — Fee Statement</h1>
+            <p className="text-muted-foreground text-sm mt-1">{child.grade} · {child.className}</p>
+          </div>
         </div>
-      </div>
 
       {/* Summary */}
       <Card className="border-none shadow-sm bg-gradient-to-r from-primary/5 to-secondary/5">
@@ -545,7 +562,8 @@ const StudentFees: React.FC = () => {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+      </div>
+    </>
   );
 };
 

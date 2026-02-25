@@ -1,7 +1,7 @@
 import React from 'react';
-import { useParams } from 'react-router-dom';
+import { Head, usePage } from '@inertiajs/react';
+import type { InertiaSharedProps } from '@/types/inertia';
 import { useT } from '@/contexts/LanguageContext';
-import { MOCK_STUDENTS, MOCK_STUDENT_PORTFOLIOS, MOCK_LEARNING_AREAS, MOCK_PORTFOLIO_EVIDENCE } from '@/lib/mock-data';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -12,18 +12,58 @@ import { Download, Eye } from 'lucide-react';
 
 const ratingColors: Record<string, string> = { EE: 'bg-success/10 text-success', ME: 'bg-blue-500/10 text-blue-600', AE: 'bg-warning/10 text-warning', BE: 'bg-destructive/10 text-destructive' };
 
+interface Student {
+  id: string;
+  firstName: string;
+  grade: string;
+  className: string;
+}
+
+interface Strand {
+  id: string;
+  name: string;
+}
+
+interface LearningArea {
+  id: string;
+  name: string;
+  strands: Strand[];
+}
+
+interface Portfolio {
+  studentId: string;
+  completionPercentage: number;
+}
+
+interface Evidence {
+  id: string;
+  studentId: string;
+  strandId: string;
+  title: string;
+  cbcRating: string;
+  teacherObservation: string;
+  dateOfActivity: string;
+  visibility: string;
+}
+
+interface Props extends InertiaSharedProps {
+  student: Student;
+  portfolio: Portfolio;
+  learningAreas: LearningArea[];
+  evidence: Evidence[];
+}
+
 const ParentPortfolio: React.FC = () => {
-  const { studentId } = useParams();
+  const { student, portfolio, learningAreas, evidence } = usePage<Props>().props;
   const T = useT();
   const t = T.PORTFOLIO_TEXT;
-  const student = MOCK_STUDENTS.find(s => s.id === studentId);
-  const portfolio = MOCK_STUDENT_PORTFOLIOS.find(p => p.studentId === studentId);
-  const evidence = MOCK_PORTFOLIO_EVIDENCE.filter(e => e.studentId === studentId && e.visibility === 'published');
 
   if (!student) return <div className="p-8 text-center text-muted-foreground">Student not found.</div>;
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <>
+      <Head title={`${student.firstName}'s Portfolio`} />
+      <div className="space-y-6 animate-fade-in">
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">{student.firstName}'s Portfolio</h1>
@@ -32,11 +72,11 @@ const ParentPortfolio: React.FC = () => {
         <Button variant="outline" className="gap-2"><Download className="h-4 w-4" />{t.parentView.downloadButton}</Button>
       </div>
       <Progress value={portfolio?.completionPercentage ?? 0} className="h-2" />
-      <Tabs defaultValue={MOCK_LEARNING_AREAS[0]?.id}>
+      <Tabs defaultValue={learningAreas[0]?.id}>
         <TabsList className="flex-wrap">
-          {MOCK_LEARNING_AREAS.map(la => <TabsTrigger key={la.id} value={la.id} className="text-xs">{la.name}</TabsTrigger>)}
+          {learningAreas.map(la => <TabsTrigger key={la.id} value={la.id} className="text-xs">{la.name}</TabsTrigger>)}
         </TabsList>
-        {MOCK_LEARNING_AREAS.map(la => (
+        {learningAreas.map(la => (
           <TabsContent key={la.id} value={la.id}>
             <Accordion type="multiple" className="space-y-2">
               {la.strands.map(strand => {
@@ -68,7 +108,8 @@ const ParentPortfolio: React.FC = () => {
           </TabsContent>
         ))}
       </Tabs>
-    </div>
+      </div>
+    </>
   );
 };
 export default ParentPortfolio;

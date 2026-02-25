@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Plus, Pencil, Trash2, ChevronDown, ChevronRight, Users } from 'lucide-react';
+import { Head, usePage } from '@inertiajs/react';
+import type { InertiaSharedProps } from '@/types/inertia';
 import { useT } from '@/contexts/LanguageContext';
-import { MOCK_GRADES } from '@/lib/mock-data';
 import type { Grade, GradeClass } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,10 +13,15 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 
+interface Props extends InertiaSharedProps {
+  grades: Grade[];
+}
+
 const Grades: React.FC = () => {
   const { toast } = useToast();
   const { GRADES_TEXT: t, COMMON_TEXT } = useT();
-  const [grades, setGrades] = useState<Grade[]>(MOCK_GRADES);
+  const { grades: initialGrades } = usePage<Props>().props;
+  const [grades, setGrades] = useState<Grade[]>(initialGrades);
   const [expandedGrade, setExpandedGrade] = useState<string | null>(null);
   const [gradeDialogOpen, setGradeDialogOpen] = useState(false);
   const [classDialogOpen, setClassDialogOpen] = useState(false);
@@ -87,6 +93,7 @@ const Grades: React.FC = () => {
 
   return (
     <div className="space-y-6 animate-fade-in">
+      <Head title={t.title} />
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">{t.title}</h1>

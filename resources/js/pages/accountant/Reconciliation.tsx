@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { CheckCircle, XCircle, Upload, RefreshCw, Link2, Search } from 'lucide-react';
+import { Link, Head, router, usePage } from '@inertiajs/react';
+import type { InertiaSharedProps } from '@/types/inertia';
 import { useT } from '@/contexts/LanguageContext';
-import { MOCK_RECONCILIATION, MOCK_PAYMENTS } from '@/lib/mock-data';
 import type { ReconciliationItem } from '@/types/accountant.types';
+import type { Payment } from '@/types';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,11 +15,17 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 
+interface Props extends InertiaSharedProps {
+  reconciliationItems: ReconciliationItem[];
+  systemPayments: Payment[];
+}
+
 const Reconciliation: React.FC = () => {
+  const { reconciliationItems, systemPayments } = usePage<Props>().props;
   const { toast } = useToast();
   const T = useT();
   const t = T.ACCOUNTANT_RECONCILIATION_TEXT;
-  const [items, setItems] = useState<ReconciliationItem[]>(MOCK_RECONCILIATION);
+  const [items, setItems] = useState<ReconciliationItem[]>(reconciliationItems);
 
   // Import Statement modal
   const [importOpen, setImportOpen] = useState(false);
@@ -87,7 +95,7 @@ const Reconciliation: React.FC = () => {
     setManualMatchOpen(true);
   };
 
-  const filteredPayments = MOCK_PAYMENTS.filter(p => {
+  const filteredPayments = systemPayments.filter(p => {
     if (!matchSearch) return true;
     return p.studentName.toLowerCase().includes(matchSearch.toLowerCase()) ||
            p.reference.toLowerCase().includes(matchSearch.toLowerCase());
@@ -98,7 +106,7 @@ const Reconciliation: React.FC = () => {
       toast({ title: 'Select a Payment', description: 'Please select a system payment to match with.', variant: 'destructive' });
       return;
     }
-    const payment = MOCK_PAYMENTS.find(p => p.id === selectedPaymentId);
+    const payment = systemPayments.find(p => p.id === selectedPaymentId);
     setItems(prev => prev.map(i => i.id === matchingItem.id ? {
       ...i,
       status: 'matched' as const,
@@ -168,6 +176,7 @@ const Reconciliation: React.FC = () => {
 
   return (
     <div className="space-y-6 animate-fade-in">
+      <Head title={t.title} />
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">{t.title}</h1>

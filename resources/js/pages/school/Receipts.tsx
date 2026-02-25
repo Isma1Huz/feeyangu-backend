@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from 'react';
+import { Head, usePage } from '@inertiajs/react';
+import type { InertiaSharedProps } from '@/types/inertia';
 import { Eye, Printer, Download, Trash2 } from 'lucide-react';
 import { useT } from '@/contexts/LanguageContext';
-import { MOCK_RECEIPTS } from '@/lib/mock-data';
 import type { Receipt } from '@/types';
 import DataTable, { type DataTableColumn, type DataTableBulkAction } from '@/components/DataTable';
 import { Button } from '@/components/ui/button';
@@ -9,15 +10,20 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Separator } from '@/components/ui/separator';
 
+interface Props extends InertiaSharedProps {
+  receipts: Receipt[];
+}
+
 const Receipts: React.FC = () => {
   const { RECEIPTS_TEXT: t, COMMON_TEXT } = useT();
+  const { receipts } = usePage<Props>().props;
   const [search, setSearch] = useState('');
   const [previewOpen, setPreviewOpen] = useState(false);
   const [viewing, setViewing] = useState<Receipt | null>(null);
 
   const filtered = useMemo(() =>
-    MOCK_RECEIPTS.filter(r => !search || r.receiptNumber.toLowerCase().includes(search.toLowerCase()) || r.studentName.toLowerCase().includes(search.toLowerCase())),
-    [search]);
+    receipts.filter(r => !search || r.receiptNumber.toLowerCase().includes(search.toLowerCase()) || r.studentName.toLowerCase().includes(search.toLowerCase())),
+    [search, receipts]);
 
   const handlePrint = () => window.print();
 
@@ -41,14 +47,16 @@ const Receipts: React.FC = () => {
   const bulkActions: DataTableBulkAction[] = [
     { label: COMMON_TEXT.actions.print, icon: <Printer className="h-3.5 w-3.5" />, onClick: () => handlePrint() },
     { label: COMMON_TEXT.actions.download, icon: <Download className="h-3.5 w-3.5" />, onClick: (ids) => {
-      const selected = MOCK_RECEIPTS.filter(r => ids.includes(r.id));
+      const selected = receipts.filter(r => ids.includes(r.id));
       exportCsv(selected);
     }},
   ];
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div><h1 className="text-2xl font-bold tracking-tight">{t.title}</h1><p className="text-muted-foreground text-sm mt-1">{t.subtitle}</p></div>
+    <>
+      <Head title={t.title} />
+      <div className="space-y-6 animate-fade-in">
+        <div><h1 className="text-2xl font-bold tracking-tight">{t.title}</h1><p className="text-muted-foreground text-sm mt-1">{t.subtitle}</p></div>
       <DataTable
         data={filtered}
         columns={columns}
@@ -97,7 +105,8 @@ const Receipts: React.FC = () => {
           )}
         </DialogContent>
       </Dialog>
-    </div>
+      </div>
+    </>
   );
 };
 

@@ -1,12 +1,31 @@
 import React from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
+import { Link, Head, router, usePage } from '@inertiajs/react';
+import type { InertiaSharedProps } from '@/types/inertia';
 import { useT } from '@/contexts/LanguageContext';
-import { ACCOUNTANT_KPI, ACCOUNTANT_MONTHLY_COLLECTIONS, PAYMENT_METHOD_DISTRIBUTION, RECEIVABLES_AGING, MOCK_PAYMENTS, MOCK_RECONCILIATION, MOCK_INTEGRATIONS } from '@/lib/mock-data';
 import schoolBannerBg from '@/assets/school-banner-bg.jpg';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { DollarSign, AlertTriangle, CheckCircle, Clock, TrendingUp, Wallet, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import StatusBadge from '@/components/StatusBadge';
+import type { Payment } from '@/types';
+import type { ReconciliationItem } from '@/types/accountant.types';
+
+interface Props extends InertiaSharedProps {
+  kpiData: {
+    dailyCollections: string;
+    pendingReconciliation: number;
+    unmatchedTransactions: number;
+    outstandingInvoices: number;
+    paymentSuccessRate: string;
+    pettyCashBalance: string;
+  };
+  monthlyCollections: Array<{ month: string; invoiced: number; collected: number }>;
+  paymentMethodDistribution: Array<{ method: string; value: number; color: string }>;
+  receivablesAging: Array<{ range: string; amount: number; count: number }>;
+  recentPayments: Payment[];
+  reconciliationQueue: ReconciliationItem[];
+}
 
 const kpiIcons: Record<string, React.ElementType> = {
   dailyCollections: DollarSign,
@@ -20,9 +39,9 @@ const kpiIcons: Record<string, React.ElementType> = {
 const kpiColors = ['hsl(var(--primary))', 'hsl(45, 90%, 50%)', 'hsl(0, 72%, 45%)', 'hsl(200, 72%, 45%)', 'hsl(142, 72%, 35%)', 'hsl(280, 60%, 50%)'];
 
 const AccountantDashboard: React.FC = () => {
+  const { kpiData, monthlyCollections, paymentMethodDistribution, receivablesAging, recentPayments, reconciliationQueue } = usePage<Props>().props;
   const T = useT();
   const t = T.ACCOUNTANT_DASHBOARD_TEXT;
-  const kpiData = ACCOUNTANT_KPI;
   const kpiEntries = [
     { key: 'dailyCollections', value: kpiData.dailyCollections, change: '+12%', changeType: 'positive' as const },
     { key: 'pendingReconciliation', value: String(kpiData.pendingReconciliation), change: '-3', changeType: 'positive' as const },
@@ -34,6 +53,7 @@ const AccountantDashboard: React.FC = () => {
 
   return (
     <div className="space-y-6 animate-fade-in">
+      <Head title={t.title} />
       <div>
         <h1 className="text-2xl font-bold tracking-tight">{t.title}</h1>
         <p className="text-muted-foreground text-sm mt-1">{t.subtitle}</p>
@@ -85,7 +105,7 @@ const AccountantDashboard: React.FC = () => {
           <CardContent>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={ACCOUNTANT_MONTHLY_COLLECTIONS}>
+                <BarChart data={monthlyCollections}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(0, 0%, 89%)" />
                   <XAxis dataKey="month" tick={{ fontSize: 12 }} stroke="hsl(0, 0%, 45%)" />
                   <YAxis tick={{ fontSize: 12 }} stroke="hsl(0, 0%, 45%)" tickFormatter={(v) => `${(v / 1000000).toFixed(1)}M`} />
@@ -105,8 +125,8 @@ const AccountantDashboard: React.FC = () => {
             <div className="h-48">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie data={PAYMENT_METHOD_DISTRIBUTION} dataKey="value" nameKey="method" cx="50%" cy="50%" outerRadius={70} innerRadius={40}>
-                    {PAYMENT_METHOD_DISTRIBUTION.map((entry, i) => (
+                  <Pie data={paymentMethodDistribution} dataKey="value" nameKey="method" cx="50%" cy="50%" outerRadius={70} innerRadius={40}>
+                    {paymentMethodDistribution.map((entry, i) => (
                       <Cell key={i} fill={entry.color} />
                     ))}
                   </Pie>
@@ -115,7 +135,7 @@ const AccountantDashboard: React.FC = () => {
               </ResponsiveContainer>
             </div>
             <div className="grid grid-cols-2 gap-2 mt-2">
-              {PAYMENT_METHOD_DISTRIBUTION.map((m) => (
+              {paymentMethodDistribution.map((m) => (
                 <div key={m.method} className="flex items-center gap-2 text-xs">
                   <div className="h-2.5 w-2.5 rounded-full" style={{ background: m.color }} />
                   <span className="text-muted-foreground">{m.method}</span>
@@ -134,7 +154,7 @@ const AccountantDashboard: React.FC = () => {
           <CardHeader className="pb-2"><CardTitle className="text-base font-semibold">{t.receivablesAging}</CardTitle></CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {RECEIVABLES_AGING.map((item) => (
+              {receivablesAging.map((item) => (
                 <div key={item.range} className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <span className="text-sm font-medium w-24">{item.range}</span>
@@ -157,7 +177,7 @@ const AccountantDashboard: React.FC = () => {
           <CardHeader className="pb-2"><CardTitle className="text-base font-semibold">{t.reconciliationQueue}</CardTitle></CardHeader>
           <CardContent>
             <div className="space-y-2">
-              {MOCK_RECONCILIATION.filter(r => r.status !== 'matched').map((item) => (
+              {reconciliationQueue.filter(r => r.status !== 'matched').map((item) => (
                 <div key={item.id} className={`p-3 rounded-lg border ${item.status === 'unmatched_bank' ? 'border-destructive/20 bg-destructive/5' : item.status === 'suggested' ? 'border-warning/20 bg-warning/5' : 'border-primary/20 bg-primary/5'}`}>
                   <div className="flex items-center justify-between">
                     <div>
@@ -189,7 +209,7 @@ const AccountantDashboard: React.FC = () => {
         <CardHeader className="pb-2"><CardTitle className="text-base font-semibold">{t.recentActivity}</CardTitle></CardHeader>
         <CardContent>
           <div className="space-y-2">
-            {MOCK_PAYMENTS.slice(0, 5).map((p) => (
+            {recentPayments.slice(0, 5).map((p) => (
               <div key={p.id} className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-colors">
                 <div className="flex items-center gap-3">
                   <div className={`h-8 w-8 rounded-full flex items-center justify-center ${p.status === 'completed' ? 'bg-success/10' : p.status === 'pending' ? 'bg-warning/10' : 'bg-destructive/10'}`}>

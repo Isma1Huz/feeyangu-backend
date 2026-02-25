@@ -1,18 +1,17 @@
 import React from 'react';
-import { Outlet, Navigate } from 'react-router-dom';
+import { usePage } from '@inertiajs/react';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import AppSidebar from '@/components/AppSidebar';
 import Header from '@/components/Header';
 import BottomNav from '@/components/BottomNav';
 import OnboardingTour from '@/components/OnboardingTour';
-import { useAuth } from '@/contexts/AuthContext';
 
-const AppLayout: React.FC = () => {
-  const { isAuthenticated } = useAuth();
+interface Props {
+  children: React.ReactNode;
+}
 
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
-  }
+const AppLayout: React.FC<Props> = ({ children }) => {
+  const { auth } = usePage().props as { auth: { user: any } };
 
   return (
     <SidebarProvider>
@@ -21,7 +20,7 @@ const AppLayout: React.FC = () => {
         <div className="flex-1 flex flex-col min-w-0">
           <Header />
           <main className="flex-1 p-4 sm:p-6 overflow-auto pb-20 lg:pb-6">
-            <Outlet />
+            {children}
           </main>
         </div>
       </div>

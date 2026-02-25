@@ -1,11 +1,17 @@
 import React from 'react';
 import { RefreshCw, Link2, Unlink, CheckCircle, XCircle, AlertTriangle, Loader2 } from 'lucide-react';
+import { Link, Head, router, usePage } from '@inertiajs/react';
+import type { InertiaSharedProps } from '@/types/inertia';
 import { useT } from '@/contexts/LanguageContext';
-import { MOCK_INTEGRATIONS } from '@/lib/mock-data';
+import type { Integration } from '@/types/accountant.types';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
+
+interface Props extends InertiaSharedProps {
+  integrations: Integration[];
+}
 
 const providerLogos: Record<string, { bg: string; text: string }> = {
   xero: { bg: 'hsl(200, 80%, 95%)', text: 'hsl(200, 80%, 40%)' },
@@ -23,6 +29,7 @@ const statusIcons: Record<string, React.ReactNode> = {
 };
 
 const Integrations: React.FC = () => {
+  const { integrations } = usePage<Props>().props;
   const { toast } = useToast();
   const T = useT();
   const t = T.ACCOUNTANT_INTEGRATIONS_TEXT;
@@ -37,6 +44,7 @@ const Integrations: React.FC = () => {
 
   return (
     <div className="space-y-6 animate-fade-in">
+      <Head title={t.title} />
       <div>
         <h1 className="text-2xl font-bold tracking-tight">{t.title}</h1>
         <p className="text-muted-foreground text-sm mt-1">{t.subtitle}</p>
@@ -44,7 +52,7 @@ const Integrations: React.FC = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {allProviders.map((p) => {
-          const integration = MOCK_INTEGRATIONS.find(i => i.provider === p.provider);
+          const integration = integrations.find(i => i.provider === p.provider);
           const isConnected = integration?.status === 'connected';
           const colors = providerLogos[p.provider] || { bg: 'hsl(0,0%,95%)', text: 'hsl(0,0%,40%)' };
 

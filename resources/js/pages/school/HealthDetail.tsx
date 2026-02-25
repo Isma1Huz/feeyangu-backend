@@ -1,7 +1,8 @@
 import React from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { Link, Head, router, usePage } from '@inertiajs/react';
+import type { InertiaSharedProps } from '@/types/inertia';
 import { useT } from '@/contexts/LanguageContext';
-import { MOCK_HEALTH_PROFILES, MOCK_STUDENTS } from '@/lib/mock-data';
+import type { HealthProfile, Student } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -19,14 +20,16 @@ const vaccColors: Record<string, string> = {
   up_to_date: 'bg-success/10 text-success', due_soon: 'bg-warning/10 text-warning', overdue: 'bg-destructive/10 text-destructive',
 };
 
+interface Props extends InertiaSharedProps {
+  studentId: string;
+  healthProfile: HealthProfile;
+  student: Student;
+}
+
 const SchoolHealthDetail: React.FC = () => {
-  const { studentId } = useParams();
-  const navigate = useNavigate();
+  const { healthProfile: hp, student } = usePage<Props>().props;
   const T = useT();
   const t = T.HEALTH_TEXT;
-
-  const hp = MOCK_HEALTH_PROFILES.find(p => p.studentId === studentId);
-  const student = MOCK_STUDENTS.find(s => s.id === studentId);
 
   if (!hp || !student) {
     return <div className="p-8 text-center text-muted-foreground">Health profile not found.</div>;
@@ -36,8 +39,9 @@ const SchoolHealthDetail: React.FC = () => {
 
   return (
     <div className="space-y-6 animate-fade-in">
+      <Head title={`${student.firstName} ${student.lastName} - Health Profile`} />
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={() => navigate('/school/health/records')}><ArrowLeft className="h-4 w-4" /></Button>
+        <Button variant="ghost" size="icon" onClick={() => router.visit('/school/health/records')}><ArrowLeft className="h-4 w-4" /></Button>
         <div>
           <h1 className="text-2xl font-bold tracking-tight">{student.firstName} {student.lastName}</h1>
           <p className="text-muted-foreground text-sm">{student.grade} · {student.className} · {student.admissionNumber}</p>

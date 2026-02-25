@@ -1,21 +1,34 @@
 import React, { useState } from 'react';
+import { Head, usePage } from '@inertiajs/react';
+import type { InertiaSharedProps } from '@/types/inertia';
 import { useT } from '@/contexts/LanguageContext';
-import { MOCK_GRADES } from '@/lib/mock-data';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { FileText, Download } from 'lucide-react';
 
+interface Grade {
+  id: string;
+  name: string;
+}
+
+interface Props extends InertiaSharedProps {
+  grades: Grade[];
+}
+
 const SchoolTripSheet: React.FC = () => {
+  const { grades } = usePage<Props>().props;
   const [selectedGrade, setSelectedGrade] = useState('');
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Trip Health Sheet Generator</h1>
-        <p className="text-muted-foreground text-sm mt-1">Generate health summary sheets for school trips.</p>
-      </div>
+    <>
+      <Head title="Trip Health Sheet Generator" />
+      <div className="space-y-6 animate-fade-in">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Trip Health Sheet Generator</h1>
+          <p className="text-muted-foreground text-sm mt-1">Generate health summary sheets for school trips.</p>
+        </div>
 
       <Card className="shadow-sm">
         <CardHeader><CardTitle className="text-base">Configure Trip Sheet</CardTitle></CardHeader>
@@ -26,7 +39,7 @@ const SchoolTripSheet: React.FC = () => {
               <Select value={selectedGrade} onValueChange={setSelectedGrade}>
                 <SelectTrigger><SelectValue placeholder="Select grade" /></SelectTrigger>
                 <SelectContent>
-                  {MOCK_GRADES.map(g => (
+                  {grades.map(g => (
                     <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>
                   ))}
                 </SelectContent>
@@ -67,7 +80,8 @@ const SchoolTripSheet: React.FC = () => {
           </div>
         </CardContent>
       </Card>
-    </div>
+      </div>
+    </>
   );
 };
 

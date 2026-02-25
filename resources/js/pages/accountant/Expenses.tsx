@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { Plus, Eye, Pencil, Trash2 } from 'lucide-react';
+import { Link, Head, router, usePage } from '@inertiajs/react';
+import type { InertiaSharedProps } from '@/types/inertia';
 import { useT } from '@/contexts/LanguageContext';
-import { MOCK_EXPENSES } from '@/lib/mock-data';
 import type { ExpenseRecord } from '@/types/accountant.types';
 import StatusBadge from '@/components/StatusBadge';
 import DataTable, { type DataTableColumn, type DataTableFilter } from '@/components/DataTable';
@@ -13,16 +14,22 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 
+interface Props extends InertiaSharedProps {
+  expenses: ExpenseRecord[];
+  categories: string[];
+}
+
 const EXPENSE_CATEGORIES = ['Utilities', 'Supplies', 'Maintenance', 'Salaries', 'Transport', 'Food & Catering', 'Technology', 'Furniture', 'Other'];
 const EXPENSE_STATUSES = ['pending', 'approved', 'rejected'] as const;
 
 const statusMap: Record<string, 'completed' | 'pending' | 'failed'> = { approved: 'completed', pending: 'pending', rejected: 'failed' };
 
 const Expenses: React.FC = () => {
+  const { expenses: initialExpenses, categories } = usePage<Props>().props;
   const { toast } = useToast();
   const T = useT();
   const t = T.ACCOUNTANT_EXPENSES_TEXT;
-  const [expenses, setExpenses] = useState<ExpenseRecord[]>(MOCK_EXPENSES);
+  const [expenses, setExpenses] = useState<ExpenseRecord[]>(initialExpenses);
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
 
@@ -43,8 +50,6 @@ const Expenses: React.FC = () => {
   // Delete confirmation
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
-
-  const categories = [...new Set(MOCK_EXPENSES.map(e => e.category))];
 
   const filtered = useMemo(() =>
     expenses.filter(e => {
@@ -145,6 +150,7 @@ const Expenses: React.FC = () => {
 
   return (
     <div className="space-y-6 animate-fade-in">
+      <Head title={t.title} />
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">{t.title}</h1>

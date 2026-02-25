@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from 'react';
+import { Head, usePage } from '@inertiajs/react';
+import type { InertiaSharedProps } from '@/types/inertia';
 import { Download, CheckCircle, XCircle, Eye, Trash2 } from 'lucide-react';
 import { useT } from '@/contexts/LanguageContext';
-import { MOCK_PAYMENTS } from '@/lib/mock-data';
 import type { Payment } from '@/types';
 import StatusBadge from '@/components/StatusBadge';
 import DataTable, { type DataTableColumn, type DataTableFilter, type DataTableBulkAction } from '@/components/DataTable';
@@ -9,10 +10,15 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 
+interface Props extends InertiaSharedProps {
+  payments: Payment[];
+}
+
 const Payments: React.FC = () => {
   const { toast } = useToast();
   const { PAYMENTS_TEXT: t, COMMON_TEXT, PAYMENT_METHOD_LABELS } = useT();
-  const [payments, setPayments] = useState<Payment[]>(MOCK_PAYMENTS);
+  const { payments: initialPayments } = usePage<Props>().props;
+  const [payments, setPayments] = useState<Payment[]>(initialPayments);
   const [search, setSearch] = useState('');
   const [methodFilter, setMethodFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -79,13 +85,15 @@ const Payments: React.FC = () => {
   ];
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">{t.title}</h1>
-          <p className="text-muted-foreground text-sm mt-1">{t.subtitle}</p>
+    <>
+      <Head title={t.title} />
+      <div className="space-y-6 animate-fade-in">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">{t.title}</h1>
+            <p className="text-muted-foreground text-sm mt-1">{t.subtitle}</p>
+          </div>
         </div>
-      </div>
 
       <DataTable
         data={filtered}
@@ -132,7 +140,8 @@ const Payments: React.FC = () => {
           )}
         </DialogContent>
       </Dialog>
-    </div>
+      </div>
+    </>
   );
 };
 

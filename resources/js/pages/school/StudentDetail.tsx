@@ -1,8 +1,9 @@
 import React, { useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { Link, Head, router, usePage } from '@inertiajs/react';
+import type { InertiaSharedProps } from '@/types/inertia';
 import { ArrowLeft, Mail, Phone } from 'lucide-react';
 import { useT } from '@/contexts/LanguageContext';
-import { MOCK_STUDENTS, MOCK_PAYMENTS } from '@/lib/mock-data';
+import type { Student, Payment } from '@/types';
 import StatusBadge from '@/components/StatusBadge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,38 +11,48 @@ import { Progress } from '@/components/ui/progress';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Separator } from '@/components/ui/separator';
 
+interface Props extends InertiaSharedProps {
+  studentId: string;
+  students: Student[];
+  payments: Payment[];
+}
+
 const StudentDetail: React.FC = () => {
   const { COMMON_TEXT, PAYMENT_METHOD_LABELS, HEADER, STUDENTS_TEXT, PAYMENTS_TEXT } = useT();
-  const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
-  const student = MOCK_STUDENTS.find(s => s.id === id);
-  const payments = useMemo(() => MOCK_PAYMENTS.filter(p => p.studentId === id), [id]);
+  const { studentId, students, payments: allPayments } = usePage<Props>().props;
+  const student = students.find(s => s.id === studentId);
+  const payments = useMemo(() => allPayments.filter(p => p.studentId === studentId), [studentId, allPayments]);
 
   if (!student) {
     return (
-      <div className="flex flex-col items-center justify-center py-16">
-        <p className="text-lg font-medium text-muted-foreground">{HEADER.studentNotFound}</p>
-        <Button variant="outline" className="mt-4" onClick={() => navigate('/school/students')}>
-          <ArrowLeft className="h-4 w-4 mr-2" />{COMMON_TEXT.actions.back}
-        </Button>
-      </div>
+      <>
+        <Head title="Student Not Found" />
+        <div className="flex flex-col items-center justify-center py-16">
+          <p className="text-lg font-medium text-muted-foreground">{HEADER.studentNotFound}</p>
+          <Button variant="outline" className="mt-4" onClick={() => router.visit('/school/students')}>
+            <ArrowLeft className="h-4 w-4 mr-2" />{COMMON_TEXT.actions.back}
+          </Button>
+        </div>
+      </>
     );
   }
 
   const pct = Math.round((student.paidFees / student.totalFees) * 100);
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={() => navigate('/school/students')}>
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">{student.firstName} {student.lastName}</h1>
-          <p className="text-muted-foreground text-sm">{student.admissionNumber} · {student.grade} {student.className}</p>
+    <>
+      <Head title={`${student.firstName} ${student.lastName}`} />
+      <div className="space-y-6 animate-fade-in">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="icon" onClick={() => router.visit('/school/students')}>
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">{student.firstName} {student.lastName}</h1>
+            <p className="text-muted-foreground text-sm">{student.admissionNumber} · {student.grade} {student.className}</p>
+          </div>
+          <div className="ml-auto"><StatusBadge status={student.status} /></div>
         </div>
-        <div className="ml-auto"><StatusBadge status={student.status} /></div>
-      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Student Info */}
@@ -122,7 +133,8 @@ const StudentDetail: React.FC = () => {
           )}
         </CardContent>
       </Card>
-    </div>
+      </div>
+    </>
   );
 };
 
