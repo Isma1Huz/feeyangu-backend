@@ -14,6 +14,25 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 
+/**
+ * ⚠️ WARNING: This page has LIMITED backend integration.
+ * 
+ * Current State:
+ * - Backend provides initial expenses and categories via Inertia props ✅
+ * - All CRUD operations (Create, Update, Delete, Approve, Reject) are CLIENT-SIDE ONLY ❌
+ * - Changes are NOT persisted to the database ❌
+ * - Data is lost on page refresh ❌
+ * - Hardcoded submitter name: 'Mary Njoroge' (line 111) ❌
+ * 
+ * Required Backend Integration:
+ * 1. POST /accountant/expenses - Create new expense
+ * 2. PUT /accountant/expenses/{id} - Update expense
+ * 3. DELETE /accountant/expenses/{id} - Delete expense
+ * 4. POST /accountant/expenses/{id}/approve - Approve expense
+ * 5. POST /accountant/expenses/{id}/reject - Reject expense
+ * 6. Use router.post/put/delete for API calls instead of local state updates
+ */
+
 interface Props extends InertiaSharedProps {
   expenses: ExpenseRecord[];
   categories: string[];

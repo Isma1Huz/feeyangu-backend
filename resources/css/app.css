@@ -110,7 +110,7 @@
 
   body {
     @apply bg-background text-foreground font-sans antialiased;
-    font-family: 'Source Sans 3', system-ui, -apple-system, sans-serif;
+    /* Font-family is defined in tailwind.config.ts, no need to duplicate here */
   }
 }
 

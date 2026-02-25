@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Head, router, usePage } from '@inertiajs/react';
 import type { InertiaSharedProps } from '@/types/inertia';
 import { PAYMENT_PROVIDERS, type PaymentProvider, type PaymentTransaction } from '@/types/payment.types';
-import { schoolPaymentConfigs } from '@/data/payment-config';
+// REMOVED MOCK DATA IMPORT: import { schoolPaymentConfigs } from '@/data/payment-config';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,28 +24,81 @@ type PaymentStep = 'select' | 'method' | 'pay' | 'processing' | 'success' | 'man
 const CURRENCY = 'KES';
 
 interface Child {
-  studentId: string;
-  name: string;
-  grade: string;
-  className: string;
+  id: string;
+  admission_number: string;
+  full_name: string;
+  first_name: string;
+  last_name: string;
+  grade: {
+    id: string;
+    name: string;
+  };
+  class: {
+    id: string;
+    name: string;
+  };
+  school: {
+    id: string;
+    name: string;
+    location: string;
+  };
+  status: string;
 }
 
-interface FeeItem {
-  name: string;
+interface Invoice {
+  id: string;
+  invoice_number: string;
+  total_amount: number;
+  paid_amount: number;
+  balance: number;
+  status: string;
+  due_date: string;
+  issued_date: string;
+  items: {
+    name: string;
+    amount: number;
+  }[];
+}
+
+interface Payment {
+  id: string;
   amount: number;
-  paid: number;
+  provider: string;
+  status: string;
+  reference: string;
+  created_at: string;
+  has_receipt: boolean;
+  receipt_number: string | null;
+}
+
+interface PaymentMethod {
+  id: string;
+  provider: string;
+  account_name: string;
+  account_number: string;
+  paybill_number: string | null;
+}
+
+interface FinancialSummary {
+  total_invoiced: number;
+  total_paid: number;
+  total_balance: number;
+  overdue_amount: number;
 }
 
 interface Props extends InertiaSharedProps {
   child: Child;
-  feeItems: FeeItem[];
+  invoices: Invoice[];
+  recentPayments: Payment[];
+  financialSummary: FinancialSummary;
+  paymentMethods: PaymentMethod[];
 }
 
-const StudentFees: React.FC = () => {
-  const { child, feeItems } = usePage<Props>().props;
+const ChildShow: React.FC = () => {
+  const { child, invoices, recentPayments, financialSummary, paymentMethods } = usePage<Props>().props;
   const { toast } = useToast();
 
-  const enabledConfigs = schoolPaymentConfigs.filter(c => c.enabled);
+  const enabledConfigs = paymentMethods;
 
   const [payOpen, setPayOpen] = useState(false);
   const [step, setStep] = useState<PaymentStep>('select');
@@ -60,16 +113,22 @@ const StudentFees: React.FC = () => {
     return <div className="p-8 text-center text-muted-foreground">Student not found.</div>;
   }
 
-  const itemsWithBalance = feeItems.map((item, idx) => ({
-    ...item, idx, balance: item.amount - item.paid,
-  })).filter(i => i.balance > 0);
+  // Use invoices with balance from backend data
+  const itemsWithBalance = invoices
+    .filter(invoice => invoice.balance > 0)
+    .map((invoice, idx) => ({
+      ...invoice,
+      idx,
+    }));
 
-  const totalBalance = feeItems.reduce((s, i) => s + (i.amount - i.paid), 0);
+  const totalBalance = financialSummary.total_balance;
   const selectedTotal = selectedItems.reduce((s, idx) => {
-    const item = feeItems[idx];
-    return s + (item ? item.amount - item.paid : 0);
+    const invoice = invoices[idx];
+    return s + (invoice ? invoice.balance : 0);
   }, 0);
-  const overallPct = Math.round(((feeItems.reduce((s, i) => s + i.paid, 0)) / Math.max(feeItems.reduce((s, i) => s + i.amount, 0), 1)) * 100);
+  const overallPct = financialSummary.total_invoiced > 0 
+    ? Math.round((financialSummary.total_paid / financialSummary.total_invoiced) * 100) 
+    : 0;
 
   const toggleItem = (idx: number) => {
     setSelectedItems(prev => prev.includes(idx) ? prev.filter(i => i !== idx) : [...prev, idx]);
@@ -94,9 +153,9 @@ const StudentFees: React.FC = () => {
   const getInstructions = () => {
     if (!selectedProviderData || !selectedConfig) return [];
     return selectedProviderData.instructions.map(i =>
-      i.replace('{paybill}', selectedConfig.paybillNumber || '')
-        .replace('{account}', selectedConfig.accountNumber)
-        .replace('{accountName}', selectedConfig.accountName)
+      i.replace('{paybill}', selectedConfig.paybill_number || '')
+        .replace('{account}', selectedConfig.account_number)
+        .replace('{accountName}', selectedConfig.account_name)
         .replace('{amount}', selectedTotal.toLocaleString())
         .replace('{reference}', transactionRef)
     );
@@ -182,15 +241,15 @@ const StudentFees: React.FC = () => {
 
   return (
     <>
-      <Head title={`${child.name} — Fee Statement`} />
+      <Head title={`${child.full_name} — Fee Statement`} />
       <div className="space-y-6 animate-fade-in">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" onClick={() => router.visit('/parent/children')}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">{child.name} — Fee Statement</h1>
-            <p className="text-muted-foreground text-sm mt-1">{child.grade} · {child.className}</p>
+            <h1 className="text-2xl font-bold tracking-tight">{child.full_name} — Fee Statement</h1>
+            <p className="text-muted-foreground text-sm mt-1">{child.grade.name} · {child.class.name}</p>
           </div>
         </div>
 
@@ -218,16 +277,18 @@ const StudentFees: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Fee Breakdown */}
+      {/* Invoice/Fee Breakdown */}
       <Card className="border-none shadow-sm">
         <CardHeader className="pb-2">
-          <CardTitle className="text-base font-semibold">Fee Breakdown</CardTitle>
+          <CardTitle className="text-base font-semibold">Invoices</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Item</TableHead>
+                <TableHead>Invoice #</TableHead>
+                <TableHead>Issued</TableHead>
+                <TableHead>Due Date</TableHead>
                 <TableHead className="text-right">Total</TableHead>
                 <TableHead className="text-right">Paid</TableHead>
                 <TableHead className="text-right">Balance</TableHead>
@@ -235,16 +296,16 @@ const StudentFees: React.FC = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {feeItems.map((item, idx) => {
-                const bal = item.amount - item.paid;
-                const status = bal === 0 ? 'paid' : item.paid > 0 ? 'partial' : 'overdue';
+              {invoices.map((invoice) => {
                 return (
-                  <TableRow key={idx}>
-                    <TableCell className="font-medium">{item.name}</TableCell>
-                    <TableCell className="text-right font-mono-amount">{CURRENCY} {item.amount.toLocaleString()}</TableCell>
-                    <TableCell className="text-right font-mono-amount text-success">{CURRENCY} {item.paid.toLocaleString()}</TableCell>
-                    <TableCell className="text-right font-mono-amount font-semibold">{CURRENCY} {bal.toLocaleString()}</TableCell>
-                    <TableCell><StatusBadge status={status} /></TableCell>
+                  <TableRow key={invoice.id}>
+                    <TableCell className="font-medium">{invoice.invoice_number}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{invoice.issued_date}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{invoice.due_date}</TableCell>
+                    <TableCell className="text-right font-mono-amount">{CURRENCY} {invoice.total_amount.toLocaleString()}</TableCell>
+                    <TableCell className="text-right font-mono-amount text-success">{CURRENCY} {invoice.paid_amount.toLocaleString()}</TableCell>
+                    <TableCell className="text-right font-mono-amount font-semibold">{CURRENCY} {invoice.balance.toLocaleString()}</TableCell>
+                    <TableCell><StatusBadge status={invoice.status} /></TableCell>
                   </TableRow>
                 );
               })}
@@ -277,20 +338,23 @@ const StudentFees: React.FC = () => {
             {/* Step 1: Select Items */}
             {step === 'select' && (
               <div className="space-y-4">
-                <DialogHeader><DialogTitle>Select Fee Items to Pay</DialogTitle></DialogHeader>
+                <DialogHeader><DialogTitle>Select Invoices to Pay</DialogTitle></DialogHeader>
                 <div className="space-y-2 max-h-64 overflow-y-auto">
                   <div className="flex items-center justify-between pb-2 border-b">
-                    <span className="text-sm font-medium">Outstanding Items</span>
+                    <span className="text-sm font-medium">Outstanding Invoices</span>
                     <Button variant="link" size="sm" className="text-xs p-0 h-auto" onClick={selectAll}>Select All</Button>
                   </div>
-                  {itemsWithBalance.map(item => (
-                    <label key={item.idx} className={cn(
+                  {itemsWithBalance.map(invoice => (
+                    <label key={invoice.idx} className={cn(
                       'flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all',
-                      selectedItems.includes(item.idx) ? 'border-primary/50 bg-primary/5 shadow-sm' : 'hover:bg-muted/50'
+                      selectedItems.includes(invoice.idx) ? 'border-primary/50 bg-primary/5 shadow-sm' : 'hover:bg-muted/50'
                     )}>
-                      <Checkbox checked={selectedItems.includes(item.idx)} onCheckedChange={() => toggleItem(item.idx)} />
-                      <div className="flex-1"><p className="text-sm font-medium">{item.name}</p></div>
-                      <span className="text-sm font-mono-amount font-semibold">{CURRENCY} {item.balance.toLocaleString()}</span>
+                      <Checkbox checked={selectedItems.includes(invoice.idx)} onCheckedChange={() => toggleItem(invoice.idx)} />
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">{invoice.invoice_number}</p>
+                        <p className="text-xs text-muted-foreground">Due: {invoice.due_date}</p>
+                      </div>
+                      <span className="text-sm font-mono-amount font-semibold">{CURRENCY} {invoice.balance.toLocaleString()}</span>
                     </label>
                   ))}
                 </div>
@@ -567,4 +631,4 @@ const StudentFees: React.FC = () => {
   );
 };
 
-export default StudentFees;
+export default ChildShow;
