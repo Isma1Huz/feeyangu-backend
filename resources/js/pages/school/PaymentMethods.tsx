@@ -1,0 +1,229 @@
+import React, { useState } from 'react';
+import { PAYMENT_PROVIDERS, type SchoolPaymentConfig, type PaymentProvider } from '@/types/payment.types';
+import { schoolPaymentConfigs } from '@/data/payment-config';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
+import { Badge } from '@/components/ui/badge';
+import { useToast } from '@/hooks/use-toast';
+import { Smartphone, Building2, Pencil, CheckCircle2, XCircle } from 'lucide-react';
+import { cn } from '@/lib/utils';
+
+const PaymentMethods: React.FC = () => {
+  const { toast } = useToast();
+  const [configs, setConfigs] = useState<SchoolPaymentConfig[]>(schoolPaymentConfigs);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [formAccount, setFormAccount] = useState('');
+  const [formAccountName, setFormAccountName] = useState('');
+  const [formPaybill, setFormPaybill] = useState('');
+
+  const toggleEnabled = (id: string) => {
+    setConfigs(prev => prev.map(c => c.id === id ? { ...c, enabled: !c.enabled } : c));
+  };
+
+  const openEdit = (config: SchoolPaymentConfig) => {
+    setEditingId(config.id);
+    setFormAccount(config.accountNumber);
+    setFormAccountName(config.accountName);
+    setFormPaybill(config.paybillNumber || '');
+    setEditOpen(true);
+  };
+
+  const handleSave = () => {
+    if (!editingId) return;
+    setConfigs(prev => prev.map(c =>
+      c.id === editingId
+        ? { ...c, accountNumber: formAccount, accountName: formAccountName, paybillNumber: formPaybill || undefined, enabled: true }
+        : c
+    ));
+    toast({ title: 'Payment method updated', description: 'Account details saved successfully.' });
+    setEditOpen(false);
+  };
+
+  const editingConfig = configs.find(c => c.id === editingId);
+  const editingProvider = editingConfig ? PAYMENT_PROVIDERS.find(p => p.id === editingConfig.provider) : null;
+
+  const mobileProviders = configs.filter(c => {
+    const p = PAYMENT_PROVIDERS.find(pp => pp.id === c.provider);
+    return p?.category === 'mobile_money';
+  });
+
+  const bankProviders = configs.filter(c => {
+    const p = PAYMENT_PROVIDERS.find(pp => pp.id === c.provider);
+    return p?.category === 'bank';
+  });
+
+  // Add any missing providers from master list
+  const configuredIds = configs.map(c => c.provider);
+  const missingProviders = PAYMENT_PROVIDERS.filter(p => !configuredIds.includes(p.id));
+
+  const addProvider = (providerId: PaymentProvider) => {
+    const newConfig: SchoolPaymentConfig = {
+      id: `spc_${Date.now()}`,
+      provider: providerId,
+      enabled: false,
+      accountNumber: '',
+      accountName: '',
+      order: configs.length + 1,
+    };
+    setConfigs(prev => [...prev, newConfig]);
+    openEdit(newConfig);
+  };
+
+  const renderProviderCard = (config: SchoolPaymentConfig) => {
+    const provider = PAYMENT_PROVIDERS.find(p => p.id === config.provider);
+    if (!provider) return null;
+
+    return (
+      <Card key={config.id} className={cn(
+        'border transition-all',
+        config.enabled ? 'border-primary/30 shadow-sm' : 'border-border opacity-70'
+      )}>
+        <CardContent className="p-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <div
+                className="h-10 w-10 rounded-lg flex items-center justify-center text-white font-bold text-sm flex-shrink-0"
+                style={{ backgroundColor: provider.color }}
+              >
+                {provider.category === 'mobile_money' ? <Smartphone className="h-5 w-5" /> : <Building2 className="h-5 w-5" />}
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <h3 className="font-semibold text-sm">{provider.name}</h3>
+                  {config.enabled ? (
+                    <Badge variant="outline" className="text-[10px] border-primary/30 text-primary gap-1">
+                      <CheckCircle2 className="h-3 w-3" /> Active
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" className="text-[10px] text-muted-foreground gap-1">
+                      <XCircle className="h-3 w-3" /> Inactive
+                    </Badge>
+                  )}
+                </div>
+                {config.accountNumber ? (
+                  <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                    {config.provider === 'mpesa' ? `Paybill: ${config.paybillNumber} • Acc: ${config.accountNumber}` : `Acc: ${config.accountNumber} • ${config.accountName}`}
+                  </p>
+                ) : (
+                  <p className="text-xs text-destructive mt-0.5">No account configured</p>
+                )}
+              </div>
+            </div>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(config)}>
+                <Pencil className="h-3.5 w-3.5" />
+              </Button>
+              <Switch
+                checked={config.enabled}
+                onCheckedChange={() => {
+                  if (!config.accountNumber && !config.enabled) {
+                    openEdit(config);
+                  } else {
+                    toggleEnabled(config.id);
+                  }
+                }}
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
+
+  return (
+    <div className="space-y-6 animate-fade-in">
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight">Payment Methods</h1>
+        <p className="text-muted-foreground text-sm mt-1">Configure how parents can pay school fees. Enable payment methods and add your account details.</p>
+      </div>
+
+      {/* Mobile Money */}
+      <div className="space-y-3">
+        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+          <Smartphone className="h-4 w-4" /> Mobile Money
+        </h2>
+        <div className="grid gap-3 sm:grid-cols-2">
+          {mobileProviders.map(renderProviderCard)}
+        </div>
+      </div>
+
+      {/* Banks */}
+      <div className="space-y-3">
+        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+          <Building2 className="h-4 w-4" /> Bank Transfers
+        </h2>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {bankProviders.map(renderProviderCard)}
+        </div>
+      </div>
+
+      {/* Add more providers */}
+      {missingProviders.length > 0 && (
+        <Card className="border-dashed">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm">Add More Payment Methods</CardTitle>
+            <CardDescription className="text-xs">Click to add a new payment provider</CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-wrap gap-2">
+            {missingProviders.map(p => (
+              <Button
+                key={p.id}
+                variant="outline"
+                size="sm"
+                className="gap-2"
+                onClick={() => addProvider(p.id)}
+              >
+                <div className="h-3 w-3 rounded-full" style={{ backgroundColor: p.color }} />
+                {p.name}
+              </Button>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Edit Dialog */}
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {editingProvider && (
+                <div className="h-8 w-8 rounded-lg flex items-center justify-center text-white" style={{ backgroundColor: editingProvider.color }}>
+                  {editingProvider.category === 'mobile_money' ? <Smartphone className="h-4 w-4" /> : <Building2 className="h-4 w-4" />}
+                </div>
+              )}
+              Configure {editingProvider?.name}
+            </DialogTitle>
+            <DialogDescription>Enter the school's account details for this payment method.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            {editingConfig?.provider === 'mpesa' && (
+              <div className="space-y-2">
+                <Label>Paybill / Till Number</Label>
+                <Input value={formPaybill} onChange={e => setFormPaybill(e.target.value)} placeholder="e.g. 123456" />
+              </div>
+            )}
+            <div className="space-y-2">
+              <Label>{editingConfig?.provider === 'mpesa' ? 'Account Number / Name' : 'Account Number'}</Label>
+              <Input value={formAccount} onChange={e => setFormAccount(e.target.value)} placeholder={editingConfig?.provider === 'mpesa' ? 'e.g. SCHOOLFEES or Student Adm No' : 'e.g. 1234567890'} />
+            </div>
+            <div className="space-y-2">
+              <Label>Account Name</Label>
+              <Input value={formAccountName} onChange={e => setFormAccountName(e.target.value)} placeholder="e.g. Green Valley Academy Ltd" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditOpen(false)}>Cancel</Button>
+            <Button onClick={handleSave} disabled={!formAccount.trim()}>Save & Enable</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};
+
+export default PaymentMethods;

@@ -1,0 +1,163 @@
+import React, { useState } from 'react';
+import { CreditCard, Check, Crown, Zap, Shield } from 'lucide-react';
+import { useT } from '@/contexts/LanguageContext';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import StatusBadge from '@/components/StatusBadge';
+import { cn } from '@/lib/utils';
+
+const plans = [
+  {
+    id: 'basic',
+    name: 'Basic',
+    price: 2500,
+    period: '/month',
+    icon: Zap,
+    features: ['Up to 200 students', 'M-Pesa payments', 'Basic reports', 'Email support'],
+    popular: false,
+  },
+  {
+    id: 'standard',
+    name: 'Standard',
+    price: 5000,
+    period: '/month',
+    icon: Crown,
+    features: ['Up to 500 students', 'All payment methods', 'Advanced reports & analytics', 'Priority support', 'SMS notifications'],
+    popular: true,
+  },
+  {
+    id: 'premium',
+    name: 'Premium',
+    price: 10000,
+    period: '/month',
+    icon: Shield,
+    features: ['Unlimited students', 'All payment methods', 'Custom reports', 'Dedicated support', 'SMS & email notifications', 'API access', 'Multi-branch support'],
+    popular: false,
+  },
+];
+
+const paymentHistory = [
+  { id: 1, date: '2026-02-01', amount: 5000, method: 'M-Pesa', status: 'completed' as const, reference: 'PLT-2026-002' },
+  { id: 2, date: '2026-01-01', amount: 5000, method: 'M-Pesa', status: 'completed' as const, reference: 'PLT-2026-001' },
+  { id: 3, date: '2025-12-01', amount: 5000, method: 'Bank Transfer', status: 'completed' as const, reference: 'PLT-2025-012' },
+];
+
+const PlatformBilling: React.FC = () => {
+  const T = useT();
+  const [selectedPlan, setSelectedPlan] = useState('standard');
+  const [showPayment, setShowPayment] = useState(false);
+
+  return (
+    <div className="space-y-6 animate-fade-in">
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight">Platform Subscription</h1>
+        <p className="text-muted-foreground text-sm mt-1">Manage your Feeyangu platform subscription and billing</p>
+      </div>
+
+      {/* Current Plan Status */}
+      <Card className="border-primary/20 bg-primary/5">
+        <CardContent className="p-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <Crown className="h-5 w-5 text-primary" />
+                <h3 className="font-bold text-lg">Standard Plan</h3>
+                <Badge variant="outline" className="text-primary border-primary/30">Active</Badge>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Next billing date: <strong>March 1, 2026</strong> · {T.COMMON_TEXT.currency} 5,000/month
+              </p>
+            </div>
+            <Button variant="outline" size="sm" onClick={() => setShowPayment(true)}>
+              <CreditCard className="h-4 w-4 mr-2" />
+              Pay Now
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Plans */}
+      <div>
+        <h2 className="text-lg font-semibold mb-4">Available Plans</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {plans.map(plan => {
+            const Icon = plan.icon;
+            const isSelected = selectedPlan === plan.id;
+            return (
+              <Card
+                key={plan.id}
+                className={cn(
+                  'cursor-pointer transition-all hover:shadow-md relative',
+                  isSelected && 'ring-2 ring-primary border-primary',
+                  plan.popular && 'shadow-md'
+                )}
+                onClick={() => setSelectedPlan(plan.id)}
+              >
+                {plan.popular && (
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                    <Badge className="bg-primary text-primary-foreground text-xs">Most Popular</Badge>
+                  </div>
+                )}
+                <CardHeader className="pb-3 pt-6">
+                  <div className="flex items-center gap-2">
+                    <Icon className="h-5 w-5 text-primary" />
+                    <CardTitle className="text-base">{plan.name}</CardTitle>
+                  </div>
+                  <div className="mt-2">
+                    <span className="text-3xl font-bold">{T.COMMON_TEXT.currency} {plan.price.toLocaleString()}</span>
+                    <span className="text-muted-foreground text-sm">{plan.period}</span>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <ul className="space-y-2">
+                    {plan.features.map(f => (
+                      <li key={f} className="flex items-center gap-2 text-sm">
+                        <Check className="h-4 w-4 text-primary flex-shrink-0" />
+                        {f}
+                      </li>
+                    ))}
+                  </ul>
+                  <Button
+                    className="w-full mt-4"
+                    variant={isSelected ? 'default' : 'outline'}
+                    size="sm"
+                  >
+                    {isSelected ? 'Current Plan' : 'Select Plan'}
+                  </Button>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Payment History */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base font-semibold">Payment History</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            {paymentHistory.map(p => (
+              <div key={p.id} className="flex items-center justify-between p-3 rounded-lg border border-border">
+                <div>
+                  <p className="text-sm font-medium">{p.date}</p>
+                  <p className="text-xs text-muted-foreground">{p.method} · {p.reference}</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-mono-amount font-semibold">
+                    {T.COMMON_TEXT.currency} {p.amount.toLocaleString()}
+                  </span>
+                  <StatusBadge status={p.status} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
+export default PlatformBilling;
