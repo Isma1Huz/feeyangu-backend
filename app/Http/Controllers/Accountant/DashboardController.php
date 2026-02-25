@@ -47,7 +47,7 @@ class DashboardController extends Controller
         $revenueByMonth = PaymentTransaction::where('school_id', $school->id)
             ->where('status', 'completed')
             ->where('completed_at', '>=', now()->subMonths(6))
-            ->selectRaw('DATE_FORMAT(completed_at, "%Y-%m") as month, SUM(amount) as total')
+            ->selectRaw("strftime('%Y-%m', completed_at) as month, SUM(amount) as total")
             ->groupBy('month')
             ->orderBy('month')
             ->get()

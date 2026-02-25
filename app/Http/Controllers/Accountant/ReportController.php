@@ -187,7 +187,7 @@ class ReportController extends Controller
         $payments = PaymentTransaction::where('school_id', $school->id)
             ->where('status', 'completed')
             ->whereBetween('completed_at', [$dateFrom, $dateTo])
-            ->selectRaw('DATE(completed_at) as date, SUM(amount) as total')
+            ->selectRaw("date(completed_at) as date, SUM(amount) as total")
             ->groupBy('date')
             ->orderBy('date')
             ->get()
