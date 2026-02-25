@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\SchoolController as AdminSchoolController;
+use App\Http\Controllers\Admin\UserController as AdminUserController;
+use App\Http\Controllers\Admin\SettingsController as AdminSettingsController;
 use App\Http\Controllers\School\DashboardController as SchoolDashboardController;
 use App\Http\Controllers\School\StudentController as SchoolStudentController;
 use App\Http\Controllers\School\GradeController as SchoolGradeController;
@@ -32,6 +34,9 @@ Route::prefix('admin')
     ->group(function () {
         Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
         Route::resource('schools', AdminSchoolController::class);
+        Route::get('/users', [AdminUserController::class, 'index'])->name('users.index');
+        Route::get('/settings', [AdminSettingsController::class, 'index'])->name('settings.index');
+        Route::put('/settings', [AdminSettingsController::class, 'update'])->name('settings.update');
     });
 
 // School Admin Routes
