@@ -1,5 +1,5 @@
-import React, { useState } from 'react'; // fixed
-import { useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
+import { router, usePage } from '@inertiajs/react';
 import { Bell, LogOut, User, ChevronDown, Globe, ChevronRight, Moon, Sun, Settings } from 'lucide-react';
 import SteppedMenuIcon from '@/components/SteppedMenuIcon';
 import { useAuth } from '@/contexts/AuthContext';
@@ -41,7 +41,7 @@ const langFlags: Record<Language, string> = { en: '🇬🇧', fr: '🇫🇷', de
 
 const Header: React.FC = () => {
   const { user, logout, switchRole } = useAuth();
-  const navigate = useNavigate();
+  const { url } = usePage();
   const { language, setLanguage, t } = useLanguage();
   const { theme, toggleTheme } = useTheme();
   const unreadCount = MOCK_NOTIFICATIONS.filter((n) => !n.read).length;
@@ -50,7 +50,7 @@ const Header: React.FC = () => {
 
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    router.visit('/login');
   };
 
   const brandLogo = user?.role === 'super_admin' ? feeyanguLogo : schoolLogo;
@@ -121,7 +121,7 @@ const Header: React.FC = () => {
               </p>
             </div>
 
-            <DropdownMenuItem onClick={() => navigate('/profile')}>
+            <DropdownMenuItem onClick={() => router.visit('/profile')}>
               <User className="h-4 w-4 mr-2" />
               {t.COMMON_TEXT.profile}
             </DropdownMenuItem>
@@ -166,7 +166,7 @@ const Header: React.FC = () => {
                 ]).map(({ role, path }) => (
                   <DropdownMenuItem
                     key={role}
-                    onClick={() => { switchRole(role); navigate(path); }}
+                    onClick={() => { switchRole(role); router.visit(path); }}
                     className={user?.role === role ? 'bg-accent font-semibold' : ''}
                   >
                     {roleLabelMap[role]}
@@ -289,7 +289,7 @@ const Header: React.FC = () => {
                   ]).map(({ role, path }) => (
                     <button
                       key={role}
-                      onClick={() => { switchRole(role); navigate(path); setMobileOpen(false); }}
+                      onClick={() => { switchRole(role); router.visit(path); setMobileOpen(false); }}
                       className={cn(
                         'w-full flex items-center justify-between text-sm px-3 py-2.5 rounded-md transition-colors',
                         user?.role === role

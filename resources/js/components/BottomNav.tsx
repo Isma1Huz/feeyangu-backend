@@ -1,5 +1,5 @@
 import React from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { router, usePage } from '@inertiajs/react';
 import {
   LayoutDashboard, Users, Building2, Settings, GraduationCap,
   CreditCard, Receipt, FileText, Wallet, Calendar, Layers,
@@ -25,8 +25,7 @@ interface NavItem {
 
 const BottomNav: React.FC = () => {
   const { user } = useAuth();
-  const location = useLocation();
-  const navigate = useNavigate();
+  const { url } = usePage();
   const t = useT();
 
   const superAdminItems: NavItem[] = [
@@ -71,13 +70,13 @@ const BottomNav: React.FC = () => {
       <div className="relative flex items-center justify-around px-2 pb-[env(safe-area-inset-bottom)] h-[68px]">
         {items.map((item) => {
           const Icon = iconMap[item.icon] || LayoutDashboard;
-          const isActive = location.pathname === item.url;
+          const isActive = url === item.url;
           const shortLabel = item.title.split(' ')[0];
 
           return (
             <button
               key={item.url}
-              onClick={() => navigate(item.url)}
+              onClick={() => router.visit(item.url)}
               className={cn(
                 'flex flex-col items-center justify-center gap-1 flex-1 py-2 transition-all duration-300 relative',
                 isActive

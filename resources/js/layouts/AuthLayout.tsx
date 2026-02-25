@@ -1,15 +1,18 @@
 import React from 'react';
-import { Outlet } from 'react-router-dom';
 import { APP_NAME, APP_TAGLINE, APP_DESCRIPTION } from '@/lib/ui-text';
 import authIllustration from '@/assets/auth-illustration.png';
 
-const AuthLayout: React.FC = () => {
+interface Props {
+  children: React.ReactNode;
+}
+
+const AuthLayout: React.FC<Props> = ({ children }) => {
   return (
     <div className="min-h-screen flex">
       {/* Left panel - form */}
       <div className="flex-1 flex items-center justify-center p-6 sm:p-8 bg-background">
         <div className="w-full max-w-md">
-          <Outlet />
+          {children}
         </div>
       </div>
 
