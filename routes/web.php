@@ -69,6 +69,9 @@ Route::prefix('school')
         
         // Payment method configuration
         Route::get('/payment-methods', [SchoolPaymentMethodController::class, 'index'])->name('payment-methods.index');
+        Route::post('/payment-methods', [SchoolPaymentMethodController::class, 'store'])->name('payment-methods.store');
+        Route::put('/payment-methods/{id}', [SchoolPaymentMethodController::class, 'update'])->name('payment-methods.update');
+        Route::delete('/payment-methods/{id}', [SchoolPaymentMethodController::class, 'destroy'])->name('payment-methods.destroy');
         
         // Payment viewing
         Route::get('/payments', [SchoolPaymentController::class, 'index'])->name('payments.index');

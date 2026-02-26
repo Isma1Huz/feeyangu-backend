@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('school_payment_configs', function (Blueprint $table) {
             $table->id();
             $table->foreignId('school_id')->constrained('schools')->onDelete('cascade');
-            $table->enum('provider', ['mpesa', 'equity', 'kcb', 'cooperative', 'ncba', 'absa', 'stanbic', 'dtb', 'family', 'standard_chartered']);
+            $table->enum('provider', ['mpesa', 'equity', 'kcb', 'coop', 'ncba', 'absa', 'stanbic', 'dtb', 'im_bank', 'family_bank']);
             $table->boolean('enabled')->default(true);
             $table->string('account_number');
             $table->string('account_name');
