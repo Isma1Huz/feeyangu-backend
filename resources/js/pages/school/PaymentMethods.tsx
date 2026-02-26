@@ -24,6 +24,7 @@ const PaymentMethods: React.FC = () => {
   const [configs, setConfigs] = useState<SchoolPaymentConfig[]>(paymentConfigs);
   const [editOpen, setEditOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingProvider, setEditingProvider] = useState<PaymentProvider | null>(null);
   const [formAccount, setFormAccount] = useState('');
   const [formAccountName, setFormAccountName] = useState('');
   const [formPaybill, setFormPaybill] = useState('');
@@ -76,6 +77,7 @@ const PaymentMethods: React.FC = () => {
 
   const openEdit = (config: SchoolPaymentConfig) => {
     setEditingId(config.id);
+    setEditingProvider(config.provider);
     setFormAccount(config.accountNumber);
     setFormAccountName(config.accountName);
     setFormPaybill(config.paybillNumber || '');
@@ -84,7 +86,7 @@ const PaymentMethods: React.FC = () => {
   };
 
   const handleSave = async () => {
-    if (!editingId) return;
+    if (!editingId || !editingProvider) return;
     if (!formAccount.trim()) {
       toast({ 
         title: 'Validation Error', 
@@ -110,7 +112,7 @@ const PaymentMethods: React.FC = () => {
           'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
         },
         body: JSON.stringify({
-          provider: isNewConfig ? configs.find(c => c.id === editingId)?.provider : undefined,
+          provider: isNewConfig ? editingProvider : undefined,
           accountNumber: formAccount,
           accountName: formAccountName,
           paybillNumber: formPaybill || undefined,
@@ -127,9 +129,11 @@ const PaymentMethods: React.FC = () => {
       
       // Update local state with saved config
       if (isNewConfig) {
-        setConfigs(prev => prev.map(c => 
-          c.id === editingId ? data.config : c
-        ));
+        // Remove the temporary config and add the real one from backend
+        setConfigs(prev => [
+          ...prev.filter(c => c.id !== editingId),
+          data.config
+        ]);
       } else {
         setConfigs(prev => prev.map(c =>
           c.id === editingId
@@ -154,8 +158,7 @@ const PaymentMethods: React.FC = () => {
     }
   };
 
-  const editingConfig = configs.find(c => c.id === editingId);
-  const editingProvider = editingConfig ? PAYMENT_PROVIDERS.find(p => p.id === editingConfig.provider) : null;
+  const editingProviderInfo = editingProvider ? PAYMENT_PROVIDERS.find(p => p.id === editingProvider) : null;
 
   const mobileProviders = configs.filter(c => {
     const p = PAYMENT_PROVIDERS.find(pp => pp.id === c.provider);
@@ -182,6 +185,7 @@ const PaymentMethods: React.FC = () => {
     };
     setConfigs(prev => [...prev, newConfig]);
     setEditingId(newConfig.id);
+    setEditingProvider(providerId);
     setFormAccount('');
     setFormAccountName('');
     setFormPaybill('');
@@ -308,25 +312,25 @@ const PaymentMethods: React.FC = () => {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              {editingProvider && (
-                <div className="h-8 w-8 rounded-lg flex items-center justify-center text-white" style={{ backgroundColor: editingProvider.color }}>
-                  {editingProvider.category === 'mobile_money' ? <Smartphone className="h-4 w-4" /> : <Building2 className="h-4 w-4" />}
+              {editingProviderInfo && (
+                <div className="h-8 w-8 rounded-lg flex items-center justify-center text-white" style={{ backgroundColor: editingProviderInfo.color }}>
+                  {editingProviderInfo.category === 'mobile_money' ? <Smartphone className="h-4 w-4" /> : <Building2 className="h-4 w-4" />}
                 </div>
               )}
-              Configure {editingProvider?.name}
+              Configure {editingProviderInfo?.name}
             </DialogTitle>
             <DialogDescription>Enter the school's account details for this payment method.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
-            {editingConfig?.provider === 'mpesa' && (
+            {editingProvider === 'mpesa' && (
               <div className="space-y-2">
                 <Label>Paybill / Till Number</Label>
                 <Input value={formPaybill} onChange={e => setFormPaybill(e.target.value)} placeholder="e.g. 123456" />
               </div>
             )}
             <div className="space-y-2">
-              <Label>{editingConfig?.provider === 'mpesa' ? 'Account Number / Name' : 'Account Number'}</Label>
-              <Input value={formAccount} onChange={e => setFormAccount(e.target.value)} placeholder={editingConfig?.provider === 'mpesa' ? 'e.g. SCHOOLFEES or Student Adm No' : 'e.g. 1234567890'} />
+              <Label>{editingProvider === 'mpesa' ? 'Account Number / Name' : 'Account Number'}</Label>
+              <Input value={formAccount} onChange={e => setFormAccount(e.target.value)} placeholder={editingProvider === 'mpesa' ? 'e.g. SCHOOLFEES or Student Adm No' : 'e.g. 1234567890'} />
             </div>
             <div className="space-y-2">
               <Label>Account Name</Label>
