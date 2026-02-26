@@ -23,20 +23,73 @@ class DashboardController extends Controller
             abort(403, 'No school assigned to user');
         }
 
+        // Calculate base metrics
+        $totalStudents = $school->students()->count();
+        $activeStudents = $school->students()->where('status', 'active')->count();
+        $inactiveStudents = $school->students()->where('status', 'inactive')->count();
+        
+        $totalRevenue = $school->paymentTransactions()
+            ->where('status', 'completed')
+            ->sum('amount') / 100;
+        
+        $totalPending = $school->invoices()
+            ->whereIn('status', ['sent', 'partial', 'overdue'])
+            ->sum('balance') / 100;
+        
+        $totalOverdue = $school->invoices()
+            ->where('status', 'overdue')
+            ->sum('balance') / 100;
+        
+        // Get total fees for collection rate
+        $totalFees = $school->invoices()->sum('total_amount') / 100;
+        $collectionRate = $totalFees > 0 ? round(($totalRevenue / $totalFees) * 100) : 0;
+        
+        $overdueCount = $school->invoices()
+            ->where('status', 'overdue')
+            ->count();
+
         // Calculate KPIs
         $kpi = [
-            'total_students' => $school->students()->count(),
-            'active_students' => $school->students()->where('status', 'active')->count(),
-            'inactive_students' => $school->students()->where('status', 'inactive')->count(),
-            'total_revenue' => $school->paymentTransactions()
-                ->where('status', 'completed')
-                ->sum('amount') / 100, // Convert from cents to KES
-            'total_pending' => $school->invoices()
-                ->whereIn('status', ['sent', 'partial', 'overdue'])
-                ->sum('balance') / 100,
-            'total_overdue' => $school->invoices()
-                ->where('status', 'overdue')
-                ->sum('balance') / 100,
+            'total_students' => $totalStudents,
+            'active_students' => $activeStudents,
+            'inactive_students' => $inactiveStudents,
+            'total_revenue' => $totalRevenue,
+            'total_pending' => $totalPending,
+            'total_overdue' => $totalOverdue,
+            'collection_rate' => $collectionRate,
+            'overdue_count' => $overdueCount,
+        ];
+
+        // Principal KPIs for KPICard component
+        $principalKPIs = [
+            [
+                'title' => 'Total Revenue',
+                'value' => 'KES ' . number_format($totalRevenue / 1000000, 1) . 'M',
+                'change' => '+8.2%',
+                'changeType' => 'positive',
+                'icon' => 'DollarSign',
+            ],
+            [
+                'title' => 'Outstanding Fees',
+                'value' => 'KES ' . number_format($totalPending / 1000, 0) . 'K',
+                'change' => '-3.1%',
+                'changeType' => 'positive',
+                'icon' => 'Clock',
+            ],
+            [
+                'title' => 'Collection Rate',
+                'value' => $collectionRate . '%',
+                'change' => '+2.4%',
+                'changeType' => 'positive',
+                'icon' => 'TrendingUp',
+            ],
+            [
+                'title' => 'Overdue Accounts',
+                'value' => (string)$overdueCount,
+                'change' => '+5',
+                'changeType' => 'negative',
+                'icon' => 'AlertTriangle',
+            ],
         ];
 
         // Get recent payments
@@ -89,7 +142,7 @@ class DashboardController extends Controller
                 ];
             });
 
-        // Recent activity (last 10 students enrolled)
+        // Get recent activity (last 10 students enrolled)
         $recentStudents = $school->students()
             ->with(['grade', 'class'])
             ->latest()
@@ -106,12 +159,126 @@ class DashboardController extends Controller
                 ];
             });
 
+        // Collection by payment method
+        $collectionByMethod = [
+            [
+                'name' => 'M-Pesa',
+                'value' => $school->paymentTransactions()
+                    ->where('status', 'completed')
+                    ->where('provider', 'mpesa')
+                    ->sum('amount') / 100,
+                'color' => 'hsl(142, 72%, 35%)',
+            ],
+            [
+                'name' => 'Bank Transfer',
+                'value' => $school->paymentTransactions()
+                    ->where('status', 'completed')
+                    ->where('provider', 'bank')
+                    ->sum('amount') / 100,
+                'color' => 'hsl(200, 72%, 45%)',
+            ],
+            [
+                'name' => 'Cash',
+                'value' => $school->paymentTransactions()
+                    ->where('status', 'completed')
+                    ->where('provider', 'cash')
+                    ->sum('amount') / 100,
+                'color' => 'hsl(45, 90%, 50%)',
+            ],
+            [
+                'name' => 'Card',
+                'value' => $school->paymentTransactions()
+                    ->where('status', 'completed')
+                    ->where('provider', 'card')
+                    ->sum('amount') / 100,
+                'color' => 'hsl(280, 60%, 50%)',
+            ],
+        ];
+
+        // Monthly revenue for last 6 months
+        $monthlyRevenue = \DB::table('payment_transactions')
+            ->selectRaw("strftime('%Y-%m', completed_at) as month, SUM(amount) / 100 as revenue")
+            ->where('school_id', $school->id)
+            ->where('status', 'completed')
+            ->whereNotNull('completed_at')
+            ->where('completed_at', '>=', now()->subMonths(6))
+            ->groupBy('month')
+            ->orderBy('month')
+            ->get()
+            ->map(function ($item) {
+                $date = \Carbon\Carbon::createFromFormat('Y-m', $item->month);
+                return [
+                    'month' => $date->format('M'),
+                    'revenue' => (float)$item->revenue,
+                    'target' => 2500000, // Static target, can be dynamic based on school settings
+                ];
+            })
+            ->values()
+            ->toArray();
+
+        // Aging data - invoices by age range
+        $now = now();
+        $agingData = [
+            [
+                'range' => '0-30 days',
+                'amount' => $school->invoices()
+                    ->whereIn('status', ['sent', 'partial', 'overdue'])
+                    ->whereBetween('due_date', [$now->copy()->subDays(30), $now])
+                    ->sum('balance') / 100,
+                'students' => $school->invoices()
+                    ->whereIn('status', ['sent', 'partial', 'overdue'])
+                    ->whereBetween('due_date', [$now->copy()->subDays(30), $now])
+                    ->distinct('student_id')
+                    ->count('student_id'),
+            ],
+            [
+                'range' => '31-60 days',
+                'amount' => $school->invoices()
+                    ->whereIn('status', ['sent', 'partial', 'overdue'])
+                    ->whereBetween('due_date', [$now->copy()->subDays(60), $now->copy()->subDays(31)])
+                    ->sum('balance') / 100,
+                'students' => $school->invoices()
+                    ->whereIn('status', ['sent', 'partial', 'overdue'])
+                    ->whereBetween('due_date', [$now->copy()->subDays(60), $now->copy()->subDays(31)])
+                    ->distinct('student_id')
+                    ->count('student_id'),
+            ],
+            [
+                'range' => '61-90 days',
+                'amount' => $school->invoices()
+                    ->whereIn('status', ['sent', 'partial', 'overdue'])
+                    ->whereBetween('due_date', [$now->copy()->subDays(90), $now->copy()->subDays(61)])
+                    ->sum('balance') / 100,
+                'students' => $school->invoices()
+                    ->whereIn('status', ['sent', 'partial', 'overdue'])
+                    ->whereBetween('due_date', [$now->copy()->subDays(90), $now->copy()->subDays(61)])
+                    ->distinct('student_id')
+                    ->count('student_id'),
+            ],
+            [
+                'range' => '90+ days',
+                'amount' => $school->invoices()
+                    ->whereIn('status', ['sent', 'partial', 'overdue'])
+                    ->where('due_date', '<', $now->copy()->subDays(90))
+                    ->sum('balance') / 100,
+                'students' => $school->invoices()
+                    ->whereIn('status', ['sent', 'partial', 'overdue'])
+                    ->where('due_date', '<', $now->copy()->subDays(90))
+                    ->distinct('student_id')
+                    ->count('student_id'),
+            ],
+        ];
+
         return Inertia::render('school/Dashboard', [
             'kpi' => $kpi,
             'recentPayments' => $recentPayments,
             'overdueInvoices' => $overdueInvoices,
             'studentsByGrade' => $studentsByGrade,
             'recentStudents' => $recentStudents,
+            'collectionByMethod' => $collectionByMethod,
+            'agingData' => $agingData,
+            'monthlyRevenue' => $monthlyRevenue,
+            'principalKPIs' => $principalKPIs,
         ]);
     }
 }

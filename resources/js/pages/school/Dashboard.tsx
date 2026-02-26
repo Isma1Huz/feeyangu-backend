@@ -1,9 +1,16 @@
 import { Head, usePage } from '@inertiajs/react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
-import { DollarSign, Users, TrendingUp, AlertTriangle } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Progress } from '@/components/ui/progress'
+import { AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
+import { DollarSign, Users, TrendingUp, AlertTriangle, ArrowRight, Clock } from 'lucide-react'
 import AppLayout from '@/layouts/AppLayout'
+import KPICard from '@/components/KPICard'
+import StatusBadge from '@/components/StatusBadge'
+import { useT } from '@/contexts/LanguageContext'
+import { useAuth } from '@/contexts/AuthContext'
+import type { KPIData } from '@/types'
 
 interface KPI {
   total_students: number
@@ -12,6 +19,8 @@ interface KPI {
   total_revenue: number
   total_pending: number
   total_overdue: number
+  collection_rate: number
+  overdue_count: number
 }
 
 interface Payment {
@@ -50,17 +59,42 @@ interface Student {
   enrolled_at: string
 }
 
+interface CollectionMethod {
+  name: string
+  value: number
+  color: string
+}
+
+interface AgingData {
+  range: string
+  amount: number
+  students: number
+}
+
+interface MonthlyRevenue {
+  month: string
+  revenue: number
+  target: number
+}
+
 interface Props {
   kpi: KPI
   recentPayments: Payment[]
   overdueInvoices: Invoice[]
   studentsByGrade: GradeData[]
   recentStudents: Student[]
+  collectionByMethod: CollectionMethod[]
+  agingData: AgingData[]
+  monthlyRevenue: MonthlyRevenue[]
+  principalKPIs: KPIData[]
 }
 
 export default function Dashboard() {
-  const { kpi, recentPayments, overdueInvoices, studentsByGrade, recentStudents } = usePage<Props>().props
+  const { kpi, recentPayments, overdueInvoices, studentsByGrade, recentStudents, collectionByMethod, agingData, monthlyRevenue, principalKPIs } = usePage<Props>().props
   const { auth } = usePage().props as { auth: { user: { name: string, school?: { name: string } } } }
+  const T = useT()
+  const t = T.DASHBOARD_TEXT?.school || {}
+  const COMMON_TEXT = T.COMMON_TEXT || {}
 
   return (
     <AppLayout>
@@ -76,80 +110,84 @@ export default function Dashboard() {
 
         {/* KPI Cards */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {principalKPIs.map((kpiData, index) => (
+            <KPICard key={index} data={kpiData} index={index} />
+          ))}
+        </div>
+
+        <div className="grid gap-6 md:grid-cols-2">
+          {/* Monthly Revenue Trend */}
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Students</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
+            <CardHeader>
+              <CardTitle>Monthly Revenue Trend</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{kpi.total_students}</div>
-              <p className="text-xs text-muted-foreground">
-                {kpi.active_students} active, {kpi.inactive_students} inactive
-              </p>
+              <ResponsiveContainer width="100%" height={300}>
+                <AreaChart data={monthlyRevenue}>
+                  <defs>
+                    <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="month" />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Area type="monotone" dataKey="revenue" stroke="hsl(var(--primary))" fillOpacity={1} fill="url(#colorRevenue)" name="Revenue" />
+                  <Area type="monotone" dataKey="target" stroke="hsl(var(--muted-foreground))" strokeDasharray="5 5" fillOpacity={0} name="Target" />
+                </AreaChart>
+              </ResponsiveContainer>
             </CardContent>
           </Card>
 
+          {/* Collection by Payment Method */}
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
+            <CardHeader>
+              <CardTitle>Collection by Payment Method</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">
-                KES {(kpi.total_revenue / 1000).toFixed(1)}K
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Collected payments
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Pending Fees</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                KES {(kpi.total_pending / 1000).toFixed(1)}K
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Outstanding balance
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Overdue Fees</CardTitle>
-              <AlertTriangle className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                KES {(kpi.total_overdue / 1000).toFixed(1)}K
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Requires attention
-              </p>
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie
+                    data={collectionByMethod}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={(entry) => `${entry.name}: KES ${(entry.value / 1000).toFixed(0)}K`}
+                    outerRadius={80}
+                    fill="#8884d8"
+                    dataKey="value"
+                  >
+                    {collectionByMethod.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(value: number) => `KES ${value.toLocaleString()}`} />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
             </CardContent>
           </Card>
         </div>
 
         <div className="grid gap-6 md:grid-cols-2">
-          {/* Students by Grade Chart */}
+          {/* Receivables Aging */}
           <Card>
             <CardHeader>
-              <CardTitle>Students by Grade</CardTitle>
+              <CardTitle>Receivables Aging</CardTitle>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={studentsByGrade}>
+                <BarChart data={agingData}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="grade" />
+                  <XAxis dataKey="range" />
                   <YAxis />
                   <Tooltip />
                   <Legend />
-                  <Bar dataKey="count" fill="#8884d8" />
+                  <Bar dataKey="amount" fill="hsl(var(--primary))" name="Amount (KES)" />
+                  <Bar dataKey="students" fill="hsl(var(--muted-foreground))" name="Students" />
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>
@@ -175,11 +213,7 @@ export default function Dashboard() {
                       <TableCell className="font-medium">{payment.student_name}</TableCell>
                       <TableCell>KES {payment.amount.toLocaleString()}</TableCell>
                       <TableCell>
-                        <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
-                          payment.status === 'completed' ? 'bg-green-50 text-green-700' : 'bg-yellow-50 text-yellow-700'
-                        }`}>
-                          {payment.status}
-                        </span>
+                        <StatusBadge status={payment.status as any} />
                       </TableCell>
                     </TableRow>
                   ))}
@@ -227,37 +261,6 @@ export default function Dashboard() {
             </CardContent>
           </Card>
         )}
-
-        {/* Recent Students */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Recently Enrolled Students</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Admission #</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Grade</TableHead>
-                  <TableHead>Class</TableHead>
-                  <TableHead>Enrolled</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {recentStudents.map((student) => (
-                  <TableRow key={student.id}>
-                    <TableCell className="font-medium">{student.admission_number}</TableCell>
-                    <TableCell>{student.full_name}</TableCell>
-                    <TableCell>{student.grade}</TableCell>
-                    <TableCell>{student.class}</TableCell>
-                    <TableCell>{student.enrolled_at}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
       </div>
     </AppLayout>
   )
