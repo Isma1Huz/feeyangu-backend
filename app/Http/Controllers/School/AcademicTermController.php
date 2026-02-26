@@ -24,17 +24,16 @@ class AcademicTermController extends Controller
             ->get()
             ->map(function ($term) {
                 return [
-                    'id' => $term->id,
+                    'id' => (string) $term->id,
                     'name' => $term->name,
                     'year' => $term->year,
-                    'start_date' => $term->start_date->format('M d, Y'),
-                    'end_date' => $term->end_date->format('M d, Y'),
+                    'startDate' => $term->start_date->format('Y-m-d'),
+                    'endDate' => $term->end_date->format('Y-m-d'),
                     'status' => $term->status,
-                    'created_at' => $term->created_at->format('M d, Y'),
                 ];
             });
 
-        return Inertia::render('school/AcademicTerms', [
+        return Inertia::render('school/Terms', [
             'terms' => $terms,
         ]);
     }

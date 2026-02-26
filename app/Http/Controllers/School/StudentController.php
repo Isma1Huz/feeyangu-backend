@@ -41,31 +41,33 @@ class StudentController extends Controller
             });
         }
 
-        $students = $query->with(['grade', 'class'])
+        $students = $query->with(['grade', 'class', 'parents'])
             ->latest()
             ->paginate(20)
             ->through(function ($student) {
                 return [
-                    'id' => $student->id,
+                    'id' => (string) $student->id,
                     'admissionNumber' => $student->admission_number,
-                    'fullName' => $student->full_name,
                     'firstName' => $student->first_name,
                     'lastName' => $student->last_name,
-                    'grade' => [
-                        'id' => $student->grade->id,
-                        'name' => $student->grade->name,
-                    ],
-                    'class' => [
-                        'id' => $student->class->id,
-                        'name' => $student->class->name,
-                    ],
+                    'grade' => $student->grade->name,
+                    'className' => $student->class->name,
+                    'parentName' => $student->parents->first()?->name ?? 'N/A',
+                    'parentEmail' => $student->parents->first()?->email ?? '',
                     'status' => $student->status,
-                    'createdAt' => $student->created_at->format('M d, Y'),
+                    'totalFees' => 0, // TODO: Calculate from invoices
+                    'paidFees' => 0, // TODO: Calculate from payments
+                    'balance' => 0, // TODO: Calculate balance
                 ];
             });
 
         // Get grades for filter dropdown
-        $grades = $school->grades()->orderBy('sort_order')->get(['id', 'name']);
+        $grades = $school->grades()->orderBy('sort_order')->get()->map(function ($grade) {
+            return [
+                'id' => (string) $grade->id,
+                'name' => $grade->name,
+            ];
+        });
 
         return Inertia::render('school/Students', [
             'students' => $students->items(),
