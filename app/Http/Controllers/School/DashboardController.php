@@ -211,8 +211,8 @@ class DashboardController extends Controller
             ->where('status', 'completed')
             ->whereNotNull('completed_at')
             ->where('completed_at', '>=', $startDate)
-            ->groupBy('month')
-            ->orderBy('month')
+            ->groupByRaw($dateFormat)
+            ->orderByRaw($dateFormat)
             ->get()
             ->keyBy('month');
         $monthlyRevenue = [];
