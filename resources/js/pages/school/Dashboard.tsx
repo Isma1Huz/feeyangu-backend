@@ -158,7 +158,7 @@ export default function Dashboard() {
                   <span className="text-sm font-medium">Outstanding Fees</span>
                   <span className="text-sm font-bold">KES {totalOutstanding.toLocaleString()}</span>
                 </div>
-                <Progress value={(totalOutstanding / totalFees) * 100} className="h-2" />
+                <Progress value={totalFees > 0 ? (totalOutstanding / totalFees) * 100 : 0} className="h-2" />
               </div>
               <div>
                 <div className="flex justify-between items-center mb-2">
