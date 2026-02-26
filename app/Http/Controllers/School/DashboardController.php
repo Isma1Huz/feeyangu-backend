@@ -203,12 +203,12 @@ class DashboardController extends Controller
         ];
 
         // Monthly revenue for last 6 months
-        $monthlyRevenue = \DB::table('payment_transactions')
+        $sixMonthsAgo = now()->subMonths(6);
+        $monthlyRevenue = $school->paymentTransactions()
             ->selectRaw("strftime('%Y-%m', completed_at) as month, SUM(amount) / ? as revenue", [self::CENTS_TO_KES])
-            ->where('school_id', $school->id)
             ->where('status', 'completed')
             ->whereNotNull('completed_at')
-            ->where('completed_at', '>=', now()->subMonths(6))
+            ->where('completed_at', '>=', $sixMonthsAgo)
             ->groupBy('month')
             ->orderBy('month')
             ->get()
@@ -231,13 +231,13 @@ class DashboardController extends Controller
                 'range' => '0-30 days',
                 'amount' => $school->invoices()
                     ->whereIn('status', ['sent', 'partial', 'overdue'])
-                    ->where('due_date', '>=', $now->copy()->subDays(30))
                     ->where('due_date', '<', $now)
+                    ->where('due_date', '>=', $now->copy()->subDays(30))
                     ->sum('balance') / self::CENTS_TO_KES,
                 'students' => $school->invoices()
                     ->whereIn('status', ['sent', 'partial', 'overdue'])
-                    ->where('due_date', '>=', $now->copy()->subDays(30))
                     ->where('due_date', '<', $now)
+                    ->where('due_date', '>=', $now->copy()->subDays(30))
                     ->distinct('student_id')
                     ->count('student_id'),
             ],
@@ -245,13 +245,13 @@ class DashboardController extends Controller
                 'range' => '31-60 days',
                 'amount' => $school->invoices()
                     ->whereIn('status', ['sent', 'partial', 'overdue'])
-                    ->where('due_date', '>=', $now->copy()->subDays(60))
                     ->where('due_date', '<', $now->copy()->subDays(30))
+                    ->where('due_date', '>=', $now->copy()->subDays(60))
                     ->sum('balance') / self::CENTS_TO_KES,
                 'students' => $school->invoices()
                     ->whereIn('status', ['sent', 'partial', 'overdue'])
-                    ->where('due_date', '>=', $now->copy()->subDays(60))
                     ->where('due_date', '<', $now->copy()->subDays(30))
+                    ->where('due_date', '>=', $now->copy()->subDays(60))
                     ->distinct('student_id')
                     ->count('student_id'),
             ],
@@ -259,13 +259,13 @@ class DashboardController extends Controller
                 'range' => '61-90 days',
                 'amount' => $school->invoices()
                     ->whereIn('status', ['sent', 'partial', 'overdue'])
-                    ->where('due_date', '>=', $now->copy()->subDays(90))
                     ->where('due_date', '<', $now->copy()->subDays(60))
+                    ->where('due_date', '>=', $now->copy()->subDays(90))
                     ->sum('balance') / self::CENTS_TO_KES,
                 'students' => $school->invoices()
                     ->whereIn('status', ['sent', 'partial', 'overdue'])
-                    ->where('due_date', '>=', $now->copy()->subDays(90))
                     ->where('due_date', '<', $now->copy()->subDays(60))
+                    ->where('due_date', '>=', $now->copy()->subDays(90))
                     ->distinct('student_id')
                     ->count('student_id'),
             ],

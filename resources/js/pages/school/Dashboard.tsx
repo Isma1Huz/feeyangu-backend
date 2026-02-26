@@ -102,8 +102,8 @@ export default function Dashboard() {
 
         {/* KPI Cards */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {principalKPIs.map((kpiData, index) => (
-            <KPICard key={index} data={kpiData} index={index} />
+          {principalKPIs.map((kpiData) => (
+            <KPICard key={kpiData.title} data={kpiData} />
           ))}
         </div>
 
@@ -152,8 +152,8 @@ export default function Dashboard() {
                     fill="#8884d8"
                     dataKey="value"
                   >
-                    {collectionByMethod.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    {collectionByMethod.map((entry) => (
+                      <Cell key={entry.name} fill={entry.color} />
                     ))}
                   </Pie>
                   <Tooltip formatter={(value: number) => `KES ${value.toLocaleString()}`} />
