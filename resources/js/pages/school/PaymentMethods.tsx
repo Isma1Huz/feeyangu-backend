@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Head, usePage } from '@inertiajs/react';
+import { Head, usePage, router } from '@inertiajs/react';
 import type { InertiaSharedProps } from '@/types/inertia';
 import { PAYMENT_PROVIDERS, type SchoolPaymentConfig, type PaymentProvider } from '@/types/payment.types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -27,9 +27,51 @@ const PaymentMethods: React.FC = () => {
   const [formAccount, setFormAccount] = useState('');
   const [formAccountName, setFormAccountName] = useState('');
   const [formPaybill, setFormPaybill] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [isNewConfig, setIsNewConfig] = useState(false);
 
-  const toggleEnabled = (id: string) => {
-    setConfigs(prev => prev.map(c => c.id === id ? { ...c, enabled: !c.enabled } : c));
+  const toggleEnabled = async (id: string) => {
+    const config = configs.find(c => c.id === id);
+    if (!config) return;
+
+    // Don't allow enabling if no account is configured
+    if (!config.accountNumber && !config.enabled) {
+      openEdit(config);
+      return;
+    }
+
+    try {
+      const response = await fetch(`/school/payment-methods/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+        },
+        body: JSON.stringify({
+          enabled: !config.enabled,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update payment method');
+      }
+
+      const data = await response.json();
+      
+      // Update local state
+      setConfigs(prev => prev.map(c => c.id === id ? { ...c, enabled: !c.enabled } : c));
+      
+      toast({ 
+        title: config.enabled ? 'Payment method disabled' : 'Payment method enabled',
+        description: data.message 
+      });
+    } catch (error) {
+      toast({ 
+        title: 'Error', 
+        description: 'Failed to update payment method. Please try again.',
+        variant: 'destructive'
+      });
+    }
   };
 
   const openEdit = (config: SchoolPaymentConfig) => {
@@ -37,18 +79,79 @@ const PaymentMethods: React.FC = () => {
     setFormAccount(config.accountNumber);
     setFormAccountName(config.accountName);
     setFormPaybill(config.paybillNumber || '');
+    setIsNewConfig(false);
     setEditOpen(true);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!editingId) return;
-    setConfigs(prev => prev.map(c =>
-      c.id === editingId
-        ? { ...c, accountNumber: formAccount, accountName: formAccountName, paybillNumber: formPaybill || undefined, enabled: true }
-        : c
-    ));
-    toast({ title: 'Payment method updated', description: 'Account details saved successfully.' });
-    setEditOpen(false);
+    if (!formAccount.trim()) {
+      toast({ 
+        title: 'Validation Error', 
+        description: 'Account number is required',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    setSaving(true);
+    
+    try {
+      const url = isNewConfig 
+        ? '/school/payment-methods'
+        : `/school/payment-methods/${editingId}`;
+      
+      const method = isNewConfig ? 'POST' : 'PUT';
+      
+      const response = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+        },
+        body: JSON.stringify({
+          provider: isNewConfig ? configs.find(c => c.id === editingId)?.provider : undefined,
+          accountNumber: formAccount,
+          accountName: formAccountName,
+          paybillNumber: formPaybill || undefined,
+          enabled: true,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to save payment method');
+      }
+
+      const data = await response.json();
+      
+      // Update local state with saved config
+      if (isNewConfig) {
+        setConfigs(prev => prev.map(c => 
+          c.id === editingId ? data.config : c
+        ));
+      } else {
+        setConfigs(prev => prev.map(c =>
+          c.id === editingId
+            ? { ...c, accountNumber: formAccount, accountName: formAccountName, paybillNumber: formPaybill || undefined, enabled: true }
+            : c
+        ));
+      }
+      
+      toast({ 
+        title: 'Success', 
+        description: data.message || 'Payment method saved successfully.' 
+      });
+      setEditOpen(false);
+    } catch (error) {
+      toast({ 
+        title: 'Error', 
+        description: error instanceof Error ? error.message : 'Failed to save payment method. Please try again.',
+        variant: 'destructive'
+      });
+    } finally {
+      setSaving(false);
+    }
   };
 
   const editingConfig = configs.find(c => c.id === editingId);
@@ -70,7 +173,7 @@ const PaymentMethods: React.FC = () => {
 
   const addProvider = (providerId: PaymentProvider) => {
     const newConfig: SchoolPaymentConfig = {
-      id: `spc_${Date.now()}`,
+      id: `new_${Date.now()}`,
       provider: providerId,
       enabled: false,
       accountNumber: '',
@@ -78,7 +181,12 @@ const PaymentMethods: React.FC = () => {
       order: configs.length + 1,
     };
     setConfigs(prev => [...prev, newConfig]);
-    openEdit(newConfig);
+    setEditingId(newConfig.id);
+    setFormAccount('');
+    setFormAccountName('');
+    setFormPaybill('');
+    setIsNewConfig(true);
+    setEditOpen(true);
   };
 
   const renderProviderCard = (config: SchoolPaymentConfig) => {
@@ -226,8 +334,10 @@ const PaymentMethods: React.FC = () => {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setEditOpen(false)}>Cancel</Button>
-            <Button onClick={handleSave} disabled={!formAccount.trim()}>Save & Enable</Button>
+            <Button variant="outline" onClick={() => setEditOpen(false)} disabled={saving}>Cancel</Button>
+            <Button onClick={handleSave} disabled={!formAccount.trim() || saving}>
+              {saving ? 'Saving...' : 'Save & Enable'}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
