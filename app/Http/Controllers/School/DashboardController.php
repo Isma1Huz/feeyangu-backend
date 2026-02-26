@@ -12,6 +12,12 @@ use Inertia\Response;
 
 class DashboardController extends Controller
 {
+    // Constants for data conversion
+    private const CENTS_TO_KES = 100;
+    private const KES_TO_THOUSANDS = 1000;
+    private const KES_TO_MILLIONS = 1000000;
+    private const DEFAULT_REVENUE_TARGET = 2500000; // Default monthly target in KES
+
     /**
      * Display the school admin dashboard with KPIs and recent activity.
      */
@@ -30,18 +36,18 @@ class DashboardController extends Controller
         
         $totalRevenue = $school->paymentTransactions()
             ->where('status', 'completed')
-            ->sum('amount') / 100;
+            ->sum('amount') / self::CENTS_TO_KES;
         
         $totalPending = $school->invoices()
             ->whereIn('status', ['sent', 'partial', 'overdue'])
-            ->sum('balance') / 100;
+            ->sum('balance') / self::CENTS_TO_KES;
         
         $totalOverdue = $school->invoices()
             ->where('status', 'overdue')
-            ->sum('balance') / 100;
+            ->sum('balance') / self::CENTS_TO_KES;
         
         // Get total fees for collection rate
-        $totalFees = $school->invoices()->sum('total_amount') / 100;
+        $totalFees = $school->invoices()->sum('total_amount') / self::CENTS_TO_KES;
         $collectionRate = $totalFees > 0 ? round(($totalRevenue / $totalFees) * 100) : 0;
         
         $overdueCount = $school->invoices()
@@ -61,32 +67,33 @@ class DashboardController extends Controller
         ];
 
         // Principal KPIs for KPICard component
+        // Note: Change percentages are placeholders - implement period-over-period calculation for actual trends
         $principalKPIs = [
             [
                 'title' => 'Total Revenue',
-                'value' => 'KES ' . number_format($totalRevenue / 1000000, 1) . 'M',
-                'change' => '+8.2%',
+                'value' => 'KES ' . number_format($totalRevenue / self::KES_TO_MILLIONS, 1) . 'M',
+                'change' => '+8.2%', // TODO: Calculate actual month-over-month change
                 'changeType' => 'positive',
                 'icon' => 'DollarSign',
             ],
             [
                 'title' => 'Outstanding Fees',
-                'value' => 'KES ' . number_format($totalPending / 1000, 0) . 'K',
-                'change' => '-3.1%',
+                'value' => 'KES ' . number_format($totalPending / self::KES_TO_THOUSANDS, 0) . 'K',
+                'change' => '-3.1%', // TODO: Calculate actual month-over-month change
                 'changeType' => 'positive',
                 'icon' => 'Clock',
             ],
             [
                 'title' => 'Collection Rate',
                 'value' => $collectionRate . '%',
-                'change' => '+2.4%',
+                'change' => '+2.4%', // TODO: Calculate actual month-over-month change
                 'changeType' => 'positive',
                 'icon' => 'TrendingUp',
             ],
             [
                 'title' => 'Overdue Accounts',
                 'value' => (string)$overdueCount,
-                'change' => '+5',
+                'change' => '+5', // TODO: Calculate actual month-over-month change
                 'changeType' => 'negative',
                 'icon' => 'AlertTriangle',
             ],
@@ -103,7 +110,7 @@ class DashboardController extends Controller
                     'id' => $payment->id,
                     'student_name' => $payment->student->full_name,
                     'parent_name' => $payment->parent->name,
-                    'amount' => $payment->amount / 100,
+                    'amount' => $payment->amount / self::CENTS_TO_KES,
                     'provider' => $payment->provider,
                     'status' => $payment->status,
                     'reference' => $payment->reference,
@@ -123,9 +130,9 @@ class DashboardController extends Controller
                     'id' => $invoice->id,
                     'invoice_number' => $invoice->invoice_number,
                     'student_name' => $invoice->student->full_name,
-                    'total_amount' => $invoice->total_amount / 100,
-                    'paid_amount' => $invoice->paid_amount / 100,
-                    'balance' => $invoice->balance / 100,
+                    'total_amount' => $invoice->total_amount / self::CENTS_TO_KES,
+                    'paid_amount' => $invoice->paid_amount / self::CENTS_TO_KES,
+                    'balance' => $invoice->balance / self::CENTS_TO_KES,
                     'due_date' => $invoice->due_date->format('M d, Y'),
                     'days_overdue' => now()->diffInDays($invoice->due_date, false),
                 ];
@@ -166,7 +173,7 @@ class DashboardController extends Controller
                 'value' => $school->paymentTransactions()
                     ->where('status', 'completed')
                     ->where('provider', 'mpesa')
-                    ->sum('amount') / 100,
+                    ->sum('amount') / self::CENTS_TO_KES,
                 'color' => 'hsl(142, 72%, 35%)',
             ],
             [
@@ -174,7 +181,7 @@ class DashboardController extends Controller
                 'value' => $school->paymentTransactions()
                     ->where('status', 'completed')
                     ->where('provider', 'bank')
-                    ->sum('amount') / 100,
+                    ->sum('amount') / self::CENTS_TO_KES,
                 'color' => 'hsl(200, 72%, 45%)',
             ],
             [
@@ -182,7 +189,7 @@ class DashboardController extends Controller
                 'value' => $school->paymentTransactions()
                     ->where('status', 'completed')
                     ->where('provider', 'cash')
-                    ->sum('amount') / 100,
+                    ->sum('amount') / self::CENTS_TO_KES,
                 'color' => 'hsl(45, 90%, 50%)',
             ],
             [
@@ -190,7 +197,7 @@ class DashboardController extends Controller
                 'value' => $school->paymentTransactions()
                     ->where('status', 'completed')
                     ->where('provider', 'card')
-                    ->sum('amount') / 100,
+                    ->sum('amount') / self::CENTS_TO_KES,
                 'color' => 'hsl(280, 60%, 50%)',
             ],
         ];
@@ -210,13 +217,13 @@ class DashboardController extends Controller
                 return [
                     'month' => $date->format('M'),
                     'revenue' => (float)$item->revenue,
-                    'target' => 2500000, // Static target, can be dynamic based on school settings
+                    'target' => self::DEFAULT_REVENUE_TARGET, // TODO: Make configurable per school
                 ];
             })
             ->values()
             ->toArray();
 
-        // Aging data - invoices by age range
+        // Aging data - invoices by how long they're overdue (past due date)
         $now = now();
         $agingData = [
             [
@@ -224,7 +231,7 @@ class DashboardController extends Controller
                 'amount' => $school->invoices()
                     ->whereIn('status', ['sent', 'partial', 'overdue'])
                     ->whereBetween('due_date', [$now->copy()->subDays(30), $now])
-                    ->sum('balance') / 100,
+                    ->sum('balance') / self::CENTS_TO_KES,
                 'students' => $school->invoices()
                     ->whereIn('status', ['sent', 'partial', 'overdue'])
                     ->whereBetween('due_date', [$now->copy()->subDays(30), $now])
@@ -236,7 +243,7 @@ class DashboardController extends Controller
                 'amount' => $school->invoices()
                     ->whereIn('status', ['sent', 'partial', 'overdue'])
                     ->whereBetween('due_date', [$now->copy()->subDays(60), $now->copy()->subDays(31)])
-                    ->sum('balance') / 100,
+                    ->sum('balance') / self::CENTS_TO_KES,
                 'students' => $school->invoices()
                     ->whereIn('status', ['sent', 'partial', 'overdue'])
                     ->whereBetween('due_date', [$now->copy()->subDays(60), $now->copy()->subDays(31)])
@@ -248,7 +255,7 @@ class DashboardController extends Controller
                 'amount' => $school->invoices()
                     ->whereIn('status', ['sent', 'partial', 'overdue'])
                     ->whereBetween('due_date', [$now->copy()->subDays(90), $now->copy()->subDays(61)])
-                    ->sum('balance') / 100,
+                    ->sum('balance') / self::CENTS_TO_KES,
                 'students' => $school->invoices()
                     ->whereIn('status', ['sent', 'partial', 'overdue'])
                     ->whereBetween('due_date', [$now->copy()->subDays(90), $now->copy()->subDays(61)])
@@ -260,7 +267,7 @@ class DashboardController extends Controller
                 'amount' => $school->invoices()
                     ->whereIn('status', ['sent', 'partial', 'overdue'])
                     ->where('due_date', '<', $now->copy()->subDays(90))
-                    ->sum('balance') / 100,
+                    ->sum('balance') / self::CENTS_TO_KES,
                 'students' => $school->invoices()
                     ->whereIn('status', ['sent', 'partial', 'overdue'])
                     ->where('due_date', '<', $now->copy()->subDays(90))

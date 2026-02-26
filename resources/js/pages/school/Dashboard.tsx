@@ -1,15 +1,10 @@
 import { Head, usePage } from '@inertiajs/react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Button } from '@/components/ui/button'
-import { Progress } from '@/components/ui/progress'
 import { AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
-import { DollarSign, Users, TrendingUp, AlertTriangle, ArrowRight, Clock } from 'lucide-react'
 import AppLayout from '@/layouts/AppLayout'
 import KPICard from '@/components/KPICard'
 import StatusBadge from '@/components/StatusBadge'
-import { useT } from '@/contexts/LanguageContext'
-import { useAuth } from '@/contexts/AuthContext'
 import type { KPIData } from '@/types'
 
 interface KPI {
@@ -92,9 +87,6 @@ interface Props {
 export default function Dashboard() {
   const { kpi, recentPayments, overdueInvoices, studentsByGrade, recentStudents, collectionByMethod, agingData, monthlyRevenue, principalKPIs } = usePage<Props>().props
   const { auth } = usePage().props as { auth: { user: { name: string, school?: { name: string } } } }
-  const T = useT()
-  const t = T.DASHBOARD_TEXT?.school || {}
-  const COMMON_TEXT = T.COMMON_TEXT || {}
 
   return (
     <AppLayout>
