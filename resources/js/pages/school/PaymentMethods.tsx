@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Head, usePage } from '@inertiajs/react';
+import { Head, usePage, router } from '@inertiajs/react';
 import type { InertiaSharedProps } from '@/types/inertia';
 import { PAYMENT_PROVIDERS, type SchoolPaymentConfig, type PaymentProvider } from '@/types/payment.types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -24,35 +24,141 @@ const PaymentMethods: React.FC = () => {
   const [configs, setConfigs] = useState<SchoolPaymentConfig[]>(paymentConfigs);
   const [editOpen, setEditOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingProvider, setEditingProvider] = useState<PaymentProvider | null>(null);
   const [formAccount, setFormAccount] = useState('');
   const [formAccountName, setFormAccountName] = useState('');
   const [formPaybill, setFormPaybill] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [isNewConfig, setIsNewConfig] = useState(false);
 
-  const toggleEnabled = (id: string) => {
-    setConfigs(prev => prev.map(c => c.id === id ? { ...c, enabled: !c.enabled } : c));
+  const toggleEnabled = async (id: string) => {
+    const config = configs.find(c => c.id === id);
+    if (!config) return;
+
+    // Don't allow enabling if no account is configured
+    if (!config.accountNumber && !config.enabled) {
+      openEdit(config);
+      return;
+    }
+
+    try {
+      const response = await fetch(`/school/payment-methods/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+        },
+        body: JSON.stringify({
+          enabled: !config.enabled,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update payment method');
+      }
+
+      const data = await response.json();
+      
+      // Update local state
+      setConfigs(prev => prev.map(c => c.id === id ? { ...c, enabled: !c.enabled } : c));
+      
+      toast({ 
+        title: config.enabled ? 'Payment method disabled' : 'Payment method enabled',
+        description: data.message 
+      });
+    } catch (error) {
+      toast({ 
+        title: 'Error', 
+        description: 'Failed to update payment method. Please try again.',
+        variant: 'destructive'
+      });
+    }
   };
 
   const openEdit = (config: SchoolPaymentConfig) => {
     setEditingId(config.id);
+    setEditingProvider(config.provider);
     setFormAccount(config.accountNumber);
     setFormAccountName(config.accountName);
     setFormPaybill(config.paybillNumber || '');
+    setIsNewConfig(false);
     setEditOpen(true);
   };
 
-  const handleSave = () => {
-    if (!editingId) return;
-    setConfigs(prev => prev.map(c =>
-      c.id === editingId
-        ? { ...c, accountNumber: formAccount, accountName: formAccountName, paybillNumber: formPaybill || undefined, enabled: true }
-        : c
-    ));
-    toast({ title: 'Payment method updated', description: 'Account details saved successfully.' });
-    setEditOpen(false);
+  const handleSave = async () => {
+    if (!editingId || !editingProvider) return;
+    if (!formAccount.trim()) {
+      toast({ 
+        title: 'Validation Error', 
+        description: 'Account number is required',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    setSaving(true);
+    
+    try {
+      const url = isNewConfig 
+        ? '/school/payment-methods'
+        : `/school/payment-methods/${editingId}`;
+      
+      const method = isNewConfig ? 'POST' : 'PUT';
+      
+      const response = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+        },
+        body: JSON.stringify({
+          provider: isNewConfig ? editingProvider : undefined,
+          accountNumber: formAccount,
+          accountName: formAccountName,
+          paybillNumber: formPaybill || undefined,
+          enabled: true,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to save payment method');
+      }
+
+      const data = await response.json();
+      
+      // Update local state with saved config
+      if (isNewConfig) {
+        // Remove the temporary config and add the real one from backend
+        setConfigs(prev => [
+          ...prev.filter(c => c.id !== editingId),
+          data.config
+        ]);
+      } else {
+        setConfigs(prev => prev.map(c =>
+          c.id === editingId
+            ? { ...c, accountNumber: formAccount, accountName: formAccountName, paybillNumber: formPaybill || undefined, enabled: true }
+            : c
+        ));
+      }
+      
+      toast({ 
+        title: 'Success', 
+        description: data.message || 'Payment method saved successfully.' 
+      });
+      setEditOpen(false);
+    } catch (error) {
+      toast({ 
+        title: 'Error', 
+        description: error instanceof Error ? error.message : 'Failed to save payment method. Please try again.',
+        variant: 'destructive'
+      });
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const editingConfig = configs.find(c => c.id === editingId);
-  const editingProvider = editingConfig ? PAYMENT_PROVIDERS.find(p => p.id === editingConfig.provider) : null;
+  const editingProviderInfo = editingProvider ? PAYMENT_PROVIDERS.find(p => p.id === editingProvider) : null;
 
   const mobileProviders = configs.filter(c => {
     const p = PAYMENT_PROVIDERS.find(pp => pp.id === c.provider);
@@ -70,7 +176,7 @@ const PaymentMethods: React.FC = () => {
 
   const addProvider = (providerId: PaymentProvider) => {
     const newConfig: SchoolPaymentConfig = {
-      id: `spc_${Date.now()}`,
+      id: `new_${Date.now()}`,
       provider: providerId,
       enabled: false,
       accountNumber: '',
@@ -78,7 +184,13 @@ const PaymentMethods: React.FC = () => {
       order: configs.length + 1,
     };
     setConfigs(prev => [...prev, newConfig]);
-    openEdit(newConfig);
+    setEditingId(newConfig.id);
+    setEditingProvider(providerId);
+    setFormAccount('');
+    setFormAccountName('');
+    setFormPaybill('');
+    setIsNewConfig(true);
+    setEditOpen(true);
   };
 
   const renderProviderCard = (config: SchoolPaymentConfig) => {
@@ -200,25 +312,25 @@ const PaymentMethods: React.FC = () => {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              {editingProvider && (
-                <div className="h-8 w-8 rounded-lg flex items-center justify-center text-white" style={{ backgroundColor: editingProvider.color }}>
-                  {editingProvider.category === 'mobile_money' ? <Smartphone className="h-4 w-4" /> : <Building2 className="h-4 w-4" />}
+              {editingProviderInfo && (
+                <div className="h-8 w-8 rounded-lg flex items-center justify-center text-white" style={{ backgroundColor: editingProviderInfo.color }}>
+                  {editingProviderInfo.category === 'mobile_money' ? <Smartphone className="h-4 w-4" /> : <Building2 className="h-4 w-4" />}
                 </div>
               )}
-              Configure {editingProvider?.name}
+              Configure {editingProviderInfo?.name}
             </DialogTitle>
             <DialogDescription>Enter the school's account details for this payment method.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
-            {editingConfig?.provider === 'mpesa' && (
+            {editingProvider === 'mpesa' && (
               <div className="space-y-2">
                 <Label>Paybill / Till Number</Label>
                 <Input value={formPaybill} onChange={e => setFormPaybill(e.target.value)} placeholder="e.g. 123456" />
               </div>
             )}
             <div className="space-y-2">
-              <Label>{editingConfig?.provider === 'mpesa' ? 'Account Number / Name' : 'Account Number'}</Label>
-              <Input value={formAccount} onChange={e => setFormAccount(e.target.value)} placeholder={editingConfig?.provider === 'mpesa' ? 'e.g. SCHOOLFEES or Student Adm No' : 'e.g. 1234567890'} />
+              <Label>{editingProvider === 'mpesa' ? 'Account Number / Name' : 'Account Number'}</Label>
+              <Input value={formAccount} onChange={e => setFormAccount(e.target.value)} placeholder={editingProvider === 'mpesa' ? 'e.g. SCHOOLFEES or Student Adm No' : 'e.g. 1234567890'} />
             </div>
             <div className="space-y-2">
               <Label>Account Name</Label>
@@ -226,8 +338,10 @@ const PaymentMethods: React.FC = () => {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setEditOpen(false)}>Cancel</Button>
-            <Button onClick={handleSave} disabled={!formAccount.trim()}>Save & Enable</Button>
+            <Button variant="outline" onClick={() => setEditOpen(false)} disabled={saving}>Cancel</Button>
+            <Button onClick={handleSave} disabled={!formAccount.trim() || saving}>
+              {saving ? 'Saving...' : 'Save & Enable'}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
