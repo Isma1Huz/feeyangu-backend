@@ -205,7 +205,7 @@ export default function Dashboard() {
                       <TableCell className="font-medium">{payment.student_name}</TableCell>
                       <TableCell>KES {payment.amount.toLocaleString()}</TableCell>
                       <TableCell>
-                        <StatusBadge status={payment.status as any} />
+                        <StatusBadge status={payment.status as 'completed' | 'pending' | 'failed'} />
                       </TableCell>
                     </TableRow>
                   ))}
