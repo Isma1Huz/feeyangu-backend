@@ -198,8 +198,16 @@ class DashboardController extends Controller
          // Build a fixed 6-month window ending this month, and fill missing months with zero revenue
         $endOfCurrentMonth = now()->startOfMonth();
         $startDate = $endOfCurrentMonth->copy()->subMonths(5);
+        
+        // Database-agnostic date formatting using DB facade
+        $dateFormat = match (config('database.default')) {
+            'mysql' => "DATE_FORMAT(completed_at, '%Y-%m')",
+            'pgsql' => "TO_CHAR(completed_at, 'YYYY-MM')",
+            default => "strftime('%Y-%m', completed_at)", // SQLite
+        };
+        
         $rawMonthlyRevenue = $school->paymentTransactions()
-            ->selectRaw("strftime('%Y-%m', completed_at) as month, SUM(amount) / ? as revenue", [self::CENTS_TO_KES])
+            ->selectRaw("{$dateFormat} as month, SUM(amount) / ? as revenue", [self::CENTS_TO_KES])
             ->where('status', 'completed')
             ->whereNotNull('completed_at')
             ->where('completed_at', '>=', $startDate)
