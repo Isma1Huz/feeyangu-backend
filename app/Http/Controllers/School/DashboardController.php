@@ -166,120 +166,109 @@ class DashboardController extends Controller
                 ];
             });
 
-        // Collection by payment method
+        $methodSums = $school->paymentTransactions()
+            ->selectRaw('provider, SUM(amount) as total_amount')
+            ->where('status', 'completed')
+            ->whereIn('provider', ['mpesa', 'bank', 'cash', 'card'])
+            ->groupBy('provider')
+            ->pluck('total_amount', 'provider');
         $collectionByMethod = [
             [
                 'name' => 'M-Pesa',
-                'value' => $school->paymentTransactions()
-                    ->where('status', 'completed')
-                    ->where('provider', 'mpesa')
-                    ->sum('amount') / self::CENTS_TO_KES,
+                'value' => ($methodSums['mpesa'] ?? 0) / self::CENTS_TO_KES,
                 'color' => 'hsl(142, 72%, 35%)',
             ],
             [
                 'name' => 'Bank Transfer',
-                'value' => $school->paymentTransactions()
-                    ->where('status', 'completed')
-                    ->where('provider', 'bank')
-                    ->sum('amount') / self::CENTS_TO_KES,
+                'value' => ($methodSums['bank'] ?? 0) / self::CENTS_TO_KES,
                 'color' => 'hsl(200, 72%, 45%)',
             ],
             [
                 'name' => 'Cash',
-                'value' => $school->paymentTransactions()
-                    ->where('status', 'completed')
-                    ->where('provider', 'cash')
-                    ->sum('amount') / self::CENTS_TO_KES,
+                'value' => ($methodSums['cash'] ?? 0) / self::CENTS_TO_KES,
                 'color' => 'hsl(45, 90%, 50%)',
             ],
             [
                 'name' => 'Card',
-                'value' => $school->paymentTransactions()
-                    ->where('status', 'completed')
-                    ->where('provider', 'card')
-                    ->sum('amount') / self::CENTS_TO_KES,
+                'value' => ($methodSums['card'] ?? 0) / self::CENTS_TO_KES,
                 'color' => 'hsl(280, 60%, 50%)',
             ],
         ];
 
-        // Monthly revenue for last 6 months
-        $sixMonthsAgo = now()->subMonths(6);
-        $monthlyRevenue = $school->paymentTransactions()
+         // Build a fixed 6-month window ending this month, and fill missing months with zero revenue
+        $endOfCurrentMonth = now()->startOfMonth();
+        $startDate = $endOfCurrentMonth->copy()->subMonths(5);
+        $rawMonthlyRevenue = $school->paymentTransactions()
             ->selectRaw("strftime('%Y-%m', completed_at) as month, SUM(amount) / ? as revenue", [self::CENTS_TO_KES])
             ->where('status', 'completed')
             ->whereNotNull('completed_at')
-            ->where('completed_at', '>=', $sixMonthsAgo)
+            ->where('completed_at', '>=', $startDate)
             ->groupBy('month')
             ->orderBy('month')
             ->get()
-            ->map(function ($item) {
-                $date = \Carbon\Carbon::createFromFormat('Y-m', $item->month);
-                return [
-                    'month' => $date->format('M'),
-                    'revenue' => (float)$item->revenue,
-                    'target' => self::DEFAULT_REVENUE_TARGET, // TODO: Make configurable per school
-                ];
-            })
-            ->values()
-            ->toArray();
+            ->keyBy('month');
+        $monthlyRevenue = [];
+        for ($i = 0; $i < 6; $i++) {
+            $currentMonthDate = $startDate->copy()->addMonths($i);
+            $monthKey = $currentMonthDate->format('Y-m');
+            $item = $rawMonthlyRevenue->get($monthKey);
+            $revenue = $item ? (float)$item->revenue : 0.0;
+            $monthlyRevenue[] = [
+                'month' => $currentMonthDate->format('M'),
+                'revenue' => $revenue,
+                'target' => self::DEFAULT_REVENUE_TARGET, // TODO: Make configurable per school
+            ];
+        }
 
         // Aging data - invoices by how long they're overdue (past due date)
         // Measures receivables by how many days past the due date
         $now = now();
+          // Fetch all overdue invoices once and aggregate into aging buckets in PHP
+        $agingInvoices = $school->invoices()
+            ->whereIn('status', ['sent', 'partial', 'overdue'])
+            ->where('due_date', '<', $now)
+            ->get(['due_date', 'balance', 'student_id']);
+        $buckets = [
+            '0-30' => ['amount_cents' => 0, 'students' => []],
+            '31-60' => ['amount_cents' => 0, 'students' => []],
+            '61-90' => ['amount_cents' => 0, 'students' => []],
+            '90+' => ['amount_cents' => 0, 'students' => []],
+        ];
+        foreach ($agingInvoices as $invoice) {
+            // Number of days the invoice is overdue
+            $daysOverdue = $now->diffInDays($invoice->due_date);
+            if ($daysOverdue <= 30) {
+                $key = '0-30';
+            } elseif ($daysOverdue <= 60) {
+                $key = '31-60';
+            } elseif ($daysOverdue <= 90) {
+                $key = '61-90';
+            } else {
+                $key = '90+';
+            }
+            $buckets[$key]['amount_cents'] += $invoice->balance;
+            $buckets[$key]['students'][$invoice->student_id] = true;
+        }
         $agingData = [
             [
                 'range' => '0-30 days',
-                'amount' => $school->invoices()
-                    ->whereIn('status', ['sent', 'partial', 'overdue'])
-                    ->where('due_date', '<', $now)
-                    ->where('due_date', '>=', $now->copy()->subDays(30))
-                    ->sum('balance') / self::CENTS_TO_KES,
-                'students' => $school->invoices()
-                    ->whereIn('status', ['sent', 'partial', 'overdue'])
-                    ->where('due_date', '<', $now)
-                    ->where('due_date', '>=', $now->copy()->subDays(30))
-                    ->distinct('student_id')
-                    ->count('student_id'),
+                'amount' => $buckets['0-30']['amount_cents'] / self::CENTS_TO_KES,
+                'students' => count($buckets['0-30']['students']),
             ],
             [
                 'range' => '31-60 days',
-                'amount' => $school->invoices()
-                    ->whereIn('status', ['sent', 'partial', 'overdue'])
-                    ->where('due_date', '<', $now->copy()->subDays(30))
-                    ->where('due_date', '>=', $now->copy()->subDays(60))
-                    ->sum('balance') / self::CENTS_TO_KES,
-                'students' => $school->invoices()
-                    ->whereIn('status', ['sent', 'partial', 'overdue'])
-                    ->where('due_date', '<', $now->copy()->subDays(30))
-                    ->where('due_date', '>=', $now->copy()->subDays(60))
-                    ->distinct('student_id')
-                    ->count('student_id'),
+                'amount' => $buckets['31-60']['amount_cents'] / self::CENTS_TO_KES,
+                'students' => count($buckets['31-60']['students']),
             ],
             [
                 'range' => '61-90 days',
-                'amount' => $school->invoices()
-                    ->whereIn('status', ['sent', 'partial', 'overdue'])
-                    ->where('due_date', '<', $now->copy()->subDays(60))
-                    ->where('due_date', '>=', $now->copy()->subDays(90))
-                    ->sum('balance') / self::CENTS_TO_KES,
-                'students' => $school->invoices()
-                    ->whereIn('status', ['sent', 'partial', 'overdue'])
-                    ->where('due_date', '<', $now->copy()->subDays(60))
-                    ->where('due_date', '>=', $now->copy()->subDays(90))
-                    ->distinct('student_id')
-                    ->count('student_id'),
+                'amount' => $buckets['61-90']['amount_cents'] / self::CENTS_TO_KES,
+                'students' => count($buckets['61-90']['students']),
             ],
             [
                 'range' => '90+ days',
-                'amount' => $school->invoices()
-                    ->whereIn('status', ['sent', 'partial', 'overdue'])
-                    ->where('due_date', '<', $now->copy()->subDays(90))
-                    ->sum('balance') / self::CENTS_TO_KES,
-                'students' => $school->invoices()
-                    ->whereIn('status', ['sent', 'partial', 'overdue'])
-                    ->where('due_date', '<', $now->copy()->subDays(90))
-                    ->distinct('student_id')
-                    ->count('student_id'),
+                'amount' => $buckets['90+']['amount_cents'] / self::CENTS_TO_KES,
+                'students' => count($buckets['90+']['students']),
             ],
         ];
 
