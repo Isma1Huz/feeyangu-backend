@@ -103,32 +103,29 @@ export default function Dashboard() {
     <AppLayout>
       <Head title="School Dashboard" />
       
-      {/* School Banner */}
-      <div 
-        className="relative h-48 bg-cover bg-center"
-        style={{ backgroundImage: `url(${schoolBannerBg})` }}
-      >
-        <div className="absolute inset-0 bg-gradient-to-r from-primary/80 to-primary/40" />
-        <div className="relative h-full flex items-center px-8">
-          <div className="flex items-center gap-6">
-            <img 
-              src={schoolLogo} 
-              alt="School Logo" 
-              className="h-24 w-24 rounded-full bg-white p-2 shadow-lg"
-            />
-            <div className="text-white">
-              <h1 className="text-4xl font-bold tracking-tight">
-                {auth?.user?.school?.name || 'School Dashboard'}
-              </h1>
-              <p className="text-lg mt-1 opacity-90">
-                Welcome back, {auth?.user?.name}
-              </p>
-            </div>
+     {/* <div className="space-y-6 animate-fade-in"> */}
+      <div className="py-4">
+        <h1 className="text-2xl font-bold tracking-tight">Principal's Financial Overview</h1>
+        <p className="text-muted-foreground text-sm mt-1">Welcome back.Here's your school overview</p>
+      </div>
+
+      <div className="relative rounded-xl overflow-hidden text-primary-foreground p-6 sm:p-8">
+        <img src={schoolBannerBg} alt="" className="absolute inset-0 w-full h-full object-cover" />
+        <div className="absolute inset-0 bg-primary/40" />
+        <div className="relative z-10 flex items-center justify-between gap-4">
+          <div>
+            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">{auth?.user?.school?.name || 'Your School'}</h2>
+            <p className="text-sm sm:text-base text-primary-foreground/80 mt-1 italic">Nurturing Excellence, Shaping Futures</p>
+          </div>
+          <div className="hidden sm:flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-white/90 backdrop-blur-sm border border-white/30 shrink-0 overflow-hidden p-1">
+            <img src={schoolLogo} alt="School Logo" className="w-full h-full object-contain" />
           </div>
         </div>
       </div>
 
-      <div className="space-y-6 p-8">
+
+
+      <div className="space-y-6 py-8">
         {/* KPI Cards */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {principalKPIs.map((kpiData, index) => (
