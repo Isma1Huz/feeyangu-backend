@@ -13,6 +13,8 @@ use App\Http\Controllers\School\FeeStructureController as SchoolFeeStructureCont
 use App\Http\Controllers\School\PaymentController as SchoolPaymentController;
 use App\Http\Controllers\School\ReceiptController as SchoolReceiptController;
 use App\Http\Controllers\School\PaymentMethodController as SchoolPaymentMethodController;
+use App\Http\Controllers\School\SettingsController as SchoolSettingsController;
+use App\Http\Controllers\School\BillingController as SchoolBillingController;
 use App\Http\Controllers\Accountant\DashboardController as AccountantDashboardController;
 use App\Http\Controllers\Accountant\InvoiceController as AccountantInvoiceController;
 use App\Http\Controllers\Accountant\PaymentController as AccountantPaymentController;
@@ -75,6 +77,13 @@ Route::prefix('school')
         // Receipt viewing
         Route::get('/receipts', [SchoolReceiptController::class, 'index'])->name('receipts.index');
         Route::get('/receipts/{receipt}', [SchoolReceiptController::class, 'show'])->name('receipts.show');
+        
+        // Settings
+        Route::get('/settings', [SchoolSettingsController::class, 'index'])->name('settings.index');
+        Route::put('/settings', [SchoolSettingsController::class, 'update'])->name('settings.update');
+        
+        // Billing
+        Route::get('/billing', [SchoolBillingController::class, 'index'])->name('billing.index');
     });
 
 // Accountant Routes

@@ -19,17 +19,15 @@ class GradeController extends Controller
         $school = auth()->user()->school;
 
         $grades = $school->grades()
-            ->withCount(['students', 'classes'])
+            ->withCount(['students', 'gradeClasses'])
             ->orderBy('sort_order')
             ->get()
             ->map(function ($grade) {
                 return [
-                    'id' => $grade->id,
+                    'id' => (string) $grade->id,
                     'name' => $grade->name,
-                    'sort_order' => $grade->sort_order,
-                    'students_count' => $grade->students_count,
-                    'classes_count' => $grade->classes_count,
-                    'created_at' => $grade->created_at->format('M d, Y'),
+                    'studentCount' => $grade->students_count,
+                    'classes' => [], // Will be loaded on demand
                 ];
             });
 
