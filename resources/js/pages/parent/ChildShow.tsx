@@ -202,10 +202,13 @@ const ChildShow: React.FC = () => {
   };
 
   const completePayment = () => {
-    const items = selectedItems.map(idx => ({
-      name: feeItems[idx].name,
-      amount: feeItems[idx].amount - feeItems[idx].paid,
-    }));
+    const items = selectedItems.map(idx => {
+      const invoice = invoices[idx];
+      return {
+        name: invoice?.invoice_number ?? `Invoice #${idx + 1}`,
+        amount: invoice?.balance ?? 0,
+      };
+    });
     setReceiptData({
       receiptNo: `RCT-${Date.now().toString().slice(-6)}`,
       amount: selectedTotal,
@@ -601,7 +604,7 @@ const ChildShow: React.FC = () => {
                   </div>
                   <div className="grid grid-cols-2 gap-1 text-xs">
                     <span className="text-muted-foreground">Date:</span><span>{receiptData.date}</span>
-                    <span className="text-muted-foreground">Student:</span><span>{child.name}</span>
+                    <span className="text-muted-foreground">Student:</span><span>{child.full_name}</span>
                     <span className="text-muted-foreground">Method:</span><span>{selectedProviderData?.name}</span>
                     <span className="text-muted-foreground">Ref:</span><span className="font-mono-amount">{transactionRef}</span>
                   </div>
