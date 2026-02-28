@@ -129,43 +129,33 @@ class PaymentController extends Controller
         $user = auth()->user();
         
         $payments = PaymentTransaction::where('parent_id', $user->id)
-            ->with(['student', 'school', 'receipt'])
+            ->with(['student'])
             ->latest()
-            ->paginate(20)
-            ->through(function ($payment) {
+            ->get()
+            ->map(function ($payment) {
                 return [
-                    'id' => $payment->id,
-                    'student_name' => $payment->student->full_name,
-                    'school_name' => $payment->school->name,
+                    'id' => (string) $payment->id,
+                    'date' => $payment->created_at->format('M d, Y'),
+                    'studentId' => (string) $payment->student_id,
+                    'studentName' => $payment->student->full_name,
                     'amount' => $payment->amount / 100,
-                    'provider' => $payment->provider,
+                    'method' => $payment->provider,
                     'status' => $payment->status,
                     'reference' => $payment->reference,
-                    'provider_reference' => $payment->provider_reference,
-                    'created_at' => $payment->created_at->format('M d, Y H:i'),
-                    'completed_at' => $payment->completed_at?->format('M d, Y H:i'),
-                    'has_receipt' => $payment->receipt !== null,
-                    'receipt_number' => $payment->receipt?->receipt_number,
                 ];
             });
 
-        // Summary statistics
-        $summary = [
-            'total_payments' => PaymentTransaction::where('parent_id', $user->id)->count(),
-            'completed_payments' => PaymentTransaction::where('parent_id', $user->id)
-                ->where('status', 'completed')
-                ->count(),
-            'total_amount_paid' => PaymentTransaction::where('parent_id', $user->id)
-                ->where('status', 'completed')
-                ->sum('amount') / 100,
-            'pending_payments' => PaymentTransaction::where('parent_id', $user->id)
-                ->whereIn('status', ['initiating', 'processing'])
-                ->count(),
-        ];
+        // Children for filter dropdown
+        $children = $user->students()
+            ->get()
+            ->map(fn($s) => [
+                'studentId' => (string) $s->id,
+                'name' => $s->full_name,
+            ]);
 
         return Inertia::render('parent/PaymentHistory', [
             'payments' => $payments,
-            'summary' => $summary,
+            'children' => $children,
         ]);
     }
 }

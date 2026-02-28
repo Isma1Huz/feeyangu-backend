@@ -17,26 +17,40 @@ class ReceiptController extends Controller
     public function index(): Response
     {
         $user = auth()->user();
+        $studentIds = $user->students->pluck('id');
         
-        $receipts = Receipt::whereIn('student_id', $user->students->pluck('id'))
-            ->with(['student', 'paymentTransaction'])
+        $receipts = Receipt::whereIn('student_id', $studentIds)
+            ->with(['student', 'receiptItems'])
             ->latest('issued_at')
-            ->paginate(20)
-            ->through(function ($receipt) {
+            ->get()
+            ->map(function ($receipt) {
                 return [
-                    'id' => $receipt->id,
-                    'receipt_number' => $receipt->receipt_number,
-                    'student_name' => $receipt->student->full_name,
-                    'school_name' => $receipt->school->name,
+                    'id' => (string) $receipt->id,
+                    'receiptNumber' => $receipt->receipt_number,
+                    'date' => $receipt->issued_at->format('M d, Y'),
+                    'studentId' => (string) $receipt->student_id,
+                    'studentName' => $receipt->student->full_name,
                     'amount' => $receipt->amount / 100,
-                    'payment_method' => $receipt->payment_method,
-                    'payment_reference' => $receipt->payment_reference,
-                    'issued_at' => $receipt->issued_at->format('M d, Y H:i'),
+                    'paymentMethod' => $receipt->payment_method,
+                    'paymentReference' => $receipt->payment_reference,
+                    'items' => ($receipt->receiptItems ?? collect())->map(fn($item) => [
+                        'name' => $item->name,
+                        'amount' => $item->amount / 100,
+                    ])->toArray(),
                 ];
             });
 
+        // Children for filter dropdown
+        $children = $user->students()
+            ->get()
+            ->map(fn($s) => [
+                'studentId' => (string) $s->id,
+                'name' => $s->full_name,
+            ]);
+
         return Inertia::render('parent/Receipts', [
             'receipts' => $receipts,
+            'children' => $children,
         ]);
     }
 

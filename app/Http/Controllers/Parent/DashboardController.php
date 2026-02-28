@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Student;
 use App\Models\Invoice;
 use App\Models\PaymentTransaction;
+use App\Models\Receipt;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -18,97 +19,73 @@ class DashboardController extends Controller
     {
         $user = auth()->user();
 
-        // Get all children for this parent
+        // Get all children for this parent with their invoice totals
         $children = $user->students()
-            ->with(['grade', 'class', 'school'])
+            ->with(['grade', 'class', 'school', 'invoices'])
             ->get()
             ->map(function ($student) {
+                $invoices = $student->invoices;
+                $totalFees = $invoices->sum('total_amount') / 100;
+                $paidFees = $invoices->sum('paid_amount') / 100;
+
                 return [
-                    'id' => $student->id,
-                    'admission_number' => $student->admission_number,
-                    'full_name' => $student->full_name,
-                    'first_name' => $student->first_name,
-                    'last_name' => $student->last_name,
-                    'grade' => $student->grade ? [
-                        'id' => $student->grade->id,
-                        'name' => $student->grade->name,
-                    ] : null,
-                    'class' => $student->class ? [
-                        'id' => $student->class->id,
-                        'name' => $student->class->name,
-                    ] : null,
-                    'school' => [
-                        'id' => $student->school->id,
-                        'name' => $student->school->name,
-                    ],
+                    'studentId' => (string) $student->id,
+                    'name' => $student->full_name,
+                    'grade' => $student->grade ? $student->grade->name : '',
+                    'className' => $student->class ? $student->class->name : '',
                     'status' => $student->status,
-                    'balance' => $this->calculateBalance($student),
+                    'paidFees' => $paidFees,
+                    'totalFees' => $totalFees,
                 ];
             });
 
-        // Get recent notifications (unread)
-        $notifications = $user->notifications()
-            ->where('read', false)
-            ->latest()
-            ->take(5)
-            ->get()
-            ->map(function ($notification) {
-                return [
-                    'id' => $notification->id,
-                    'title' => $notification->title,
-                    'message' => $notification->message,
-                    'type' => $notification->type,
-                    'created_at' => $notification->created_at->diffForHumans(),
-                ];
-            });
-
-        // Get recent payments
-        $recentPayments = PaymentTransaction::whereIn('student_id', $children->pluck('id'))
+        // Get recent payments formatted for the dashboard table
+        $studentIds = $user->students()->pluck('students.id');
+        $recentPayments = PaymentTransaction::whereIn('student_id', $studentIds)
             ->where('parent_id', $user->id)
-            ->with(['student', 'receipt'])
+            ->with('student')
             ->latest()
             ->take(5)
             ->get()
             ->map(function ($payment) {
                 return [
-                    'id' => $payment->id,
-                    'student_name' => $payment->student->full_name,
-                    'amount' => $payment->amount / 100, // Convert from cents to KES
-                    'provider' => $payment->provider,
+                    'id' => (string) $payment->id,
+                    'date' => $payment->created_at->format('M d, Y'),
+                    'amount' => $payment->amount / 100,
+                    'method' => $payment->provider,
                     'status' => $payment->status,
                     'reference' => $payment->reference,
-                    'created_at' => $payment->created_at->format('M d, Y'),
-                    'has_receipt' => $payment->receipt !== null,
                 ];
             });
 
-        // Calculate summary statistics
-        $summary = [
-            'total_children' => $children->count(),
-            'total_balance' => $children->sum('balance'),
-            'unread_notifications' => $notifications->count(),
-            'recent_payment_count' => $recentPayments->count(),
-        ];
+        // Get recent receipts
+        $recentReceipts = Receipt::whereIn('student_id', $studentIds)
+            ->latest('issued_at')
+            ->take(5)
+            ->get()
+            ->map(function ($receipt) {
+                return [
+                    'id' => (string) $receipt->id,
+                    'receiptNumber' => $receipt->receipt_number,
+                    'date' => $receipt->issued_at->format('M d, Y'),
+                    'amount' => $receipt->amount / 100,
+                    'studentId' => (string) $receipt->student_id,
+                ];
+            });
+
+        // Calculate overall financial totals
+        $allInvoices = Invoice::whereIn('student_id', $studentIds)->get();
+        $totalFees = $allInvoices->sum('total_amount') / 100;
+        $totalPaid = $allInvoices->sum('paid_amount') / 100;
+        $totalOutstanding = $allInvoices->whereIn('status', ['sent', 'partial', 'overdue'])->sum('balance') / 100;
 
         return Inertia::render('parent/Dashboard', [
             'children' => $children,
-            'notifications' => $notifications,
             'recentPayments' => $recentPayments,
-            'summary' => $summary,
+            'recentReceipts' => $recentReceipts,
+            'totalFees' => $totalFees,
+            'totalPaid' => $totalPaid,
+            'totalOutstanding' => $totalOutstanding,
         ]);
-    }
-
-    /**
-     * Calculate the balance (unpaid fees) for a student.
-     */
-    private function calculateBalance(Student $student): float
-    {
-        // Get all invoices for this student
-        $totalInvoiced = Invoice::where('student_id', $student->id)
-            ->whereIn('status', ['sent', 'partial', 'overdue'])
-            ->sum('balance');
-
-        // Return balance in KES (convert from cents)
-        return $totalInvoiced / 100;
     }
 }

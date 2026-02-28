@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Parent;
 
 use App\Http\Controllers\Controller;
 use App\Models\Student;
-use App\Models\Invoice;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -18,55 +17,26 @@ class ChildrenController extends Controller
         $user = auth()->user();
 
         $children = $user->students()
-            ->with(['grade', 'class', 'school'])
+            ->with(['grade', 'class', 'invoices'])
             ->get()
             ->map(function ($student) {
-                // Get invoices for this student
-                $invoices = $student->invoices()
-                    ->whereIn('status', ['sent', 'partial', 'overdue'])
-                    ->get();
-
-                $totalBalance = $invoices->sum('balance') / 100;
-                $overdueBalance = $invoices->where('status', 'overdue')->sum('balance') / 100;
+                $invoices = $student->invoices;
+                $totalFees = $invoices->sum('total_amount') / 100;
+                $paidFees = $invoices->sum('paid_amount') / 100;
 
                 return [
-                    'id' => $student->id,
-                    'admission_number' => $student->admission_number,
-                    'full_name' => $student->full_name,
-                    'first_name' => $student->first_name,
-                    'last_name' => $student->last_name,
-                    'grade' => [
-                        'id' => $student->grade->id,
-                        'name' => $student->grade->name,
-                    ],
-                    'class' => [
-                        'id' => $student->class->id,
-                        'name' => $student->class->name,
-                    ],
-                    'school' => [
-                        'id' => $student->school->id,
-                        'name' => $student->school->name,
-                        'location' => $student->school->location,
-                    ],
+                    'studentId' => (string) $student->id,
+                    'name' => $student->full_name,
+                    'grade' => $student->grade ? $student->grade->name : '',
+                    'className' => $student->class ? $student->class->name : '',
                     'status' => $student->status,
-                    'balance' => $totalBalance,
-                    'overdue_balance' => $overdueBalance,
-                    'has_overdue' => $overdueBalance > 0,
-                    'invoice_count' => $invoices->count(),
+                    'paidFees' => $paidFees,
+                    'totalFees' => $totalFees,
                 ];
             });
 
-        // Calculate summary
-        $summary = [
-            'total_children' => $children->count(),
-            'total_balance' => $children->sum('balance'),
-            'total_overdue' => $children->sum('overdue_balance'),
-            'children_with_overdue' => $children->where('has_overdue', true)->count(),
-        ];
-
         return Inertia::render('parent/Children', [
             'children' => $children,
-            'summary' => $summary,
         ]);
     }
 
