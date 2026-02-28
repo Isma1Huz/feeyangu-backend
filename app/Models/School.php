@@ -90,6 +90,11 @@ class School extends Model
         return $this->hasMany(IntegrationConfig::class);
     }
 
+    public function apiCredentials(): HasMany
+    {
+        return $this->hasMany(SchoolApiCredential::class);
+    }
+
     public function reconciliationItems(): HasMany
     {
         return $this->hasMany(ReconciliationItem::class);

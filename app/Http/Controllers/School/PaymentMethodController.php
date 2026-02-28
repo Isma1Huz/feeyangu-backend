@@ -41,8 +41,26 @@ class PaymentMethodController extends Controller
             ->values()
             ->toArray();
 
+        // Fetch existing API credentials (without exposing secret values)
+        $apiCredentials = $school->apiCredentials()
+            ->get()
+            ->map(function ($cred) {
+                return [
+                    'provider'    => $cred->provider,
+                    'environment' => $cred->environment,
+                    'enabled'     => $cred->enabled,
+                    // Return masked values so the frontend knows fields are filled
+                    'values'      => collect($cred->credentials ?? [])->mapWithKeys(function ($val, $key) {
+                        return [$key => $val ? '••••••••' : ''];
+                    })->all(),
+                ];
+            })
+            ->keyBy('provider')
+            ->all();
+
         return Inertia::render('school/PaymentMethods', [
-            'paymentConfigs' => $paymentConfigs,
+            'paymentConfigs'  => $paymentConfigs,
+            'apiCredentials'  => $apiCredentials,
         ]);
     }
 

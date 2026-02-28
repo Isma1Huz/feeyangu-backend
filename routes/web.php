@@ -15,6 +15,7 @@ use App\Http\Controllers\School\ReceiptController as SchoolReceiptController;
 use App\Http\Controllers\School\PaymentMethodController as SchoolPaymentMethodController;
 use App\Http\Controllers\School\SettingsController as SchoolSettingsController;
 use App\Http\Controllers\School\BillingController as SchoolBillingController;
+use App\Http\Controllers\School\BankApiCredentialController as SchoolBankApiCredentialController;
 use App\Http\Controllers\Accountant\DashboardController as AccountantDashboardController;
 use App\Http\Controllers\Accountant\InvoiceController as AccountantInvoiceController;
 use App\Http\Controllers\Accountant\PaymentController as AccountantPaymentController;
@@ -72,6 +73,10 @@ Route::prefix('school')
         Route::post('/payment-methods', [SchoolPaymentMethodController::class, 'store'])->name('payment-methods.store');
         Route::put('/payment-methods/{id}', [SchoolPaymentMethodController::class, 'update'])->name('payment-methods.update');
         Route::delete('/payment-methods/{id}', [SchoolPaymentMethodController::class, 'destroy'])->name('payment-methods.destroy');
+
+        // Bank API credentials configuration
+        Route::post('/api-credentials', [SchoolBankApiCredentialController::class, 'store'])->name('api-credentials.store');
+        Route::post('/api-credentials/test', [SchoolBankApiCredentialController::class, 'test'])->name('api-credentials.test');
         
         // Payment viewing
         Route::get('/payments', [SchoolPaymentController::class, 'index'])->name('payments.index');

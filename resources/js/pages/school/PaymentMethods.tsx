@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Head, usePage, router } from '@inertiajs/react';
+import { Head, usePage } from '@inertiajs/react';
 import type { InertiaSharedProps } from '@/types/inertia';
 import { PAYMENT_PROVIDERS, type SchoolPaymentConfig, type PaymentProvider } from '@/types/payment.types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -9,18 +9,28 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import AppLayout from '@/layouts/AppLayout';
-import { Smartphone, Building2, Pencil, CheckCircle2, XCircle } from 'lucide-react';
+import BankApiConfigPanel from '@/components/school/BankApiConfigPanel';
+import { Smartphone, Building2, Pencil, CheckCircle2, XCircle, CreditCard, Settings2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+
+interface SavedApiCredential {
+  provider: string;
+  environment: 'sandbox' | 'production';
+  enabled: boolean;
+  values: Record<string, string>;
+}
 
 interface Props extends InertiaSharedProps {
   paymentConfigs: SchoolPaymentConfig[];
+  apiCredentials?: Record<string, SavedApiCredential>;
 }
 
 const PaymentMethods: React.FC = () => {
   const { toast } = useToast();
-  const { paymentConfigs } = usePage<Props>().props;
+  const { paymentConfigs, apiCredentials } = usePage<Props>().props;
   const [configs, setConfigs] = useState<SchoolPaymentConfig[]>(paymentConfigs);
   const [editOpen, setEditOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -263,49 +273,68 @@ const PaymentMethods: React.FC = () => {
           <p className="text-muted-foreground text-sm mt-1">Configure how parents can pay school fees. Enable payment methods and add your account details.</p>
         </div>
 
-      {/* Mobile Money */}
-      <div className="space-y-3">
-        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-          <Smartphone className="h-4 w-4" /> Mobile Money
-        </h2>
-        <div className="grid gap-3 sm:grid-cols-2">
-          {mobileProviders.map(renderProviderCard)}
-        </div>
-      </div>
+        <Tabs defaultValue="account-info">
+          <TabsList className="mb-4">
+            <TabsTrigger value="account-info" className="gap-2">
+              <CreditCard className="h-4 w-4" /> Account Info
+            </TabsTrigger>
+            <TabsTrigger value="bank-config" className="gap-2">
+              <Settings2 className="h-4 w-4" /> Bank Config
+            </TabsTrigger>
+          </TabsList>
 
-      {/* Banks */}
-      <div className="space-y-3">
-        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-          <Building2 className="h-4 w-4" /> Bank Transfers
-        </h2>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {bankProviders.map(renderProviderCard)}
-        </div>
-      </div>
+          {/* Tab 1: Account Info */}
+          <TabsContent value="account-info" className="space-y-6">
+            {/* Mobile Money */}
+            <div className="space-y-3">
+              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                <Smartphone className="h-4 w-4" /> Mobile Money
+              </h2>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {mobileProviders.map(renderProviderCard)}
+              </div>
+            </div>
 
-      {/* Add more providers */}
-      {missingProviders.length > 0 && (
-        <Card className="border-dashed">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm">Add More Payment Methods</CardTitle>
-            <CardDescription className="text-xs">Click to add a new payment provider</CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-wrap gap-2">
-            {missingProviders.map(p => (
-              <Button
-                key={p.id}
-                variant="outline"
-                size="sm"
-                className="gap-2"
-                onClick={() => addProvider(p.id)}
-              >
-                <div className="h-3 w-3 rounded-full" style={{ backgroundColor: p.color }} />
-                {p.name}
-              </Button>
-            ))}
-          </CardContent>
-        </Card>
-      )}
+            {/* Banks */}
+            <div className="space-y-3">
+              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                <Building2 className="h-4 w-4" /> Bank Transfers
+              </h2>
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {bankProviders.map(renderProviderCard)}
+              </div>
+            </div>
+
+            {/* Add more providers */}
+            {missingProviders.length > 0 && (
+              <Card className="border-dashed">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm">Add More Payment Methods</CardTitle>
+                  <CardDescription className="text-xs">Click to add a new payment provider</CardDescription>
+                </CardHeader>
+                <CardContent className="flex flex-wrap gap-2">
+                  {missingProviders.map(p => (
+                    <Button
+                      key={p.id}
+                      variant="outline"
+                      size="sm"
+                      className="gap-2"
+                      onClick={() => addProvider(p.id)}
+                    >
+                      <div className="h-3 w-3 rounded-full" style={{ backgroundColor: p.color }} />
+                      {p.name}
+                    </Button>
+                  ))}
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+
+          {/* Tab 2: Bank Config (API Credentials) */}
+          <TabsContent value="bank-config">
+            <BankApiConfigPanel savedCredentials={apiCredentials} />
+          </TabsContent>
+        </Tabs>
 
       {/* Edit Dialog */}
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
