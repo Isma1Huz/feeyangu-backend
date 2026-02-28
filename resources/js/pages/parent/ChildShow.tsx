@@ -488,8 +488,8 @@ const ChildShow: React.FC = () => {
                     <div className="bg-accent/50 rounded-xl p-3 space-y-1.5">
                       <p className="text-xs font-semibold text-muted-foreground">Payment Details</p>
                       <div className="grid grid-cols-2 gap-1 text-xs">
-                        <span className="text-muted-foreground">Paybill:</span><span className="font-mono-amount font-medium">{selectedConfig?.paybillNumber}</span>
-                        <span className="text-muted-foreground">Account:</span><span className="font-mono-amount font-medium">{selectedConfig?.accountNumber}</span>
+                        <span className="text-muted-foreground">Paybill:</span><span className="font-mono-amount font-medium">{selectedConfig?.paybill_number}</span>
+                        <span className="text-muted-foreground">Account:</span><span className="font-mono-amount font-medium">{selectedConfig?.account_number}</span>
                       </div>
                     </div>
                   </div>
@@ -500,8 +500,8 @@ const ChildShow: React.FC = () => {
                       <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Account Details</p>
                       <div className="grid grid-cols-[auto,1fr] gap-x-4 gap-y-1.5 text-sm">
                         <span className="text-muted-foreground">Bank:</span><span className="font-medium">{selectedProviderData?.name}</span>
-                        <span className="text-muted-foreground">Account:</span><span className="font-mono-amount font-medium">{selectedConfig?.accountNumber}</span>
-                        <span className="text-muted-foreground">Name:</span><span className="font-medium">{selectedConfig?.accountName}</span>
+                        <span className="text-muted-foreground">Account:</span><span className="font-mono-amount font-medium">{selectedConfig?.account_number}</span>
+                        <span className="text-muted-foreground">Name:</span><span className="font-medium">{selectedConfig?.account_name}</span>
                         <span className="text-muted-foreground">Reference:</span><span className="font-mono-amount font-medium">{generateRef()}</span>
                       </div>
                     </div>
@@ -596,7 +596,7 @@ const ChildShow: React.FC = () => {
                 </div>
                 <div className="border rounded-xl p-4 space-y-3 text-sm">
                   <div className="text-center border-b pb-2">
-                    <h4 className="font-bold">{selectedConfig?.accountName || 'School'}</h4>
+                    <h4 className="font-bold">{selectedConfig?.account_name || 'School'}</h4>
                     <p className="text-xs text-muted-foreground">Receipt: {receiptData.receiptNo}</p>
                   </div>
                   <div className="grid grid-cols-2 gap-1 text-xs">

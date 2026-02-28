@@ -16,17 +16,32 @@ import {
   Loader2, Settings2, Globe, Lock, TestTube,
 } from 'lucide-react';
 
-const initialCredentials: SavedApiCredentials[] = BANK_API_CONFIGS.map(cfg => ({
-  provider: cfg.provider,
-  environment: 'sandbox' as const,
-  enabled: false,
-  values: Object.fromEntries(cfg.fields.map(f => [f.key, ''])),
-  testStatus: 'untested' as const,
-}));
+interface SavedApiCredentialsFromServer {
+  provider: PaymentProvider;
+  environment: 'sandbox' | 'production';
+  enabled: boolean;
+  values: Record<string, string>;
+}
 
-const BankApiConfigPanel: React.FC = () => {
+interface BankApiConfigPanelProps {
+  savedCredentials?: Record<string, SavedApiCredentialsFromServer>;
+}
+
+const buildInitialCredentials = (saved: Record<string, SavedApiCredentialsFromServer> = {}): SavedApiCredentials[] =>
+  BANK_API_CONFIGS.map(cfg => {
+    const existing = saved[cfg.provider];
+    return {
+      provider: cfg.provider,
+      environment: existing?.environment ?? ('sandbox' as const),
+      enabled: existing?.enabled ?? false,
+      values: Object.fromEntries(cfg.fields.map(f => [f.key, existing?.values?.[f.key] ?? ''])),
+      testStatus: 'untested' as const,
+    };
+  });
+
+const BankApiConfigPanel: React.FC<BankApiConfigPanelProps> = ({ savedCredentials = {} }) => {
   const { toast } = useToast();
-  const [credentials, setCredentials] = useState<SavedApiCredentials[]>(initialCredentials);
+  const [credentials, setCredentials] = useState<SavedApiCredentials[]>(() => buildInitialCredentials(savedCredentials));
   const [activeProvider, setActiveProvider] = useState<PaymentProvider>(BANK_API_CONFIGS[0].provider);
   const [visibleFields, setVisibleFields] = useState<Record<string, boolean>>({});
   const [saving, setSaving] = useState(false);
