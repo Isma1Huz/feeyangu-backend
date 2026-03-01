@@ -15,6 +15,7 @@ use App\Http\Controllers\School\ReceiptController as SchoolReceiptController;
 use App\Http\Controllers\School\PaymentMethodController as SchoolPaymentMethodController;
 use App\Http\Controllers\School\SettingsController as SchoolSettingsController;
 use App\Http\Controllers\School\BillingController as SchoolBillingController;
+use App\Http\Controllers\School\UserController as SchoolUserController;
 use App\Http\Controllers\School\BankApiCredentialController as SchoolBankApiCredentialController;
 use App\Http\Controllers\Accountant\DashboardController as AccountantDashboardController;
 use App\Http\Controllers\Accountant\InvoiceController as AccountantInvoiceController;
@@ -42,6 +43,9 @@ Route::prefix('admin')
         Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
         Route::resource('schools', AdminSchoolController::class);
         Route::get('/users', [AdminUserController::class, 'index'])->name('users.index');
+        Route::post('/users', [AdminUserController::class, 'store'])->name('users.store');
+        Route::put('/users/{user}', [AdminUserController::class, 'update'])->name('users.update');
+        Route::delete('/users/{user}', [AdminUserController::class, 'destroy'])->name('users.destroy');
         Route::get('/settings', [AdminSettingsController::class, 'index'])->name('settings.index');
         Route::put('/settings', [AdminSettingsController::class, 'update'])->name('settings.update');
     });
@@ -92,6 +96,12 @@ Route::prefix('school')
         
         // Billing
         Route::get('/billing', [SchoolBillingController::class, 'index'])->name('billing.index');
+        
+        // User/Accountant management
+        Route::get('/users', [SchoolUserController::class, 'index'])->name('users.index');
+        Route::post('/users', [SchoolUserController::class, 'store'])->name('users.store');
+        Route::put('/users/{user}', [SchoolUserController::class, 'update'])->name('users.update');
+        Route::delete('/users/{user}', [SchoolUserController::class, 'destroy'])->name('users.destroy');
     });
 
 // Accountant Routes

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Head, usePage } from '@inertiajs/react';
+import { Head, usePage, router } from '@inertiajs/react';
 import type { InertiaSharedProps } from '@/types/inertia';
 import { useT } from '@/contexts/LanguageContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -28,15 +28,35 @@ const Settings: React.FC = () => {
   const { SCHOOL_SETTINGS_TEXT: t } = useT();
   const { school } = usePage<Props>().props;
   const [schoolName, setSchoolName] = useState(school.name);
-  const [motto, setMotto] = useState(school.motto);
-  const [location, setLocation] = useState(school.location);
-  const [email, setEmail] = useState(school.email);
-  const [phone, setPhone] = useState(school.phone);
-  const [primaryColor, setPrimaryColor] = useState(school.primaryColor);
-  const [secondaryColor, setSecondaryColor] = useState(school.secondaryColor);
+  const [motto, setMotto] = useState(school.motto || '');
+  const [location, setLocation] = useState(school.location || '');
+  const [email, setEmail] = useState(school.email || '');
+  const [phone, setPhone] = useState(school.phone || '');
+  const [primaryColor, setPrimaryColor] = useState(school.primaryColor || '#8B0000');
+  const [secondaryColor, setSecondaryColor] = useState(school.secondaryColor || '#FFD700');
+  const [saving, setSaving] = useState(false);
 
   const handleSave = () => {
-    toast({ title: t.savedMessage });
+    setSaving(true);
+    router.put('/school/settings', {
+      name: schoolName,
+      motto,
+      location,
+      email,
+      phone,
+      primary_color: primaryColor,
+      secondary_color: secondaryColor,
+    }, {
+      onSuccess: () => {
+        toast({ title: t.savedMessage });
+      },
+      onError: () => {
+        toast({ title: 'Error saving settings', variant: 'destructive' } as any);
+      },
+      onFinish: () => {
+        setSaving(false);
+      },
+    });
   };
 
   return (
@@ -129,7 +149,7 @@ const Settings: React.FC = () => {
       </Card>
 
       <div className="flex justify-end">
-        <Button onClick={handleSave}>{t.saveButton}</Button>
+        <Button onClick={handleSave} disabled={saving}>{saving ? 'Saving...' : t.saveButton}</Button>
       </div>
       </div>
     </AppLayout>

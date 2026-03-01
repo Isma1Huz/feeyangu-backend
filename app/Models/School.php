@@ -16,6 +16,11 @@ class School extends Model
         'status',
         'location',
         'logo',
+        'motto',
+        'email',
+        'phone',
+        'primary_color',
+        'secondary_color',
     ];
 
     protected function casts(): array

@@ -57,6 +57,7 @@ const AppSidebar: React.FC = () => {
       { title: t.SIDEBAR_TEXT.schoolAdmin.finance.items.receipts, url: '/school/receipts', icon: 'Receipt' },
     ]},
     { label: t.SIDEBAR_TEXT.schoolAdmin.settings.label, items: [
+      { title: 'Staff', url: '/school/users', icon: 'UserCheck' },
       { title: t.SIDEBAR_TEXT.schoolAdmin.settings.items.settings, url: '/school/settings', icon: 'Settings' },
       { title: 'Billing', url: '/school/billing', icon: 'Sparkles' },
     ]},
