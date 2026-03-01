@@ -25,7 +25,7 @@ class PaymentController extends Controller
 
         $validated = $request->validate([
             'amount' => 'required|numeric|min:1',
-            'provider' => 'required|in:mpesa,equity,kcb,cooperative,ncba,absa,stanbic,dtb,family,standard_chartered,coop,im_bank,family_bank',
+            'provider' => 'required|in:mpesa,equity,kcb,ncba,absa,stanbic,dtb,coop,im_bank,family_bank',
             'phone_number' => 'nullable|string',
         ]);
 
@@ -146,6 +146,9 @@ class PaymentController extends Controller
 
     /**
      * Manual payment confirmation (fallback).
+     * 
+     * Note: In production, replace sleep() with asynchronous queue processing
+     * to avoid blocking the request thread.
      */
     public function confirm(Request $request, Student $student): JsonResponse
     {
@@ -165,8 +168,10 @@ class PaymentController extends Controller
             abort(403, 'Unauthorized access to this transaction');
         }
 
-        // Simulate verification process with timeout
-        sleep(2); // Simulate processing time
+        // TODO: In production, dispatch this to a queue instead of using sleep
+        // Example: VerifyPaymentJob::dispatch($transaction);
+        // For now, simulate verification process with a small delay
+        sleep(2);
         
         // 90% success rate for manual confirmation
         $success = rand(1, 100) <= 90;

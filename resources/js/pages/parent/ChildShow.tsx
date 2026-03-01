@@ -156,7 +156,7 @@ const ChildShow: React.FC = () => {
   const getInstructions = () => {
     if (!selectedProviderData || !selectedConfig) return [];
     // Use transaction reference if available, otherwise show placeholder
-    const ref = transactionRef || '{reference will be generated}';
+    const ref = transactionRef || '(Reference will be generated)';
     return selectedProviderData.instructions.map(i =>
       i.replace('{paybill}', selectedConfig.paybill_number || '')
         .replace('{account}', selectedConfig.account_number)
