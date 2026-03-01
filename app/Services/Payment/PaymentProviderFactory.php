@@ -31,7 +31,7 @@ class PaymentProviderFactory
             'kcb' => app(KcbPaymentProvider::class),
             'equity' => app(EquityPaymentProvider::class),
             'ncba' => app(NcbaPaymentProvider::class),
-            'cooperative' => app(CooperativePaymentProvider::class),
+            'cooperative', 'coop' => app(CooperativePaymentProvider::class),
             'absa' => throw new InvalidArgumentException("Absa payment provider not yet implemented"),
             'stanbic' => throw new InvalidArgumentException("Stanbic payment provider not yet implemented"),
             'dtb' => throw new InvalidArgumentException("DTB payment provider not yet implemented"),

@@ -22,6 +22,11 @@ Route::prefix('payments')->group(function () {
         ->name('api.payment.callback')
         ->middleware('payment.callback');
 
+    // School-aware callback: includes school ID so webhooks work without subdomain routing
+    Route::post('/callback/{provider}/{school}', [PaymentCallbackController::class, 'handle'])
+        ->name('api.payment.callback.school')
+        ->middleware('payment.callback');
+
     // Authenticated payment status and confirmation endpoints
     Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/{transaction}/status', [PaymentCallbackController::class, 'status'])
