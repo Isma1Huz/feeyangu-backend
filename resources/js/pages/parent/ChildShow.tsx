@@ -108,7 +108,9 @@ const ChildShow: React.FC = () => {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [processingProgress, setProcessingProgress] = useState(0);
   const [transactionRef, setTransactionRef] = useState('');
+  const [transactionId, setTransactionId] = useState<string | null>(null);
   const [receiptData, setReceiptData] = useState<{ receiptNo: string; amount: number; items: { name: string; amount: number }[]; date: string } | null>(null);
+  const [isPolling, setIsPolling] = useState(false);
 
   if (!child) {
     return <div className="p-8 text-center text-muted-foreground">Student not found.</div>;
@@ -153,55 +155,128 @@ const ChildShow: React.FC = () => {
 
   const getInstructions = () => {
     if (!selectedProviderData || !selectedConfig) return [];
+    // Use transaction reference if available, otherwise show placeholder
+    const ref = transactionRef || '(Reference will be generated)';
     return selectedProviderData.instructions.map(i =>
       i.replace('{paybill}', selectedConfig.paybill_number || '')
         .replace('{account}', selectedConfig.account_number)
         .replace('{accountName}', selectedConfig.account_name)
         .replace('{amount}', selectedTotal.toLocaleString())
-        .replace('{reference}', transactionRef)
+        .replace('{reference}', ref)
     );
   };
 
-  const generateRef = () => {
-    const prefix = selectedProvider === 'mpesa' ? 'MPE' : selectedProvider?.toUpperCase().slice(0, 3) || 'PAY';
-    return `${prefix}-${Date.now().toString().slice(-8)}`;
-  };
-
-  const handleInitiatePayment = () => {
-    const ref = generateRef();
-    setTransactionRef(ref);
-
-    if (selectedProvider === 'mpesa') {
-      // Simulate M-Pesa STK push
+  const handleInitiatePayment = async () => {
+    if (!selectedProvider) return;
+    
+    try {
       setStep('processing');
-      simulateProcessing();
-    } else {
-      // Bank transfer — show instructions and manual confirm
-      setStep('pay');
+      setProcessingProgress(0);
+
+      // Call backend to initiate payment
+      const response = await fetch(`/parent/children/${child.id}/pay`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+        },
+        body: JSON.stringify({
+          amount: selectedTotal,
+          provider: selectedProvider,
+          phone_number: phoneNumber || null,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setTransactionRef(data.reference);
+        setTransactionId(data.transaction_id);
+
+        // Start polling for payment status
+        if (data.is_mobile_money) {
+          // M-Pesa - poll frequently
+          pollPaymentStatus(data.transaction_id, 2000);
+        } else {
+          // Bank transfer - poll less frequently with longer timeout
+          pollPaymentStatus(data.transaction_id, 3000);
+        }
+      } else {
+        toast({
+          title: 'Payment Initiation Failed',
+          description: data.message || 'Unable to initiate payment',
+          variant: 'destructive',
+        });
+        setStep('method');
+      }
+    } catch (error) {
+      console.error('Payment initiation error:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to initiate payment. Please try again.',
+        variant: 'destructive',
+      });
+      setStep('method');
     }
   };
 
-  const simulateProcessing = () => {
-    setProcessingProgress(0);
-    let progress = 0;
-    const interval = setInterval(() => {
-      progress += Math.random() * 15;
-      if (progress >= 100) {
-        progress = 100;
-        clearInterval(interval);
-        // Simulate 70% success, 30% needs manual confirm
-        const success = Math.random() > 0.3;
-        if (success) {
-          completePayment();
+  const pollPaymentStatus = useCallback(async (txnId: string, interval: number) => {
+    if (isPolling) return;
+    setIsPolling(true);
+
+    let attempts = 0;
+    const maxAttempts = 30; // Maximum 60 seconds for M-Pesa, 90 seconds for bank
+    
+    const poll = async () => {
+      try {
+        const response = await fetch(`/parent/children/${child.id}/pay/${txnId}/status`);
+        const data = await response.json();
+
+        // Update progress based on attempts
+        const progress = Math.min((attempts / maxAttempts) * 100, 95);
+        setProcessingProgress(progress);
+
+        if (data.status === 'completed') {
+          setProcessingProgress(100);
+          setIsPolling(false);
+          completePayment(data);
+        } else if (data.status === 'pending_confirmation') {
+          setIsPolling(false);
+          setStep('manual_confirm');
+        } else if (data.status === 'failed') {
+          setIsPolling(false);
+          toast({
+            title: 'Payment Failed',
+            description: 'The payment could not be processed.',
+            variant: 'destructive',
+          });
+          setStep('method');
         } else {
+          attempts++;
+          if (attempts < maxAttempts) {
+            setTimeout(poll, interval);
+          } else {
+            // Timeout - show manual confirm
+            setIsPolling(false);
+            setStep('manual_confirm');
+          }
+        }
+      } catch (error) {
+        console.error('Status poll error:', error);
+        attempts++;
+        if (attempts < maxAttempts) {
+          setTimeout(poll, interval);
+        } else {
+          setIsPolling(false);
           setStep('manual_confirm');
         }
       }
-      setProcessingProgress(Math.min(progress, 100));
-    }, 600);
-  };
+    };
 
-  const completePayment = () => {
+    poll();
+  }, [child.id, isPolling, toast]);
+
+  const completePayment = (paymentData?: any) => {
     const items = selectedItems.map(idx => {
       const invoice = invoices[idx];
       return {
@@ -210,26 +285,59 @@ const ChildShow: React.FC = () => {
       };
     });
     setReceiptData({
-      receiptNo: `RCT-${Date.now().toString().slice(-6)}`,
+      receiptNo: paymentData?.provider_reference || `RCT-${Date.now().toString().slice(-6)}`,
       amount: selectedTotal,
       items,
       date: new Date().toISOString().split('T')[0],
     });
     setStep('success');
+    
+    // Refresh page data after successful payment
+    setTimeout(() => {
+      router.reload({ only: ['invoices', 'recentPayments', 'financialSummary'] });
+    }, 3000);
   };
 
-  const handleManualConfirm = () => {
-    setStep('processing');
-    setProcessingProgress(0);
-    let progress = 0;
-    const interval = setInterval(() => {
-      progress += 20;
-      if (progress >= 100) {
-        clearInterval(interval);
-        completePayment();
+  const handleManualConfirm = async () => {
+    if (!transactionId) return;
+
+    try {
+      setStep('processing');
+      setProcessingProgress(0);
+
+      const response = await fetch(`/parent/children/${child.id}/pay/confirm`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+        },
+        body: JSON.stringify({
+          transaction_id: transactionId,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success && data.status === 'completed') {
+        setProcessingProgress(100);
+        completePayment(data);
+      } else {
+        toast({
+          title: 'Verification in Progress',
+          description: data.message || 'Please check back later for payment confirmation.',
+          variant: 'default',
+        });
+        setStep('manual_confirm');
       }
-      setProcessingProgress(Math.min(progress, 100));
-    }, 400);
+    } catch (error) {
+      console.error('Manual confirm error:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to confirm payment. Please try again.',
+        variant: 'destructive',
+      });
+      setStep('manual_confirm');
+    }
   };
 
   const closePayment = () => {
@@ -237,6 +345,9 @@ const ChildShow: React.FC = () => {
     setStep('select');
     setSelectedItems([]);
     setReceiptData(null);
+    setTransactionRef('');
+    setTransactionId(null);
+    setIsPolling(false);
   };
 
   const stepIndex = ['select', 'method', 'pay', 'processing', 'success'].indexOf(
@@ -444,10 +555,7 @@ const ChildShow: React.FC = () => {
 
                 <div className="flex justify-between pt-3 border-t">
                   <Button variant="outline" onClick={() => setStep('select')}>Back</Button>
-                  <Button onClick={() => {
-                    if (selectedProvider === 'mpesa') setStep('pay');
-                    else setStep('pay');
-                  }} disabled={!selectedProvider} className="gap-1.5">
+                  <Button onClick={() => setStep('pay')} disabled={!selectedProvider} className="gap-1.5">
                     Continue <ArrowRight className="h-3.5 w-3.5" />
                   </Button>
                 </div>
@@ -505,7 +613,7 @@ const ChildShow: React.FC = () => {
                         <span className="text-muted-foreground">Bank:</span><span className="font-medium">{selectedProviderData?.name}</span>
                         <span className="text-muted-foreground">Account:</span><span className="font-mono-amount font-medium">{selectedConfig?.account_number}</span>
                         <span className="text-muted-foreground">Name:</span><span className="font-medium">{selectedConfig?.account_name}</span>
-                        <span className="text-muted-foreground">Reference:</span><span className="font-mono-amount font-medium">{generateRef()}</span>
+                        <span className="text-muted-foreground">Reference:</span><span className="font-mono-amount font-medium">{transactionRef || 'Will be generated'}</span>
                       </div>
                     </div>
                     <div className="space-y-2">
@@ -548,8 +656,15 @@ const ChildShow: React.FC = () => {
                 <div>
                   <h3 className="text-lg font-bold">Processing Payment</h3>
                   <p className="text-sm text-muted-foreground mt-1">
-                    {selectedProvider === 'mpesa' ? 'Waiting for M-Pesa confirmation...' : 'Verifying your bank transfer...'}
+                    {selectedProvider === 'mpesa' 
+                      ? 'Waiting for M-Pesa confirmation. Please check your phone and enter your PIN...' 
+                      : 'Verifying your bank transfer. This usually takes 20-30 seconds...'}
                   </p>
+                  {selectedProvider !== 'mpesa' && (
+                    <p className="text-xs text-muted-foreground mt-2">
+                      We're checking with {selectedProviderData?.name} to confirm your payment.
+                    </p>
+                  )}
                 </div>
                 <div className="max-w-xs mx-auto space-y-2">
                   <Progress value={processingProgress} className="h-2" />
@@ -596,34 +711,41 @@ const ChildShow: React.FC = () => {
                   <p className="text-sm text-muted-foreground">
                     {CURRENCY} {receiptData.amount.toLocaleString()} paid via {selectedProviderData?.name}
                   </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Your receipt will be available in the Receipts section
+                  </p>
                 </div>
-                <div className="border rounded-xl p-4 space-y-3 text-sm">
+                <div className="border rounded-xl p-4 space-y-3 text-sm bg-gradient-to-br from-success/5 to-primary/5">
                   <div className="text-center border-b pb-2">
-                    <h4 className="font-bold">{selectedConfig?.account_name || 'School'}</h4>
-                    <p className="text-xs text-muted-foreground">Receipt: {receiptData.receiptNo}</p>
+                    <h4 className="font-bold">{child.school.name}</h4>
+                    <p className="text-xs text-muted-foreground">Payment Receipt: {receiptData.receiptNo}</p>
                   </div>
                   <div className="grid grid-cols-2 gap-1 text-xs">
                     <span className="text-muted-foreground">Date:</span><span>{receiptData.date}</span>
                     <span className="text-muted-foreground">Student:</span><span>{child.full_name}</span>
+                    <span className="text-muted-foreground">Admission No:</span><span className="font-mono-amount">{child.admission_number}</span>
                     <span className="text-muted-foreground">Method:</span><span>{selectedProviderData?.name}</span>
-                    <span className="text-muted-foreground">Ref:</span><span className="font-mono-amount">{transactionRef}</span>
+                    <span className="text-muted-foreground">Ref:</span><span className="font-mono-amount text-[10px]">{transactionRef}</span>
                   </div>
-                  {receiptData.items.map((item, i) => (
-                    <div key={i} className="flex justify-between text-xs border-b border-border/50 pb-1">
-                      <span>{item.name}</span>
-                      <span className="font-mono-amount">{CURRENCY} {item.amount.toLocaleString()}</span>
-                    </div>
-                  ))}
-                  <div className="flex justify-between font-bold text-sm pt-1">
-                    <span>Total</span>
-                    <span className="font-mono-amount">{CURRENCY} {receiptData.amount.toLocaleString()}</span>
+                  <div className="border-t pt-2">
+                    <p className="text-xs font-semibold text-muted-foreground mb-2">Items Paid</p>
+                    {receiptData.items.map((item, i) => (
+                      <div key={i} className="flex justify-between text-xs border-b border-border/30 pb-1 mb-1">
+                        <span>{item.name}</span>
+                        <span className="font-mono-amount">{CURRENCY} {item.amount.toLocaleString()}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex justify-between font-bold text-sm pt-1 border-t">
+                    <span>Total Paid</span>
+                    <span className="font-mono-amount text-success">{CURRENCY} {receiptData.amount.toLocaleString()}</span>
                   </div>
                 </div>
                 <div className="flex gap-2">
                   <Button variant="outline" className="flex-1 gap-1" onClick={() => window.print()}>
-                    <Download className="h-3.5 w-3.5" /> Download
+                    <Download className="h-3.5 w-3.5" /> Save
                   </Button>
-                  <Button className="flex-1" onClick={closePayment}>Done</Button>
+                  <Button className="flex-1" onClick={closePayment}>View Updated Balance</Button>
                 </div>
               </div>
             )}
