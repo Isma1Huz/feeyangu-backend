@@ -656,8 +656,15 @@ const ChildShow: React.FC = () => {
                 <div>
                   <h3 className="text-lg font-bold">Processing Payment</h3>
                   <p className="text-sm text-muted-foreground mt-1">
-                    {selectedProvider === 'mpesa' ? 'Waiting for M-Pesa confirmation...' : 'Verifying your bank transfer...'}
+                    {selectedProvider === 'mpesa' 
+                      ? 'Waiting for M-Pesa confirmation. Please check your phone and enter your PIN...' 
+                      : 'Verifying your bank transfer. This usually takes 20-30 seconds...'}
                   </p>
+                  {selectedProvider !== 'mpesa' && (
+                    <p className="text-xs text-muted-foreground mt-2">
+                      We're checking with {selectedProviderData?.name} to confirm your payment.
+                    </p>
+                  )}
                 </div>
                 <div className="max-w-xs mx-auto space-y-2">
                   <Progress value={processingProgress} className="h-2" />
@@ -704,34 +711,41 @@ const ChildShow: React.FC = () => {
                   <p className="text-sm text-muted-foreground">
                     {CURRENCY} {receiptData.amount.toLocaleString()} paid via {selectedProviderData?.name}
                   </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Your receipt will be available in the Receipts section
+                  </p>
                 </div>
-                <div className="border rounded-xl p-4 space-y-3 text-sm">
+                <div className="border rounded-xl p-4 space-y-3 text-sm bg-gradient-to-br from-success/5 to-primary/5">
                   <div className="text-center border-b pb-2">
-                    <h4 className="font-bold">{selectedConfig?.account_name || 'School'}</h4>
-                    <p className="text-xs text-muted-foreground">Receipt: {receiptData.receiptNo}</p>
+                    <h4 className="font-bold">{child.school.name}</h4>
+                    <p className="text-xs text-muted-foreground">Payment Receipt: {receiptData.receiptNo}</p>
                   </div>
                   <div className="grid grid-cols-2 gap-1 text-xs">
                     <span className="text-muted-foreground">Date:</span><span>{receiptData.date}</span>
                     <span className="text-muted-foreground">Student:</span><span>{child.full_name}</span>
+                    <span className="text-muted-foreground">Admission No:</span><span className="font-mono-amount">{child.admission_number}</span>
                     <span className="text-muted-foreground">Method:</span><span>{selectedProviderData?.name}</span>
-                    <span className="text-muted-foreground">Ref:</span><span className="font-mono-amount">{transactionRef}</span>
+                    <span className="text-muted-foreground">Ref:</span><span className="font-mono-amount text-[10px]">{transactionRef}</span>
                   </div>
-                  {receiptData.items.map((item, i) => (
-                    <div key={i} className="flex justify-between text-xs border-b border-border/50 pb-1">
-                      <span>{item.name}</span>
-                      <span className="font-mono-amount">{CURRENCY} {item.amount.toLocaleString()}</span>
-                    </div>
-                  ))}
-                  <div className="flex justify-between font-bold text-sm pt-1">
-                    <span>Total</span>
-                    <span className="font-mono-amount">{CURRENCY} {receiptData.amount.toLocaleString()}</span>
+                  <div className="border-t pt-2">
+                    <p className="text-xs font-semibold text-muted-foreground mb-2">Items Paid</p>
+                    {receiptData.items.map((item, i) => (
+                      <div key={i} className="flex justify-between text-xs border-b border-border/30 pb-1 mb-1">
+                        <span>{item.name}</span>
+                        <span className="font-mono-amount">{CURRENCY} {item.amount.toLocaleString()}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex justify-between font-bold text-sm pt-1 border-t">
+                    <span>Total Paid</span>
+                    <span className="font-mono-amount text-success">{CURRENCY} {receiptData.amount.toLocaleString()}</span>
                   </div>
                 </div>
                 <div className="flex gap-2">
                   <Button variant="outline" className="flex-1 gap-1" onClick={() => window.print()}>
-                    <Download className="h-3.5 w-3.5" /> Download
+                    <Download className="h-3.5 w-3.5" /> Save
                   </Button>
-                  <Button className="flex-1" onClick={closePayment}>Done</Button>
+                  <Button className="flex-1" onClick={closePayment}>View Updated Balance</Button>
                 </div>
               </div>
             )}
