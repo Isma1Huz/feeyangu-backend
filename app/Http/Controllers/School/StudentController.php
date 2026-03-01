@@ -124,11 +124,20 @@ class StudentController extends Controller
             'status' => 'required|in:active,inactive',
         ]);
 
+        // Verify grade and class belong to this school
+        $grade = $school->grades()->find($validated['grade_id']);
+        if (!$grade) {
+            abort(403, 'Unauthorized access to this grade');
+        }
+        if (!$grade->gradeClasses()->where('id', $validated['class_id'])->exists()) {
+            abort(403, 'Unauthorized access to this class');
+        }
+
         $validated['school_id'] = $school->id;
 
-        $student = Student::create($validated);
+        Student::create($validated);
 
-        return redirect()->route('school.students.show', $student)
+        return redirect()->route('school.students.index')
             ->with('success', 'Student created successfully.');
     }
 
