@@ -5,14 +5,20 @@ namespace App\Http\Controllers\Parent;
 use App\Http\Controllers\Controller;
 use App\Models\Student;
 use App\Models\PaymentTransaction;
+use App\Services\Payment\PaymentProviderFactory;
+use App\Services\Payment\PaymentReferenceGenerator;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class PaymentController extends Controller
 {
+    public function __construct(
+        private PaymentProviderFactory $factory,
+        private PaymentReferenceGenerator $referenceGenerator
+    ) {}
+
     /**
      * Initiate a payment for a student.
      */
@@ -30,52 +36,84 @@ class PaymentController extends Controller
         ]);
 
         // Convert amount from KES to cents
-        $amountInCents = (int)($validated['amount'] * 100);
+        $amountInCents = (int) ($validated['amount'] * 100);
 
-        // Generate unique reference code including student reg number and school ID
-        $providerCode = strtoupper(substr($validated['provider'], 0, 3));
-        $schoolCode = str_pad(substr($student->school_id, -4), 4, '0', STR_PAD_LEFT);
-        $studentReg = preg_replace('/[^A-Z0-9]/', '', strtoupper($student->admission_number));
-        $timestamp = date('ymd');
-        $uniqueId = strtoupper(substr(uniqid(), -4));
-        
-        // Format: PROVIDER-SCHOOLID-STUDENTREG-YYMMDD-UNIQ
-        // Example: MPE-0001-STD123-240301-A1B2
-        $reference = "{$providerCode}-{$schoolCode}-{$studentReg}-{$timestamp}-{$uniqueId}";
+        // Generate unique reference: {ADMISSION}-{SCHOOL_ID}-{CODE}
+        $reference = $this->generateUniqueReference($student);
 
         // Create payment transaction
         $transaction = PaymentTransaction::create([
-            'school_id' => $student->school_id,
-            'student_id' => $student->id,
-            'parent_id' => auth()->id(),
-            'amount' => $amountInCents,
-            'provider' => $validated['provider'],
-            'status' => 'pending',
-            'reference' => $reference,
+            'school_id'    => $student->school_id,
+            'student_id'   => $student->id,
+            'parent_id'    => auth()->id(),
+            'amount'       => $amountInCents,
+            'provider'     => $validated['provider'],
+            'status'       => 'pending',
+            'reference'    => $reference,
             'phone_number' => $validated['phone_number'] ?? null,
         ]);
 
-        // Determine if this is mobile money or bank transfer
-        $isMobileMoney = in_array($validated['provider'], ['mpesa']);
-        
+        $isMobileMoney = $validated['provider'] === 'mpesa';
+
         if ($isMobileMoney) {
-            // For M-Pesa, simulate STK push
-            $transaction->update(['status' => 'processing']);
-            $message = 'Payment initiated. Please check your phone for M-Pesa prompt.';
-        } else {
-            // For bank transfers, keep as pending with instructions
-            $transaction->update(['status' => 'pending']);
-            $message = 'Please complete the bank transfer using the provided instructions.';
+            // Trigger real STK Push via provider
+            $provider = $this->factory->make('mpesa');
+            $result   = $provider->initiatePayment($transaction);
+
+            if ($result->success) {
+                return response()->json([
+                    'success'        => true,
+                    'transaction_id' => $transaction->id,
+                    'reference'      => $reference,
+                    'status'         => $transaction->fresh()->status,
+                    'is_mobile_money' => true,
+                    'message'        => $result->message,
+                ]);
+            }
+
+            // STK push failed – keep transaction as pending for manual fallback
+            return response()->json([
+                'success'        => false,
+                'transaction_id' => $transaction->id,
+                'reference'      => $reference,
+                'status'         => 'pending',
+                'is_mobile_money' => true,
+                'message'        => $result->errorMessage ?? 'Failed to initiate M-Pesa payment. Please try again or pay via PayBill.',
+            ], 422);
         }
 
+        // For bank transfers, keep as pending with PayBill/transfer instructions
         return response()->json([
-            'success' => true,
+            'success'        => true,
             'transaction_id' => $transaction->id,
-            'reference' => $reference,
-            'status' => $transaction->status,
-            'is_mobile_money' => $isMobileMoney,
-            'message' => $message,
+            'reference'      => $reference,
+            'status'         => 'pending',
+            'is_mobile_money' => false,
+            'message'        => 'Please complete the bank transfer using the provided reference number.',
         ]);
+    }
+
+    /**
+     * Generate a unique reference, retrying on collision (rare).
+     */
+    private function generateUniqueReference(Student $student): string
+    {
+        $maxAttempts = 5;
+
+        for ($i = 0; $i < $maxAttempts; $i++) {
+            $reference = $this->referenceGenerator->generate(
+                $student->admission_number,
+                $student->school_id
+            );
+
+            if (!PaymentTransaction::where('reference', $reference)->exists()) {
+                return $reference;
+            }
+        }
+
+        // Extremely unlikely to reach here; use a longer code as fallback
+        $extendedLength = 10;
+        return $this->referenceGenerator->generate($student->admission_number, $student->school_id, $extendedLength);
     }
 
     /**
@@ -92,63 +130,20 @@ class PaymentController extends Controller
             abort(403, 'Transaction does not belong to this student');
         }
 
-        // Simulate payment processing for demo purposes
-        // In production, this would poll the actual payment provider API
-        if ($transaction->status === 'processing') {
-            // Simulate random success/failure after some time
-            $elapsed = now()->diffInSeconds($transaction->created_at);
-            
-            // For M-Pesa: simulate STK push result after 5-15 seconds
-            if (in_array($transaction->provider, ['mpesa']) && $elapsed >= 8) {
-                // 85% success rate
-                if (rand(1, 100) <= 85) {
-                    $transaction->update([
-                        'status' => 'completed',
-                        'completed_at' => now(),
-                        'provider_reference' => 'SIM' . strtoupper(uniqid()),
-                    ]);
-                } else {
-                    // Needs manual confirmation
-                    $transaction->update(['status' => 'pending_confirmation']);
-                }
-            }
-        } elseif ($transaction->status === 'pending') {
-            // For bank transfers: Check if enough time has passed for simulation
-            $elapsed = now()->diffInSeconds($transaction->created_at);
-            
-            // Simulate bank transfer verification after 20 seconds
-            if ($elapsed >= 20) {
-                // 80% success rate for automatic verification
-                if (rand(1, 100) <= 80) {
-                    $transaction->update([
-                        'status' => 'completed',
-                        'completed_at' => now(),
-                        'provider_reference' => 'BNK' . strtoupper(uniqid()),
-                    ]);
-                } else {
-                    // Needs manual confirmation
-                    $transaction->update(['status' => 'pending_confirmation']);
-                }
-            }
-        }
-
         return response()->json([
-            'transaction_id' => $transaction->id,
-            'reference' => $transaction->reference,
-            'status' => $transaction->status,
-            'amount' => $transaction->amount / 100,
-            'provider' => $transaction->provider,
+            'transaction_id'     => $transaction->id,
+            'reference'          => $transaction->reference,
+            'status'             => $transaction->status,
+            'amount'             => $transaction->amount / 100,
+            'provider'           => $transaction->provider,
             'provider_reference' => $transaction->provider_reference,
-            'created_at' => $transaction->created_at->toISOString(),
-            'completed_at' => $transaction->completed_at?->toISOString(),
+            'created_at'         => $transaction->created_at->toISOString(),
+            'completed_at'       => $transaction->completed_at?->toISOString(),
         ]);
     }
 
     /**
-     * Manual payment confirmation (fallback).
-     * 
-     * Note: In production, replace sleep() with asynchronous queue processing
-     * to avoid blocking the request thread.
+     * Manual payment confirmation (fallback for unmatched payments).
      */
     public function confirm(Request $request, Student $student): JsonResponse
     {
@@ -168,38 +163,25 @@ class PaymentController extends Controller
             abort(403, 'Unauthorized access to this transaction');
         }
 
-        // TODO: In production, dispatch this to a queue instead of using sleep
-        // Example: VerifyPaymentJob::dispatch($transaction);
-        // For now, simulate verification process with a small delay
-        sleep(2);
-        
-        // 90% success rate for manual confirmation
-        $success = rand(1, 100) <= 90;
-        
-        if ($success) {
-            $transaction->update([
-                'status' => 'completed',
-                'completed_at' => now(),
-                'provider_reference' => 'MAN' . strtoupper(uniqid()),
-            ]);
-            
+        if ($transaction->status === 'completed') {
             return response()->json([
-                'success' => true,
+                'success'        => true,
                 'transaction_id' => $transaction->id,
-                'reference' => $transaction->reference,
-                'status' => 'completed',
-                'message' => 'Payment confirmed successfully.',
+                'reference'      => $transaction->reference,
+                'status'         => 'completed',
+                'message'        => 'Payment is already confirmed.',
             ]);
-        } else {
-            $transaction->update(['status' => 'pending_confirmation']);
-            
-            return response()->json([
-                'success' => false,
-                'transaction_id' => $transaction->id,
-                'status' => 'pending_confirmation',
-                'message' => 'Payment verification in progress. Please check back later.',
-            ], 202);
         }
+
+        // Mark as pending_confirmation for staff to verify manually
+        $transaction->update(['status' => 'pending_confirmation']);
+
+        return response()->json([
+            'success'        => true,
+            'transaction_id' => $transaction->id,
+            'status'         => 'pending_confirmation',
+            'message'        => 'Your payment is being verified. You will be notified once confirmed.',
+        ]);
     }
 
     /**
@@ -208,30 +190,30 @@ class PaymentController extends Controller
     public function index(): Response
     {
         $user = auth()->user();
-        
+
         $payments = PaymentTransaction::where('parent_id', $user->id)
             ->with(['student'])
             ->latest()
             ->get()
             ->map(function ($payment) {
                 return [
-                    'id' => (string) $payment->id,
-                    'date' => $payment->created_at->format('M d, Y'),
-                    'studentId' => (string) $payment->student_id,
+                    'id'          => (string) $payment->id,
+                    'date'        => $payment->created_at->format('M d, Y'),
+                    'studentId'   => (string) $payment->student_id,
                     'studentName' => $payment->student->full_name,
-                    'amount' => $payment->amount / 100,
-                    'method' => $payment->provider,
-                    'status' => $payment->status,
-                    'reference' => $payment->reference,
+                    'amount'      => $payment->amount / 100,
+                    'method'      => $payment->provider,
+                    'status'      => $payment->status,
+                    'reference'   => $payment->reference,
                 ];
             });
 
         // Children for filter dropdown
         $children = $user->students()
             ->get()
-            ->map(fn($s) => [
+            ->map(fn ($s) => [
                 'studentId' => (string) $s->id,
-                'name' => $s->full_name,
+                'name'      => $s->full_name,
             ]);
 
         return Inertia::render('parent/PaymentHistory', [
@@ -240,3 +222,4 @@ class PaymentController extends Controller
         ]);
     }
 }
+

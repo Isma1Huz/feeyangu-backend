@@ -4,49 +4,88 @@ namespace App\Services\Payment\Providers;
 
 use App\Models\PaymentTransaction;
 use App\Models\Receipt;
+use App\Models\SchoolApiCredential;
 use App\Services\Payment\Contracts\PaymentProviderInterface;
 use App\Services\Payment\DTOs\PaymentInitResult;
 use App\Services\Payment\DTOs\PaymentStatusResult;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Cache;
 
 /**
  * M-Pesa Payment Provider
- * 
+ *
  * Implements Safaricom Daraja API for M-Pesa payments.
- * Supports STK Push (Lipa Na M-Pesa Online) and C2B callbacks.
+ * Supports:
+ *   - STK Push (Lipa Na M-Pesa Online)
+ *   - C2B PayBill confirmation callbacks
+ *
+ * Credentials are loaded per-school from SchoolApiCredential, with a
+ * fallback to global config() values for backwards compatibility.
  */
 class MpesaPaymentProvider implements PaymentProviderInterface
 {
-    private string $consumerKey;
-    private string $consumerSecret;
-    private string $passkey;
-    private string $shortcode;
-    private string $environment;
-    private string $baseUrl;
+    private ?string $consumerKey = null;
+    private ?string $consumerSecret = null;
+    private ?string $passkey = null;
+    private ?string $shortcode = null;
+    private string $environment = 'sandbox';
+    private string $baseUrl = 'https://sandbox.safaricom.co.ke';
 
     public function __construct()
     {
-        $this->environment = config('services.mpesa.environment', 'sandbox');
-        $this->consumerKey = config('services.mpesa.consumer_key');
-        $this->consumerSecret = config('services.mpesa.consumer_secret');
-        $this->passkey = config('services.mpesa.passkey');
-        $this->shortcode = config('services.mpesa.shortcode');
-        
+        // Credentials are loaded lazily via loadCredentialsForSchool().
+    }
+
+    // -------------------------------------------------------------------------
+    // Credential loading
+    // -------------------------------------------------------------------------
+
+    /**
+     * Load per-school M-Pesa credentials from SchoolApiCredential.
+     * Falls back to global config values if no DB entry exists.
+     */
+    private function loadCredentialsForSchool(int $schoolId): void
+    {
+        $cred = SchoolApiCredential::where('school_id', $schoolId)
+            ->where('provider', 'mpesa')
+            ->where('enabled', true)
+            ->first();
+
+        if ($cred) {
+            $this->environment    = $cred->environment;
+            $this->consumerKey    = $cred->credentials['consumer_key']    ?? null;
+            $this->consumerSecret = $cred->credentials['consumer_secret'] ?? null;
+            $this->passkey        = $cred->credentials['passkey']         ?? null;
+            $this->shortcode      = $cred->credentials['shortcode']       ?? null;
+        } else {
+            // Fallback to global config for schools that haven't configured DB credentials
+            $this->environment    = config('services.mpesa.environment', 'sandbox');
+            $this->consumerKey    = config('services.mpesa.consumer_key');
+            $this->consumerSecret = config('services.mpesa.consumer_secret');
+            $this->passkey        = config('services.mpesa.passkey');
+            $this->shortcode      = config('services.mpesa.shortcode');
+        }
+
         $this->baseUrl = $this->environment === 'production'
             ? 'https://api.safaricom.co.ke'
             : 'https://sandbox.safaricom.co.ke';
     }
 
+    // -------------------------------------------------------------------------
+    // OAuth / helpers
+    // -------------------------------------------------------------------------
+
     /**
      * Get OAuth access token from Daraja API.
+     * Cached per school+environment to minimise API calls.
      */
-    private function getAccessToken(): ?string
+    private function getAccessToken(int $schoolId): ?string
     {
-        $cacheKey = 'mpesa_access_token_' . $this->environment;
-        
+        $cacheKey = "mpesa_access_token_{$this->environment}_{$schoolId}";
+
         return Cache::remember($cacheKey, 3500, function () {
             try {
                 $response = Http::withBasicAuth($this->consumerKey, $this->consumerSecret)
@@ -58,7 +97,7 @@ class MpesaPaymentProvider implements PaymentProviderInterface
 
                 Log::error('M-Pesa OAuth failed', [
                     'status' => $response->status(),
-                    'body' => $response->body(),
+                    'body'   => $response->body(),
                 ]);
 
                 return null;
@@ -70,50 +109,79 @@ class MpesaPaymentProvider implements PaymentProviderInterface
     }
 
     /**
-     * Generate password for STK Push request.
+     * Generate STK Push password and populate $timestamp by reference.
      */
-    private function generatePassword(): string
+    private function generatePassword(string &$timestamp): string
     {
         $timestamp = now()->format('YmdHis');
         return base64_encode($this->shortcode . $this->passkey . $timestamp);
     }
 
     /**
-     * Initiate STK Push payment.
+     * Normalise phone number to 254XXXXXXXXX format.
+     */
+    private function normalizePhone(string $phone): string
+    {
+        $phone = preg_replace('/[^0-9]/', '', $phone);
+        if (str_starts_with($phone, '0')) {
+            $phone = '254' . substr($phone, 1);
+        }
+        return $phone;
+    }
+
+    /**
+     * Build the callback URL for this school, including the school ID so that
+     * webhooks can be routed without relying on subdomain routing.
+     */
+    private function callbackUrl(int $schoolId): string
+    {
+        if (app('router')->has('api.payment.callback.school')) {
+            return route('api.payment.callback.school', [
+                'provider' => 'mpesa',
+                'school'   => $schoolId,
+            ]);
+        }
+
+        return route('api.payment.callback', ['provider' => 'mpesa']);
+    }
+
+    // -------------------------------------------------------------------------
+    // Interface implementation
+    // -------------------------------------------------------------------------
+
+    /**
+     * Initiate an STK Push payment.
      */
     public function initiatePayment(PaymentTransaction $transaction): PaymentInitResult
     {
-        $token = $this->getAccessToken();
-        
-        if (!$token) {
-            return PaymentInitResult::failure(
-                'Failed to obtain M-Pesa access token',
-                'AUTH_FAILED'
-            );
+        $this->loadCredentialsForSchool($transaction->school_id);
+
+        if (!$this->validateConfiguration()) {
+            return PaymentInitResult::failure('M-Pesa not configured for this school', 'NOT_CONFIGURED');
         }
 
-        $timestamp = now()->format('YmdHis');
-        $password = $this->generatePassword();
-        
-        // Format phone number (remove + and ensure it starts with 254)
-        $phoneNumber = $transaction->phone_number;
-        $phoneNumber = preg_replace('/[^0-9]/', '', $phoneNumber);
-        if (substr($phoneNumber, 0, 1) === '0') {
-            $phoneNumber = '254' . substr($phoneNumber, 1);
+        $token = $this->getAccessToken($transaction->school_id);
+
+        if (!$token) {
+            return PaymentInitResult::failure('Failed to obtain M-Pesa access token', 'AUTH_FAILED');
         }
+
+        $timestamp = '';
+        $password  = $this->generatePassword($timestamp);
+        $phone     = $this->normalizePhone($transaction->phone_number ?? '');
 
         $payload = [
             'BusinessShortCode' => $this->shortcode,
-            'Password' => $password,
-            'Timestamp' => $timestamp,
-            'TransactionType' => 'CustomerPayBillOnline',
-            'Amount' => (int)($transaction->amount / 100), // Convert cents to KES
-            'PartyA' => $phoneNumber,
-            'PartyB' => $this->shortcode,
-            'PhoneNumber' => $phoneNumber,
-            'CallBackURL' => route('api.payment.callback.mpesa'),
-            'AccountReference' => $transaction->reference,
-            'TransactionDesc' => "Payment for {$transaction->student->full_name} - {$transaction->school->name}",
+            'Password'          => $password,
+            'Timestamp'         => $timestamp,
+            'TransactionType'   => 'CustomerPayBillOnline',
+            'Amount'            => (int) ($transaction->amount / 100), // cents → KES
+            'PartyA'            => $phone,
+            'PartyB'            => $this->shortcode,
+            'PhoneNumber'       => $phone,
+            'CallBackURL'       => $this->callbackUrl($transaction->school_id),
+            'AccountReference'  => $transaction->reference,
+            'TransactionDesc'   => "School fees - {$transaction->reference}",
         ];
 
         try {
@@ -122,24 +190,31 @@ class MpesaPaymentProvider implements PaymentProviderInterface
 
             $data = $response->json();
 
-            if ($response->successful() && $data['ResponseCode'] === '0') {
-                // Update transaction with checkout request ID
+            if ($response->successful() && ($data['ResponseCode'] ?? '') === '0') {
+                $checkoutRequestId = $data['CheckoutRequestID']  ?? null;
+                $merchantRequestId = $data['MerchantRequestID']  ?? null;
+
                 $transaction->update([
-                    'status' => 'processing',
-                    'provider_reference' => $data['CheckoutRequestID'] ?? null,
+                    'status'             => 'processing',
+                    'provider_reference' => $checkoutRequestId,
+                    'metadata'           => array_merge($transaction->metadata ?? [], [
+                        'CheckoutRequestID' => $checkoutRequestId,
+                        'MerchantRequestID' => $merchantRequestId,
+                        'stk_initiated_at'  => now()->toISOString(),
+                    ]),
                 ]);
 
                 return PaymentInitResult::success(
-                    $transaction->id,
-                    $data['CheckoutRequestID'],
+                    (string) $transaction->id,
+                    $checkoutRequestId,
                     $data['CustomerMessage'] ?? 'Payment request sent. Please complete on your phone.',
-                    $data['CheckoutRequestID']
+                    $checkoutRequestId
                 );
             }
 
             Log::error('M-Pesa STK Push failed', [
                 'transaction_id' => $transaction->id,
-                'response' => $data,
+                'response'       => $data,
             ]);
 
             return PaymentInitResult::failure(
@@ -149,18 +224,15 @@ class MpesaPaymentProvider implements PaymentProviderInterface
         } catch (\Exception $e) {
             Log::error('M-Pesa STK Push exception', [
                 'transaction_id' => $transaction->id,
-                'message' => $e->getMessage(),
+                'message'        => $e->getMessage(),
             ]);
 
-            return PaymentInitResult::failure(
-                'An error occurred while initiating payment',
-                'EXCEPTION'
-            );
+            return PaymentInitResult::failure('An error occurred while initiating payment', 'EXCEPTION');
         }
     }
 
     /**
-     * Check payment status.
+     * Check payment status via Daraja STK Push Query API.
      */
     public function checkStatus(string $reference): PaymentStatusResult
     {
@@ -169,16 +241,12 @@ class MpesaPaymentProvider implements PaymentProviderInterface
             ->first();
 
         if (!$transaction) {
-            return PaymentStatusResult::failed(
-                $reference,
-                'Transaction not found'
-            );
+            return PaymentStatusResult::failed($reference, 'Transaction not found');
         }
 
-        // If already completed, return completed status
         if ($transaction->status === 'completed') {
             return PaymentStatusResult::completed(
-                $transaction->id,
+                (string) $transaction->id,
                 $transaction->provider_reference,
                 $transaction->amount / 100,
                 $transaction->completed_at ?? now(),
@@ -186,23 +254,20 @@ class MpesaPaymentProvider implements PaymentProviderInterface
             );
         }
 
-        // Otherwise, query Daraja API for status
-        $token = $this->getAccessToken();
-        
+        $this->loadCredentialsForSchool($transaction->school_id);
+        $token = $this->getAccessToken($transaction->school_id);
+
         if (!$token) {
-            return PaymentStatusResult::processing(
-                $transaction->id,
-                'Unable to check status at this time'
-            );
+            return PaymentStatusResult::processing((string) $transaction->id, 'Unable to check status at this time');
         }
 
-        $timestamp = now()->format('YmdHis');
-        $password = $this->generatePassword();
+        $timestamp = '';
+        $password  = $this->generatePassword($timestamp);
 
         $payload = [
             'BusinessShortCode' => $this->shortcode,
-            'Password' => $password,
-            'Timestamp' => $timestamp,
+            'Password'          => $password,
+            'Timestamp'         => $timestamp,
             'CheckoutRequestID' => $transaction->provider_reference,
         ];
 
@@ -214,140 +279,213 @@ class MpesaPaymentProvider implements PaymentProviderInterface
 
             if ($response->successful() && isset($data['ResultCode'])) {
                 if ($data['ResultCode'] === '0') {
-                    // Payment successful
-                    $this->markAsCompleted($transaction, $data);
-                    
+                    $this->completeTransaction($transaction, []);
                     return PaymentStatusResult::completed(
-                        $transaction->id,
+                        (string) $transaction->id,
                         $transaction->provider_reference,
                         $transaction->amount / 100,
                         now(),
                         'Payment completed successfully'
                     );
-                } elseif ($data['ResultCode'] === '1032') {
-                    // User cancelled
-                    $transaction->update(['status' => 'failed']);
-                    
-                    return PaymentStatusResult::failed(
-                        $transaction->id,
-                        'Payment cancelled by user',
-                        $data['ResultCode']
-                    );
-                } else {
-                    // Other failure
-                    $transaction->update(['status' => 'failed']);
-                    
-                    return PaymentStatusResult::failed(
-                        $transaction->id,
-                        $data['ResultDesc'] ?? 'Payment failed',
-                        $data['ResultCode']
-                    );
                 }
+
+                if ($data['ResultCode'] === '1032') {
+                    $transaction->update(['status' => 'failed']);
+                    return PaymentStatusResult::failed((string) $transaction->id, 'Payment cancelled by user', $data['ResultCode']);
+                }
+
+                $transaction->update(['status' => 'failed']);
+                return PaymentStatusResult::failed(
+                    (string) $transaction->id,
+                    $data['ResultDesc'] ?? 'Payment failed',
+                    $data['ResultCode']
+                );
             }
 
-            return PaymentStatusResult::processing(
-                $transaction->id,
-                'Payment is being processed'
-            );
+            return PaymentStatusResult::processing((string) $transaction->id, 'Payment is being processed');
         } catch (\Exception $e) {
-            Log::error('M-Pesa status check exception', [
-                'reference' => $reference,
-                'message' => $e->getMessage(),
-            ]);
-
-            return PaymentStatusResult::processing(
-                $transaction->id,
-                'Unable to check status'
-            );
+            Log::error('M-Pesa status check exception', ['reference' => $reference, 'message' => $e->getMessage()]);
+            return PaymentStatusResult::processing((string) $transaction->id, 'Unable to check status');
         }
     }
 
     /**
-     * Handle M-Pesa callback.
+     * Handle incoming M-Pesa callback.
+     *
+     * Supports both STK Push callbacks and C2B PayBill confirmation callbacks.
      */
     public function handleCallback(Request $request): void
     {
         $payload = $request->all();
-        
-        Log::info('M-Pesa callback received', $payload);
 
-        // Extract callback data
-        $resultCode = $payload['Body']['stkCallback']['ResultCode'] ?? null;
-        $resultDesc = $payload['Body']['stkCallback']['ResultDesc'] ?? '';
+        if (isset($payload['Body']['stkCallback'])) {
+            $this->handleStkCallback($payload);
+        } elseif (isset($payload['TransID'])) {
+            $this->handleC2BCallback($payload);
+        } else {
+            Log::warning('M-Pesa callback: unrecognised payload structure', $payload);
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // STK Push callback
+    // -------------------------------------------------------------------------
+
+    private function handleStkCallback(array $payload): void
+    {
+        $resultCode        = $payload['Body']['stkCallback']['ResultCode']        ?? null;
+        $resultDesc        = $payload['Body']['stkCallback']['ResultDesc']        ?? '';
         $checkoutRequestId = $payload['Body']['stkCallback']['CheckoutRequestID'] ?? null;
 
         if (!$checkoutRequestId) {
-            Log::error('M-Pesa callback missing CheckoutRequestID', $payload);
+            Log::error('M-Pesa STK callback missing CheckoutRequestID', $payload);
             return;
         }
 
         $transaction = PaymentTransaction::where('provider_reference', $checkoutRequestId)->first();
 
         if (!$transaction) {
-            Log::error('Transaction not found for M-Pesa callback', ['checkoutRequestId' => $checkoutRequestId]);
+            Log::error('M-Pesa STK callback: transaction not found', [
+                'checkoutRequestId' => $checkoutRequestId,
+            ]);
             return;
         }
 
         if ($resultCode === 0) {
-            // Success
-            $callbackMetadata = $payload['Body']['stkCallback']['CallbackMetadata']['Item'] ?? [];
-            $this->markAsCompleted($transaction, ['CallbackMetadata' => $callbackMetadata]);
+            $items = $payload['Body']['stkCallback']['CallbackMetadata']['Item'] ?? [];
+            $meta  = $this->parseCallbackMetadata($items);
+            $this->completeTransaction($transaction, $meta);
         } else {
-            // Failed
-            $transaction->update([
-                'status' => 'failed',
-            ]);
-            
-            Log::info('M-Pesa payment failed', [
+            $transaction->update(['status' => 'failed']);
+            Log::info('M-Pesa STK payment failed', [
                 'transaction_id' => $transaction->id,
-                'result_code' => $resultCode,
-                'result_desc' => $resultDesc,
+                'result_code'    => $resultCode,
+                'result_desc'    => $resultDesc,
             ]);
         }
     }
 
     /**
-     * Mark transaction as completed and generate receipt.
+     * Parse the key/value Item array from the STK Push CallbackMetadata.
      */
-    private function markAsCompleted(PaymentTransaction $transaction, array $metadata): void
+    private function parseCallbackMetadata(array $items): array
     {
-        $transaction->update([
-            'status' => 'completed',
-            'completed_at' => now(),
-        ]);
+        $meta = [];
+        foreach ($items as $item) {
+            if (isset($item['Name'], $item['Value'])) {
+                $meta[$item['Name']] = $item['Value'];
+            }
+        }
+        return $meta;
+    }
 
-        // Generate receipt
-        $receiptNumber = 'RCT-' . date('Y') . '-' . str_pad($transaction->school_id, 3, '0', STR_PAD_LEFT) . '-' . uniqid();
-        
-        Receipt::create([
-            'school_id' => $transaction->school_id,
-            'payment_transaction_id' => $transaction->id,
-            'receipt_number' => $receiptNumber,
-            'student_id' => $transaction->student_id,
-            'amount' => $transaction->amount,
-            'payment_method' => 'M-Pesa',
-            'payment_reference' => $transaction->provider_reference,
-            'issued_at' => now(),
-        ]);
+    // -------------------------------------------------------------------------
+    // C2B PayBill confirmation callback
+    // -------------------------------------------------------------------------
 
-        Log::info('M-Pesa payment completed', [
-            'transaction_id' => $transaction->id,
-            'receipt_number' => $receiptNumber,
-        ]);
+    /**
+     * Handle Daraja C2B PayBill confirmation callback.
+     *
+     * Daraja sends this when a customer pays via PayBill.
+     * The BillRefNumber field must match PaymentTransaction.reference.
+     */
+    private function handleC2BCallback(array $payload): void
+    {
+        $billRefNumber = $payload['BillRefNumber'] ?? null;
+        $transId       = $payload['TransID']       ?? null;
+        $amount        = $payload['TransAmount']   ?? null;
+
+        if (!$billRefNumber) {
+            Log::error('M-Pesa C2B callback missing BillRefNumber', $payload);
+            return;
+        }
+
+        $transaction = PaymentTransaction::where('reference', $billRefNumber)->first();
+
+        if (!$transaction) {
+            Log::error('M-Pesa C2B callback: no transaction matches BillRefNumber', [
+                'BillRefNumber' => $billRefNumber,
+            ]);
+            return;
+        }
+
+        $meta = [
+            'MpesaReceiptNumber' => $transId,
+            'TransAmount'        => $amount,
+            'MSISDN'             => $payload['MSISDN'] ?? null,
+        ];
+
+        $this->completeTransaction($transaction, $meta);
+    }
+
+    // -------------------------------------------------------------------------
+    // Shared completion logic
+    // -------------------------------------------------------------------------
+
+    /**
+     * Mark a transaction as completed and create a receipt (idempotent).
+     *
+     * Uses a DB transaction + Receipt.firstOrCreate to ensure exactly-once receipt
+     * creation even if the callback arrives multiple times.
+     */
+    private function completeTransaction(PaymentTransaction $transaction, array $callbackMeta): void
+    {
+        DB::transaction(function () use ($transaction, $callbackMeta) {
+            // Reload with a lock to prevent concurrent duplicate processing
+            $tx = PaymentTransaction::lockForUpdate()->find($transaction->id);
+
+            if (!$tx || $tx->status === 'completed') {
+                return; // Already completed – idempotent guard
+            }
+
+            $mergedMeta = array_merge($tx->metadata ?? [], $callbackMeta, [
+                'completed_at' => now()->toISOString(),
+            ]);
+
+            $mpesaReceipt = $callbackMeta['MpesaReceiptNumber'] ?? null;
+
+            $tx->update([
+                'status'             => 'completed',
+                'completed_at'       => now(),
+                'provider_reference' => $mpesaReceipt ?? $tx->provider_reference,
+                'metadata'           => $mergedMeta,
+            ]);
+
+            $receiptNumber = 'RCT-' . date('Y') . '-'
+                . str_pad($tx->school_id, 3, '0', STR_PAD_LEFT) . '-'
+                . str_pad($tx->id, 6, '0', STR_PAD_LEFT);
+
+            Receipt::firstOrCreate(
+                ['payment_transaction_id' => $tx->id],
+                [
+                    'school_id'        => $tx->school_id,
+                    'receipt_number'   => $receiptNumber,
+                    'student_id'       => $tx->student_id,
+                    'amount'           => $tx->amount,
+                    'payment_method'   => 'M-Pesa',
+                    'payment_reference' => $mpesaReceipt ?? $tx->provider_reference,
+                    'issued_at'        => now(),
+                ]
+            );
+
+            Log::info('M-Pesa payment completed', [
+                'transaction_id' => $tx->id,
+                'receipt_number' => $receiptNumber,
+                'mpesa_receipt'  => $mpesaReceipt,
+            ]);
+        });
     }
 
     /**
-     * Reverse a payment.
+     * Reverse a payment (not yet implemented for M-Pesa Daraja).
      */
     public function reversePayment(string $reference, string $reason = ''): bool
     {
-        // M-Pesa reversal API implementation
-        // This would require additional Daraja API calls
         Log::warning('M-Pesa reversal requested but not implemented', [
             'reference' => $reference,
-            'reason' => $reason,
+            'reason'    => $reason,
         ]);
-        
+
         return false;
     }
 

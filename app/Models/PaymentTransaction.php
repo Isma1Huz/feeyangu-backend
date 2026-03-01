@@ -20,6 +20,7 @@ class PaymentTransaction extends Model
         'provider_reference',
         'completed_at',
         'notes',
+        'metadata',
     ];
 
     protected function casts(): array
@@ -27,6 +28,7 @@ class PaymentTransaction extends Model
         return [
             'amount' => 'integer',
             'completed_at' => 'datetime',
+            'metadata' => 'array',
         ];
     }
 

@@ -4,6 +4,7 @@ namespace App\Services\Payment\Providers;
 
 use App\Models\PaymentTransaction;
 use App\Models\Receipt;
+use App\Models\SchoolApiCredential;
 use App\Services\Payment\Contracts\PaymentProviderInterface;
 use App\Services\Payment\DTOs\PaymentInitResult;
 use App\Services\Payment\DTOs\PaymentStatusResult;
@@ -14,6 +15,9 @@ use Illuminate\Support\Facades\Cache;
 
 /**
  * NCBA Bank Payment Provider (Loop API)
+ *
+ * Credentials are loaded per-school from SchoolApiCredential, with a
+ * fallback to global config() values for backwards compatibility.
  */
 class NcbaPaymentProvider implements PaymentProviderInterface
 {
@@ -23,13 +27,32 @@ class NcbaPaymentProvider implements PaymentProviderInterface
 
     public function __construct()
     {
-        $this->apiKey = config('services.ncba.api_key', '');
-        $this->accountNumber = config('services.ncba.account_number', '');
-        $this->baseUrl = config('services.ncba.base_url', 'https://api.ncbagroup.com');
+        $this->apiKey        = config('services.ncba.api_key')        ?? '';
+        $this->accountNumber = config('services.ncba.account_number') ?? '';
+        $this->baseUrl       = config('services.ncba.base_url')       ?? 'https://api.ncbagroup.com';
+    }
+
+    /**
+     * Load per-school NCBA credentials, overriding any global config defaults.
+     */
+    private function loadCredentialsForSchool(int $schoolId): void
+    {
+        $cred = SchoolApiCredential::where('school_id', $schoolId)
+            ->where('provider', 'ncba')
+            ->where('enabled', true)
+            ->first();
+
+        if ($cred) {
+            $this->apiKey        = $cred->credentials['api_key']        ?? $this->apiKey;
+            $this->accountNumber = $cred->credentials['account_number'] ?? $this->accountNumber;
+            $this->baseUrl       = $cred->credentials['base_url']       ?? $this->baseUrl;
+        }
     }
 
     public function initiatePayment(PaymentTransaction $transaction): PaymentInitResult
     {
+        $this->loadCredentialsForSchool($transaction->school_id);
+
         if (!$this->validateConfiguration()) {
             return PaymentInitResult::failure('NCBA Bank not configured');
         }

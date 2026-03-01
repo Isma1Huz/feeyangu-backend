@@ -25,8 +25,12 @@ class PaymentCallbackController extends Controller
      * Handle payment callback from any provider.
      * 
      * Route: POST /api/payments/callback/{provider}
+     *        POST /api/payments/callback/{provider}/{school}
+     *
+     * The {school} segment is the school ID and is used to route multi-tenant
+     * webhooks without relying on subdomain routing.
      */
-    public function handle(Request $request, string $provider): JsonResponse
+    public function handle(Request $request, string $provider, ?int $school = null): JsonResponse
     {
         $ipAddress = $request->ip();
         $headers = $request->headers->all();
@@ -44,6 +48,7 @@ class PaymentCallbackController extends Controller
         try {
             Log::info("Payment callback received", [
                 'provider' => $provider,
+                'school_id' => $school,
                 'ip' => $ipAddress,
                 'webhook_id' => $webhookLog->id,
             ]);

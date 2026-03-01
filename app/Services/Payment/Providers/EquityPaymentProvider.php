@@ -4,6 +4,7 @@ namespace App\Services\Payment\Providers;
 
 use App\Models\PaymentTransaction;
 use App\Models\Receipt;
+use App\Models\SchoolApiCredential;
 use App\Services\Payment\Contracts\PaymentProviderInterface;
 use App\Services\Payment\DTOs\PaymentInitResult;
 use App\Services\Payment\DTOs\PaymentStatusResult;
@@ -14,8 +15,9 @@ use Illuminate\Support\Facades\Cache;
 
 /**
  * Equity Bank Payment Provider (Jenga API)
- * 
- * Implements Equity Bank Jenga API for payment processing.
+ *
+ * Credentials are loaded per-school from SchoolApiCredential, with a
+ * fallback to global config() values for backwards compatibility.
  */
 class EquityPaymentProvider implements PaymentProviderInterface
 {
@@ -25,13 +27,32 @@ class EquityPaymentProvider implements PaymentProviderInterface
 
     public function __construct()
     {
-        $this->apiKey = config('services.equity.api_key', '');
-        $this->merchantCode = config('services.equity.merchant_code', '');
-        $this->baseUrl = config('services.equity.base_url', 'https://api.jengaapi.io');
+        $this->apiKey       = config('services.equity.api_key')       ?? '';
+        $this->merchantCode = config('services.equity.merchant_code') ?? '';
+        $this->baseUrl      = config('services.equity.base_url')      ?? 'https://api.jengaapi.io';
+    }
+
+    /**
+     * Load per-school Equity credentials, overriding any global config defaults.
+     */
+    private function loadCredentialsForSchool(int $schoolId): void
+    {
+        $cred = SchoolApiCredential::where('school_id', $schoolId)
+            ->where('provider', 'equity')
+            ->where('enabled', true)
+            ->first();
+
+        if ($cred) {
+            $this->apiKey       = $cred->credentials['api_key']       ?? $this->apiKey;
+            $this->merchantCode = $cred->credentials['merchant_code'] ?? $this->merchantCode;
+            $this->baseUrl      = $cred->credentials['base_url']      ?? $this->baseUrl;
+        }
     }
 
     public function initiatePayment(PaymentTransaction $transaction): PaymentInitResult
     {
+        $this->loadCredentialsForSchool($transaction->school_id);
+
         if (!$this->validateConfiguration()) {
             return PaymentInitResult::failure('Equity Bank not configured');
         }
@@ -41,13 +62,17 @@ class EquityPaymentProvider implements PaymentProviderInterface
             return PaymentInitResult::failure('Unable to authenticate with Equity Bank');
         }
 
+        $callbackUrl = app('router')->has('api.payment.callback.school')
+            ? route('api.payment.callback.school', ['provider' => 'equity', 'school' => $transaction->school_id])
+            : route('api.payment.callback', ['provider' => 'equity']);
+
         $payload = [
-            'merchant_code' => $this->merchantCode,
-            'amount' => $transaction->amount / 100,
-            'reference' => $transaction->reference,
+            'merchant_code'  => $this->merchantCode,
+            'amount'         => $transaction->amount / 100,
+            'reference'      => $transaction->reference,
             'customer_phone' => $transaction->phone_number,
-            'description' => "School fees - {$transaction->school->name}",
-            'callback_url' => route('api.payment.callback', ['provider' => 'equity']),
+            'description'    => "School fees - {$transaction->school->name}",
+            'callback_url'   => $callbackUrl,
         ];
 
         try {

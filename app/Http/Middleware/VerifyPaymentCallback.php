@@ -43,11 +43,16 @@ class VerifyPaymentCallback
     /**
      * Handle an incoming request.
      */
-    public function handle(Request $request, Closure $next, string $provider): Response
+    public function handle(Request $request, Closure $next, string $provider = ''): Response
     {
         // In development/testing, allow all IPs
         if (app()->environment(['local', 'testing'])) {
             return $next($request);
+        }
+
+        // If provider was not supplied as middleware parameter, extract from route
+        if ($provider === '') {
+            $provider = $request->route('provider') ?? '';
         }
 
         $clientIp = $request->ip();

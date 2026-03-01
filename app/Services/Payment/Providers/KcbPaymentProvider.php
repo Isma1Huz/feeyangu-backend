@@ -4,6 +4,7 @@ namespace App\Services\Payment\Providers;
 
 use App\Models\PaymentTransaction;
 use App\Models\Receipt;
+use App\Models\SchoolApiCredential;
 use App\Services\Payment\Contracts\PaymentProviderInterface;
 use App\Services\Payment\DTOs\PaymentInitResult;
 use App\Services\Payment\DTOs\PaymentStatusResult;
@@ -14,9 +15,9 @@ use Illuminate\Support\Facades\Cache;
 
 /**
  * KCB Bank Payment Provider
- * 
- * Implements KCB Bank API for payment processing.
- * Note: Replace with actual KCB API endpoints and authentication.
+ *
+ * Credentials are loaded per-school from SchoolApiCredential, with a
+ * fallback to global config() values for backwards compatibility.
  */
 class KcbPaymentProvider implements PaymentProviderInterface
 {
@@ -27,10 +28,28 @@ class KcbPaymentProvider implements PaymentProviderInterface
 
     public function __construct()
     {
-        $this->apiKey = config('services.kcb.api_key', '');
-        $this->apiSecret = config('services.kcb.api_secret', '');
-        $this->baseUrl = config('services.kcb.base_url', 'https://api.kcbgroup.com');
-        $this->accountNumber = config('services.kcb.account_number', '');
+        $this->apiKey        = config('services.kcb.api_key')        ?? '';
+        $this->apiSecret     = config('services.kcb.api_secret')     ?? '';
+        $this->baseUrl       = config('services.kcb.base_url')       ?? 'https://api.kcbgroup.com';
+        $this->accountNumber = config('services.kcb.account_number') ?? '';
+    }
+
+    /**
+     * Load per-school KCB credentials, overriding any global config defaults.
+     */
+    private function loadCredentialsForSchool(int $schoolId): void
+    {
+        $cred = SchoolApiCredential::where('school_id', $schoolId)
+            ->where('provider', 'kcb')
+            ->where('enabled', true)
+            ->first();
+
+        if ($cred) {
+            $this->apiKey        = $cred->credentials['api_key']        ?? $this->apiKey;
+            $this->apiSecret     = $cred->credentials['api_secret']     ?? $this->apiSecret;
+            $this->accountNumber = $cred->credentials['account_number'] ?? $this->accountNumber;
+            $this->baseUrl       = $cred->credentials['base_url']       ?? $this->baseUrl;
+        }
     }
 
     /**
@@ -38,6 +57,8 @@ class KcbPaymentProvider implements PaymentProviderInterface
      */
     public function initiatePayment(PaymentTransaction $transaction): PaymentInitResult
     {
+        $this->loadCredentialsForSchool($transaction->school_id);
+
         if (!$this->validateConfiguration()) {
             return PaymentInitResult::failure('KCB Bank not configured');
         }
@@ -47,6 +68,10 @@ class KcbPaymentProvider implements PaymentProviderInterface
             return PaymentInitResult::failure('Unable to authenticate with KCB Bank');
         }
 
+        $callbackUrl = app('router')->has('api.payment.callback.school')
+            ? route('api.payment.callback.school', ['provider' => 'kcb', 'school' => $transaction->school_id])
+            : route('api.payment.callback', ['provider' => 'kcb']);
+
         // Build KCB payment request
         $payload = [
             'account_number' => $this->accountNumber,
@@ -54,7 +79,7 @@ class KcbPaymentProvider implements PaymentProviderInterface
             'reference' => $transaction->reference,
             'customer_phone' => $transaction->phone_number,
             'description' => "School fees payment - {$transaction->school->name}",
-            'callback_url' => route('api.payment.callback', ['provider' => 'kcb']),
+            'callback_url' => $callbackUrl,
         ];
 
         try {
