@@ -108,7 +108,9 @@ const ChildShow: React.FC = () => {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [processingProgress, setProcessingProgress] = useState(0);
   const [transactionRef, setTransactionRef] = useState('');
+  const [transactionId, setTransactionId] = useState<string | null>(null);
   const [receiptData, setReceiptData] = useState<{ receiptNo: string; amount: number; items: { name: string; amount: number }[]; date: string } | null>(null);
+  const [isPolling, setIsPolling] = useState(false);
 
   if (!child) {
     return <div className="p-8 text-center text-muted-foreground">Student not found.</div>;
@@ -153,55 +155,128 @@ const ChildShow: React.FC = () => {
 
   const getInstructions = () => {
     if (!selectedProviderData || !selectedConfig) return [];
+    // Use transaction reference if available, otherwise show placeholder
+    const ref = transactionRef || '{reference will be generated}';
     return selectedProviderData.instructions.map(i =>
       i.replace('{paybill}', selectedConfig.paybill_number || '')
         .replace('{account}', selectedConfig.account_number)
         .replace('{accountName}', selectedConfig.account_name)
         .replace('{amount}', selectedTotal.toLocaleString())
-        .replace('{reference}', transactionRef)
+        .replace('{reference}', ref)
     );
   };
 
-  const generateRef = () => {
-    const prefix = selectedProvider === 'mpesa' ? 'MPE' : selectedProvider?.toUpperCase().slice(0, 3) || 'PAY';
-    return `${prefix}-${Date.now().toString().slice(-8)}`;
-  };
-
-  const handleInitiatePayment = () => {
-    const ref = generateRef();
-    setTransactionRef(ref);
-
-    if (selectedProvider === 'mpesa') {
-      // Simulate M-Pesa STK push
+  const handleInitiatePayment = async () => {
+    if (!selectedProvider) return;
+    
+    try {
       setStep('processing');
-      simulateProcessing();
-    } else {
-      // Bank transfer — show instructions and manual confirm
-      setStep('pay');
+      setProcessingProgress(0);
+
+      // Call backend to initiate payment
+      const response = await fetch(`/parent/children/${child.id}/pay`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+        },
+        body: JSON.stringify({
+          amount: selectedTotal,
+          provider: selectedProvider,
+          phone_number: phoneNumber || null,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setTransactionRef(data.reference);
+        setTransactionId(data.transaction_id);
+
+        // Start polling for payment status
+        if (data.is_mobile_money) {
+          // M-Pesa - poll frequently
+          pollPaymentStatus(data.transaction_id, 2000);
+        } else {
+          // Bank transfer - poll less frequently with longer timeout
+          pollPaymentStatus(data.transaction_id, 3000);
+        }
+      } else {
+        toast({
+          title: 'Payment Initiation Failed',
+          description: data.message || 'Unable to initiate payment',
+          variant: 'destructive',
+        });
+        setStep('method');
+      }
+    } catch (error) {
+      console.error('Payment initiation error:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to initiate payment. Please try again.',
+        variant: 'destructive',
+      });
+      setStep('method');
     }
   };
 
-  const simulateProcessing = () => {
-    setProcessingProgress(0);
-    let progress = 0;
-    const interval = setInterval(() => {
-      progress += Math.random() * 15;
-      if (progress >= 100) {
-        progress = 100;
-        clearInterval(interval);
-        // Simulate 70% success, 30% needs manual confirm
-        const success = Math.random() > 0.3;
-        if (success) {
-          completePayment();
+  const pollPaymentStatus = useCallback(async (txnId: string, interval: number) => {
+    if (isPolling) return;
+    setIsPolling(true);
+
+    let attempts = 0;
+    const maxAttempts = 30; // Maximum 60 seconds for M-Pesa, 90 seconds for bank
+    
+    const poll = async () => {
+      try {
+        const response = await fetch(`/parent/children/${child.id}/pay/${txnId}/status`);
+        const data = await response.json();
+
+        // Update progress based on attempts
+        const progress = Math.min((attempts / maxAttempts) * 100, 95);
+        setProcessingProgress(progress);
+
+        if (data.status === 'completed') {
+          setProcessingProgress(100);
+          setIsPolling(false);
+          completePayment(data);
+        } else if (data.status === 'pending_confirmation') {
+          setIsPolling(false);
+          setStep('manual_confirm');
+        } else if (data.status === 'failed') {
+          setIsPolling(false);
+          toast({
+            title: 'Payment Failed',
+            description: 'The payment could not be processed.',
+            variant: 'destructive',
+          });
+          setStep('method');
         } else {
+          attempts++;
+          if (attempts < maxAttempts) {
+            setTimeout(poll, interval);
+          } else {
+            // Timeout - show manual confirm
+            setIsPolling(false);
+            setStep('manual_confirm');
+          }
+        }
+      } catch (error) {
+        console.error('Status poll error:', error);
+        attempts++;
+        if (attempts < maxAttempts) {
+          setTimeout(poll, interval);
+        } else {
+          setIsPolling(false);
           setStep('manual_confirm');
         }
       }
-      setProcessingProgress(Math.min(progress, 100));
-    }, 600);
-  };
+    };
 
-  const completePayment = () => {
+    poll();
+  }, [child.id, isPolling, toast]);
+
+  const completePayment = (paymentData?: any) => {
     const items = selectedItems.map(idx => {
       const invoice = invoices[idx];
       return {
@@ -210,26 +285,59 @@ const ChildShow: React.FC = () => {
       };
     });
     setReceiptData({
-      receiptNo: `RCT-${Date.now().toString().slice(-6)}`,
+      receiptNo: paymentData?.provider_reference || `RCT-${Date.now().toString().slice(-6)}`,
       amount: selectedTotal,
       items,
       date: new Date().toISOString().split('T')[0],
     });
     setStep('success');
+    
+    // Refresh page data after successful payment
+    setTimeout(() => {
+      router.reload({ only: ['invoices', 'recentPayments', 'financialSummary'] });
+    }, 3000);
   };
 
-  const handleManualConfirm = () => {
-    setStep('processing');
-    setProcessingProgress(0);
-    let progress = 0;
-    const interval = setInterval(() => {
-      progress += 20;
-      if (progress >= 100) {
-        clearInterval(interval);
-        completePayment();
+  const handleManualConfirm = async () => {
+    if (!transactionId) return;
+
+    try {
+      setStep('processing');
+      setProcessingProgress(0);
+
+      const response = await fetch(`/parent/children/${child.id}/pay/confirm`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+        },
+        body: JSON.stringify({
+          transaction_id: transactionId,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success && data.status === 'completed') {
+        setProcessingProgress(100);
+        completePayment(data);
+      } else {
+        toast({
+          title: 'Verification in Progress',
+          description: data.message || 'Please check back later for payment confirmation.',
+          variant: 'default',
+        });
+        setStep('manual_confirm');
       }
-      setProcessingProgress(Math.min(progress, 100));
-    }, 400);
+    } catch (error) {
+      console.error('Manual confirm error:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to confirm payment. Please try again.',
+        variant: 'destructive',
+      });
+      setStep('manual_confirm');
+    }
   };
 
   const closePayment = () => {
@@ -237,6 +345,9 @@ const ChildShow: React.FC = () => {
     setStep('select');
     setSelectedItems([]);
     setReceiptData(null);
+    setTransactionRef('');
+    setTransactionId(null);
+    setIsPolling(false);
   };
 
   const stepIndex = ['select', 'method', 'pay', 'processing', 'success'].indexOf(
@@ -444,10 +555,7 @@ const ChildShow: React.FC = () => {
 
                 <div className="flex justify-between pt-3 border-t">
                   <Button variant="outline" onClick={() => setStep('select')}>Back</Button>
-                  <Button onClick={() => {
-                    if (selectedProvider === 'mpesa') setStep('pay');
-                    else setStep('pay');
-                  }} disabled={!selectedProvider} className="gap-1.5">
+                  <Button onClick={() => setStep('pay')} disabled={!selectedProvider} className="gap-1.5">
                     Continue <ArrowRight className="h-3.5 w-3.5" />
                   </Button>
                 </div>
@@ -505,7 +613,7 @@ const ChildShow: React.FC = () => {
                         <span className="text-muted-foreground">Bank:</span><span className="font-medium">{selectedProviderData?.name}</span>
                         <span className="text-muted-foreground">Account:</span><span className="font-mono-amount font-medium">{selectedConfig?.account_number}</span>
                         <span className="text-muted-foreground">Name:</span><span className="font-medium">{selectedConfig?.account_name}</span>
-                        <span className="text-muted-foreground">Reference:</span><span className="font-mono-amount font-medium">{generateRef()}</span>
+                        <span className="text-muted-foreground">Reference:</span><span className="font-mono-amount font-medium">{transactionRef || 'Will be generated'}</span>
                       </div>
                     </div>
                     <div className="space-y-2">

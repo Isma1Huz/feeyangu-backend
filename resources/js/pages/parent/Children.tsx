@@ -63,11 +63,11 @@ const ParentChildren: React.FC = () => {
                   </div>
                 </div>
                 <div className="flex gap-2 mt-4">
-                  <Button variant="outline" size="sm" className="flex-1 gap-1" onClick={() => router.visit(`/parent/children/${child.studentId}/fees`)}>
+                  <Button variant="outline" size="sm" className="flex-1 gap-1" onClick={() => router.visit(`/parent/children/${child.studentId}`)}>
                     <Eye className="h-3.5 w-3.5" />{t.viewFees}
                   </Button>
                   {balance > 0 && (
-                    <Button size="sm" className="flex-1 gap-1" onClick={() => router.visit(`/parent/children/${child.studentId}/fees`)}>
+                    <Button size="sm" className="flex-1 gap-1" onClick={() => router.visit(`/parent/children/${child.studentId}`)}>
                       <CreditCard className="h-3.5 w-3.5" />{t.quickPay}
                     </Button>
                   )}

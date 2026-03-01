@@ -140,11 +140,11 @@ const ParentDashboard: React.FC = () => {
                         </div>
                       </div>
                       <div className="flex gap-2 mt-4">
-                        <Button variant="outline" size="sm" className="flex-1 gap-1" onClick={() => router.visit(`/parent/children/${child.studentId}/fees`)}>
+                        <Button variant="outline" size="sm" className="flex-1 gap-1" onClick={() => router.visit(`/parent/children/${child.studentId}`)}>
                           <Eye className="h-3.5 w-3.5" />{t.viewFees}
                         </Button>
                         {balance > 0 && (
-                          <Button size="sm" className="flex-1 gap-1" onClick={() => router.visit(`/parent/children/${child.studentId}/fees`)}>
+                          <Button size="sm" className="flex-1 gap-1" onClick={() => router.visit(`/parent/children/${child.studentId}`)}>
                             <CreditCard className="h-3.5 w-3.5" />{t.quickPay}
                           </Button>
                         )}
@@ -164,7 +164,7 @@ const ParentDashboard: React.FC = () => {
             </CardHeader>
             <CardContent className="space-y-3">
               {children.map((child) => (
-                <div key={child.studentId} className="flex items-center gap-3 p-2 rounded-md hover:bg-muted/50 cursor-pointer transition-colors" onClick={() => router.visit(`/parent/children/${child.studentId}/fees`)}>
+                <div key={child.studentId} className="flex items-center gap-3 p-2 rounded-md hover:bg-muted/50 cursor-pointer transition-colors" onClick={() => router.visit(`/parent/children/${child.studentId}`)}>
                   <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">{child.name.charAt(0)}</div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{child.name}</p>
