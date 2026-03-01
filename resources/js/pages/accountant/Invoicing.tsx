@@ -97,34 +97,19 @@ const Invoicing: React.FC = () => {
       return;
     }
 
-    const newInvoices: Invoice[] = [];
-    genSelectedStudents.forEach(studentId => {
-      const student = students.find(s => s.id === studentId);
-      if (!student) return;
-      const feeStructure = feeStructures.find(fs => fs.grade === student.grade && fs.status === 'active');
-      const items = feeStructure?.items.map(i => ({ name: i.name, amount: i.amount })) || [{ name: 'Tuition', amount: 25000 }];
-      const totalAmount = items.reduce((sum, i) => sum + i.amount, 0);
-      newInvoices.push({
-        id: `inv${Date.now()}-${studentId}`,
-        invoiceNumber: `INV-${Date.now().toString().slice(-4)}-${studentId.slice(-2).toUpperCase()}`,
-        studentId,
-        studentName: `${student.firstName} ${student.lastName}`,
-        grade: student.grade,
-        term: genTerm,
-        items,
-        totalAmount,
-        paidAmount: 0,
-        balance: totalAmount,
-        status: genSendVia === 'none' ? 'draft' : 'sent',
-        dueDate: genDueDate,
-        issuedDate: new Date().toISOString().split('T')[0],
-        sentVia: genSendVia,
-      });
+    router.post('/accountant/invoices/bulk-generate', {
+      student_ids: Array.from(genSelectedStudents),
+      term: genTerm,
+      due_date: genDueDate,
+      sent_via: genSendVia,
+    }, {
+      onSuccess: () => {
+        toast({ title: `Invoices Generated`, description: genSendVia !== 'none' ? `Sent via ${genSendVia} to parents.` : 'Saved as drafts.' });
+        setGenerateOpen(false);
+      },
+      onError: () => toast({ title: 'Error', description: 'Failed to generate invoices.', variant: 'destructive' }),
+      preserveState: false,
     });
-
-    setInvoices(prev => [...newInvoices, ...prev]);
-    toast({ title: `${newInvoices.length} Invoices Generated`, description: genSendVia !== 'none' ? `Sent via ${genSendVia} to parents.` : 'Saved as drafts.' });
-    setGenerateOpen(false);
   };
 
   const openMarkPaid = (inv: Invoice) => {
@@ -140,14 +125,14 @@ const Invoicing: React.FC = () => {
       toast({ title: 'Invalid Amount', variant: 'destructive' });
       return;
     }
-    setInvoices(prev => prev.map(inv => {
-      if (inv.id !== markPaidInvoice.id) return inv;
-      const newPaid = inv.paidAmount + Math.min(amount, inv.balance);
-      const newBalance = inv.totalAmount - newPaid;
-      return { ...inv, paidAmount: newPaid, balance: newBalance, status: newBalance <= 0 ? 'paid' : 'partial' };
-    }));
-    toast({ title: 'Payment Applied', description: `KES ${amount.toLocaleString()} applied to ${markPaidInvoice.invoiceNumber}` });
-    setMarkPaidOpen(false);
+    router.post(`/accountant/invoices/${markPaidInvoice.id}/mark-paid`, { amount }, {
+      onSuccess: () => {
+        toast({ title: 'Payment Applied', description: `KES ${amount.toLocaleString()} applied to ${markPaidInvoice.invoiceNumber}` });
+        setMarkPaidOpen(false);
+      },
+      onError: () => toast({ title: 'Error', description: 'Failed to apply payment.', variant: 'destructive' }),
+      preserveState: false,
+    });
   };
 
   const columns: DataTableColumn<Invoice>[] = [
@@ -172,12 +157,18 @@ const Invoicing: React.FC = () => {
 
   const bulkActions: DataTableBulkAction[] = [
     { label: t.actions.send, icon: <Send className="h-3.5 w-3.5" />, confirm: true, confirmTitle: 'Send Invoices', confirmDescription: 'Send selected invoices to parents via email?', onClick: (ids) => {
-      setInvoices(prev => prev.map(inv => ids.includes(inv.id) ? { ...inv, sentVia: 'email' as const, status: inv.status === 'draft' ? 'sent' as const : inv.status } : inv));
-      toast({ title: `${ids.length} invoices sent` });
+      router.post('/accountant/invoices/bulk-send', { ids }, {
+        onSuccess: () => toast({ title: `${ids.length} invoices sent` }),
+        onError: () => toast({ title: 'Error', variant: 'destructive' }),
+        preserveState: false,
+      });
     }},
     { label: t.actions.void, icon: <XCircle className="h-3.5 w-3.5" />, variant: 'destructive', confirm: true, confirmTitle: 'Void Invoices', confirmDescription: 'Are you sure? This cannot be undone.', onClick: (ids) => {
-      setInvoices(prev => prev.map(inv => ids.includes(inv.id) ? { ...inv, status: 'void' as const } : inv));
-      toast({ title: `${ids.length} invoices voided` });
+      router.post('/accountant/invoices/bulk-void', { ids }, {
+        onSuccess: () => toast({ title: `${ids.length} invoices voided` }),
+        onError: () => toast({ title: 'Error', variant: 'destructive' }),
+        preserveState: false,
+      });
     }},
   ];
 
@@ -227,8 +218,11 @@ const Invoicing: React.FC = () => {
             {inv.status !== 'void' && inv.status !== 'paid' && (
               <>
                 <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => {
-                  setInvoices(prev => prev.map(i => i.id === inv.id ? { ...i, sentVia: 'email' as const, status: i.status === 'draft' ? 'sent' as const : i.status } : i));
-                  toast({ title: `Reminder sent to ${inv.studentName}` });
+                  router.post(`/accountant/invoices/${inv.id}/send`, {}, {
+                    onSuccess: () => toast({ title: `Reminder sent to ${inv.studentName}` }),
+                    onError: () => toast({ title: 'Error', variant: 'destructive' }),
+                    preserveState: false,
+                  });
                 }}><Send className="h-3 w-3" /></Button>
                 <Button variant="ghost" size="icon" className="h-7 w-7 text-success" onClick={() => openMarkPaid(inv)}><CheckCircle className="h-3 w-3" /></Button>
               </>

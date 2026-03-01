@@ -55,13 +55,19 @@ const AccountantPayments: React.FC = () => {
     }), [search, methodFilter, statusFilter, payments]);
 
   const handleApprove = (id: string) => {
-    setPayments(prev => prev.map(p => p.id === id ? { ...p, status: 'completed' as const } : p));
-    toast({ title: 'Payment approved' });
+    router.post(`/accountant/payments/${id}/approve`, {}, {
+      onSuccess: () => toast({ title: 'Payment approved' }),
+      onError: () => toast({ title: 'Error', variant: 'destructive' } as any),
+      preserveState: false,
+    });
   };
 
   const handleReject = (id: string) => {
-    setPayments(prev => prev.map(p => p.id === id ? { ...p, status: 'failed' as const } : p));
-    toast({ title: 'Payment rejected' });
+    router.post(`/accountant/payments/${id}/reject`, {}, {
+      onSuccess: () => toast({ title: 'Payment rejected' }),
+      onError: () => toast({ title: 'Error', variant: 'destructive' } as any),
+      preserveState: false,
+    });
   };
 
   const openRecordPayment = () => {
@@ -85,21 +91,23 @@ const AccountantPayments: React.FC = () => {
       return;
     }
 
-    const student = students.find(s => s.id === rpStudent);
-    const prefixes: Record<string, string> = { mpesa: 'MPE', bank: 'BNK', cash: 'CSH', card: 'CRD' };
-    const newPayment: Payment = {
-      id: `p${Date.now()}`,
-      date: rpDate,
-      studentName: student ? `${student.firstName} ${student.lastName}` : 'Unknown',
-      studentId: rpStudent,
+    router.post('/accountant/payments', {
+      student_id: rpStudent,
       amount,
       method: rpMethod,
-      status: 'pending',
-      reference: rpReference.trim() || `${prefixes[rpMethod]}-${Date.now()}`,
-    };
-    setPayments(prev => [newPayment, ...prev]);
-    toast({ title: 'Payment Recorded', description: `KES ${amount.toLocaleString()} from ${newPayment.studentName} — pending approval.` });
-    setRecordOpen(false);
+      reference: rpReference.trim(),
+      date: rpDate,
+      notes: rpNotes,
+    }, {
+      onSuccess: () => {
+        const student = students.find(s => s.id === rpStudent);
+        const name = student ? `${student.firstName} ${student.lastName}` : 'student';
+        toast({ title: 'Payment Recorded', description: `KES ${amount.toLocaleString()} from ${name} — recorded.` });
+        setRecordOpen(false);
+      },
+      onError: () => toast({ title: 'Error', description: 'Failed to record payment.', variant: 'destructive' }),
+      preserveState: false,
+    });
   };
 
   const columns: DataTableColumn<Payment>[] = [
@@ -122,11 +130,11 @@ const AccountantPayments: React.FC = () => {
 
   const bulkActions: DataTableBulkAction[] = [
     { label: pt.actions.approve, icon: <CheckCircle className="h-3.5 w-3.5" />, confirm: true, confirmTitle: 'Approve Payments', confirmDescription: 'Approve selected pending payments?', onClick: (ids) => {
-      setPayments(prev => prev.map(p => ids.includes(p.id) && p.status === 'pending' ? { ...p, status: 'completed' as const } : p));
+      ids.forEach(id => router.post(`/accountant/payments/${id}/approve`, {}, { preserveState: false }));
       toast({ title: `${ids.length} payments approved` });
     }},
     { label: pt.actions.reject, icon: <XCircle className="h-3.5 w-3.5" />, variant: 'destructive', confirm: true, confirmTitle: 'Reject Payments', confirmDescription: 'Reject selected payments?', onClick: (ids) => {
-      setPayments(prev => prev.map(p => ids.includes(p.id) && p.status === 'pending' ? { ...p, status: 'failed' as const } : p));
+      ids.forEach(id => router.post(`/accountant/payments/${id}/reject`, {}, { preserveState: false }));
       toast({ title: `${ids.length} payments rejected` });
     }},
   ];

@@ -70,7 +70,8 @@ class InvoiceController extends Controller
             ->get(['id', 'first_name', 'last_name', 'admission_number', 'grade_id'])
             ->map(fn($s) => [
                 'id' => (string) $s->id,
-                'name' => $s->full_name,
+                'firstName' => $s->first_name,
+                'lastName' => $s->last_name,
                 'admissionNumber' => $s->admission_number,
                 'grade' => $s->grade_id ? \App\Models\Grade::find($s->grade_id)?->name ?? '' : '',
             ]);
@@ -83,14 +84,15 @@ class InvoiceController extends Controller
             ->map(fn($fs) => [
                 'id' => (string) $fs->id,
                 'name' => $fs->name,
-                'gradeId' => (string) $fs->grade_id,
-                'gradeName' => $fs->grade->name ?? '',
-                'termName' => $fs->term->name ?? '',
+                'grade' => $fs->grade->name ?? '',
+                'term' => ($fs->term->name ?? '') . ' ' . ($fs->term->year ?? ''),
                 'totalAmount' => $fs->total_amount / 100,
+                'status' => $fs->status,
                 'items' => $fs->feeItems->map(fn($item) => [
+                    'id' => (string) $item->id,
                     'name' => $item->name,
                     'amount' => $item->amount / 100,
-                ]),
+                ])->toArray(),
             ]);
 
         // Get unique grades
@@ -397,4 +399,174 @@ class InvoiceController extends Controller
         return redirect()->route('accountant.invoices.show', $invoice)
             ->with('success', 'Invoice sent successfully.');
     }
+
+    /**
+     * Void an invoice.
+     */
+    public function void(Invoice $invoice): RedirectResponse
+    {
+        if ($invoice->school_id !== auth()->user()->school_id) {
+            abort(403, 'Unauthorized access to this invoice');
+        }
+
+        if ($invoice->paid_amount > 0) {
+            return redirect()->route('accountant.invoicing')
+                ->with('error', 'Cannot void an invoice with payments made.');
+        }
+
+        $invoice->update(['status' => 'void']);
+
+        return redirect()->route('accountant.invoicing')
+            ->with('success', 'Invoice voided.');
+    }
+
+    /**
+     * Record a payment against an invoice (mark-paid).
+     */
+    public function markPaid(Request $request, Invoice $invoice): RedirectResponse
+    {
+        if ($invoice->school_id !== auth()->user()->school_id) {
+            abort(403, 'Unauthorized access to this invoice');
+        }
+
+        $validated = $request->validate([
+            'amount' => 'required|numeric|min:1',
+        ]);
+
+        $amountCents = (int) round($validated['amount'] * 100);
+        $applying = min($amountCents, $invoice->balance);
+
+        DB::transaction(function () use ($invoice, $applying) {
+            $newPaid = $invoice->paid_amount + $applying;
+            $newBalance = $invoice->total_amount - $newPaid;
+            $status = $newBalance <= 0 ? 'paid' : 'partial';
+            $invoice->update([
+                'paid_amount' => $newPaid,
+                'balance' => $newBalance,
+                'status' => $status,
+            ]);
+        });
+
+        return redirect()->route('accountant.invoicing')
+            ->with('success', 'Payment applied to invoice.');
+    }
+
+    /**
+     * Bulk generate invoices for multiple students.
+     */
+    public function bulkGenerate(Request $request): RedirectResponse
+    {
+        $school = auth()->user()->school;
+
+        $validated = $request->validate([
+            'student_ids' => 'required|array|min:1',
+            'student_ids.*' => 'required|exists:students,id',
+            'term' => 'required|string|max:100',
+            'due_date' => 'required|date',
+            'sent_via' => 'required|in:email,sms,both,none',
+        ]);
+
+        $generated = 0;
+
+        DB::transaction(function () use ($validated, $school, &$generated) {
+            foreach ($validated['student_ids'] as $studentId) {
+                $student = $school->students()->find($studentId);
+                if (!$student) continue;
+
+                // Skip if invoice already exists for this student + term
+                $exists = $school->invoices()
+                    ->where('student_id', $studentId)
+                    ->where('term', $validated['term'])
+                    ->exists();
+                if ($exists) continue;
+
+                // Find active fee structure for this student's grade
+                $feeStructure = $school->feeStructures()
+                    ->where('status', 'active')
+                    ->whereHas('grade', fn($q) => $q->where('id', $student->grade_id))
+                    ->with('feeItems')
+                    ->first();
+
+                $items = $feeStructure?->feeItems ?? collect();
+                $totalAmount = $items->sum('amount');
+
+                if ($totalAmount <= 0) {
+                    // Default fallback
+                    $totalAmount = 0;
+                    $items = collect([]);
+                }
+
+                $invoice = Invoice::create([
+                    'school_id' => $school->id,
+                    'invoice_number' => 'INV-' . date('Y') . '-' . str_pad($school->id, 3, '0', STR_PAD_LEFT) . '-' . strtoupper(substr(uniqid(), -6)),
+                    'student_id' => $studentId,
+                    'grade' => $student->grade?->name ?? '',
+                    'term' => $validated['term'],
+                    'total_amount' => $totalAmount,
+                    'paid_amount' => 0,
+                    'balance' => $totalAmount,
+                    'status' => $validated['sent_via'] === 'none' ? 'draft' : 'sent',
+                    'due_date' => $validated['due_date'],
+                    'issued_date' => now(),
+                    'sent_via' => $validated['sent_via'],
+                ]);
+
+                foreach ($items as $item) {
+                    InvoiceItem::create([
+                        'invoice_id' => $invoice->id,
+                        'name' => $item->name,
+                        'amount' => $item->amount,
+                    ]);
+                }
+
+                $generated++;
+            }
+        });
+
+        return redirect()->route('accountant.invoicing')
+            ->with('success', "{$generated} invoices generated successfully.");
+    }
+
+    /**
+     * Bulk send invoices.
+     */
+    public function bulkSend(Request $request): RedirectResponse
+    {
+        $school = auth()->user()->school;
+
+        $validated = $request->validate([
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'required|exists:invoices,id',
+        ]);
+
+        $school->invoices()
+            ->whereIn('id', $validated['ids'])
+            ->where('status', 'draft')
+            ->update(['status' => 'sent', 'sent_via' => 'email']);
+
+        return redirect()->route('accountant.invoicing')
+            ->with('success', 'Invoices sent successfully.');
+    }
+
+    /**
+     * Bulk void invoices.
+     */
+    public function bulkVoid(Request $request): RedirectResponse
+    {
+        $school = auth()->user()->school;
+
+        $validated = $request->validate([
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'required|exists:invoices,id',
+        ]);
+
+        $school->invoices()
+            ->whereIn('id', $validated['ids'])
+            ->where('paid_amount', 0)
+            ->update(['status' => 'void']);
+
+        return redirect()->route('accountant.invoicing')
+            ->with('success', 'Invoices voided successfully.');
+    }
 }
+

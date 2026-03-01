@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Plus, Pencil, Trash2, ChevronDown, ChevronRight, Users } from 'lucide-react';
-import { Head, usePage } from '@inertiajs/react';
+import { Head, usePage, router } from '@inertiajs/react';
 import type { InertiaSharedProps } from '@/types/inertia';
 import { useT } from '@/contexts/LanguageContext';
 import type { Grade, GradeClass } from '@/types';
@@ -52,44 +52,52 @@ const Grades: React.FC = () => {
   const handleSaveGrade = () => {
     if (!gradeName.trim()) return;
     if (editingGrade) {
-      setGrades(prev => prev.map(g => g.id === editingGrade.id ? { ...g, name: gradeName } : g));
-      toast({ title: 'Grade updated', description: `${gradeName} has been updated.` });
+      router.put(`/school/grades/${editingGrade.id}`, { name: gradeName, sort_order: 1 }, {
+        onSuccess: () => { toast({ title: 'Grade updated', description: `${gradeName} has been updated.` }); setGradeDialogOpen(false); },
+        onError: () => toast({ title: 'Error', description: 'Failed to update grade.', variant: 'destructive' } as any),
+        preserveState: false,
+      });
     } else {
-      const newGrade: Grade = { id: `g${Date.now()}`, name: gradeName, studentCount: 0, classes: [] };
-      setGrades(prev => [...prev, newGrade]);
-      toast({ title: 'Grade created', description: `${gradeName} has been added.` });
+      router.post('/school/grades', { name: gradeName, sort_order: grades.length + 1 }, {
+        onSuccess: () => { toast({ title: 'Grade created', description: `${gradeName} has been added.` }); setGradeDialogOpen(false); },
+        onError: () => toast({ title: 'Error', description: 'Failed to create grade.', variant: 'destructive' } as any),
+        preserveState: false,
+      });
     }
-    setGradeDialogOpen(false);
   };
 
   const handleSaveClass = () => {
     if (!className.trim()) return;
-    const grade = grades.find(g => g.id === selectedGradeId);
-    if (!grade) return;
     if (editingClass) {
-      setGrades(prev => prev.map(g => g.id === selectedGradeId
-        ? { ...g, classes: g.classes.map(c => c.id === editingClass.id ? { ...c, name: className, teacher: classTeacher } : c) }
-        : g));
-      toast({ title: 'Class updated', description: `${className} has been updated.` });
+      router.put(`/school/classes/${editingClass.id}`, { name: className, teacher_name: classTeacher, grade_id: selectedGradeId, capacity: 40 }, {
+        onSuccess: () => { toast({ title: 'Class updated', description: `${className} has been updated.` }); setClassDialogOpen(false); },
+        onError: () => toast({ title: 'Error', description: 'Failed to update class.', variant: 'destructive' } as any),
+        preserveState: false,
+      });
     } else {
-      const newClass: GradeClass = { id: `c${Date.now()}`, name: className, gradeId: selectedGradeId, gradeName: grade.name, teacher: classTeacher, studentCount: 0 };
-      setGrades(prev => prev.map(g => g.id === selectedGradeId ? { ...g, classes: [...g.classes, newClass] } : g));
-      toast({ title: 'Class created', description: `${className} has been added to ${grade.name}.` });
+      router.post('/school/classes', { name: className, teacher_name: classTeacher, grade_id: selectedGradeId, capacity: 40 }, {
+        onSuccess: () => { toast({ title: 'Class created', description: `${className} has been added.` }); setClassDialogOpen(false); },
+        onError: () => toast({ title: 'Error', description: 'Failed to create class.', variant: 'destructive' } as any),
+        preserveState: false,
+      });
     }
-    setClassDialogOpen(false);
   };
 
   const handleDelete = () => {
     if (!deleteTarget) return;
     if (deleteTarget.type === 'grade') {
-      setGrades(prev => prev.filter(g => g.id !== deleteTarget.id));
-      toast({ title: 'Grade deleted' });
+      router.delete(`/school/grades/${deleteTarget.id}`, {
+        onSuccess: () => { toast({ title: 'Grade deleted' }); setDeleteDialogOpen(false); setDeleteTarget(null); },
+        onError: () => toast({ title: 'Error', description: 'Failed to delete grade. It may have students enrolled.', variant: 'destructive' } as any),
+        preserveState: false,
+      });
     } else {
-      setGrades(prev => prev.map(g => ({ ...g, classes: g.classes.filter(c => c.id !== deleteTarget.id) })));
-      toast({ title: 'Class deleted' });
+      router.delete(`/school/classes/${deleteTarget.id}`, {
+        onSuccess: () => { toast({ title: 'Class deleted' }); setDeleteDialogOpen(false); setDeleteTarget(null); },
+        onError: () => toast({ title: 'Error', description: 'Failed to delete class.', variant: 'destructive' } as any),
+        preserveState: false,
+      });
     }
-    setDeleteDialogOpen(false);
-    setDeleteTarget(null);
   };
 
   return (
