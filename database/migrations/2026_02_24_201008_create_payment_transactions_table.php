@@ -18,7 +18,7 @@ return new class extends Migration
             $table->foreignId('parent_id')->constrained('users')->onDelete('cascade');
             $table->bigInteger('amount');
             $table->string('provider');
-            $table->enum('status', ['initiating', 'processing', 'completed', 'failed', 'manual_confirm'])->default('initiating');
+            $table->string('status')->default('pending'); // pending, processing, completed, failed, pending_confirmation
             $table->string('reference')->unique();
             $table->string('phone_number')->nullable();
             $table->string('provider_reference')->nullable();
