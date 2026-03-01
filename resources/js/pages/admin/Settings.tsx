@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Head, router } from '@inertiajs/react';
+import { Head, usePage, router } from '@inertiajs/react';
 import { useT } from '@/contexts/LanguageContext';
 import type { InertiaSharedProps } from '@/types/inertia';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -22,21 +22,37 @@ interface Props extends InertiaSharedProps {
   overdueReminders?: boolean;
 }
 
-const AdminSettings: React.FC<Props> = (initialProps) => {
+const AdminSettings: React.FC = () => {
   const { toast } = useToast();
   const { ADMIN_SETTINGS_TEXT: t } = useT();
+  const props = usePage<Props>().props;
   
-  const [platformName, setPlatformName] = useState(initialProps.platformName || 'Feeyangu');
-  const [supportEmail, setSupportEmail] = useState(initialProps.supportEmail || 'support@feeyangu.com');
-  const [currency, setCurrency] = useState(initialProps.currency || 'KES');
-  const [maintenance, setMaintenance] = useState(initialProps.maintenance || false);
-  const [emailNotifs, setEmailNotifs] = useState(initialProps.emailNotifications !== false);
-  const [smsNotifs, setSmsNotifs] = useState(initialProps.smsNotifications || false);
-  const [paymentAlerts, setPaymentAlerts] = useState(initialProps.paymentAlerts !== false);
-  const [overdueReminders, setOverdueReminders] = useState(initialProps.overdueReminders !== false);
+  const [platformName, setPlatformName] = useState(props.platformName || 'Feeyangu');
+  const [supportEmail, setSupportEmail] = useState(props.supportEmail || 'support@feeyangu.com');
+  const [currency, setCurrency] = useState(props.currency || 'KES');
+  const [maintenance, setMaintenance] = useState(props.maintenance || false);
+  const [emailNotifs, setEmailNotifs] = useState(props.emailNotifications !== false);
+  const [smsNotifs, setSmsNotifs] = useState(props.smsNotifications || false);
+  const [paymentAlerts, setPaymentAlerts] = useState(props.paymentAlerts !== false);
+  const [overdueReminders, setOverdueReminders] = useState(props.overdueReminders !== false);
+  const [saving, setSaving] = useState(false);
 
   const handleSave = () => {
-    toast({ title: t.savedMessage });
+    setSaving(true);
+    router.put('/admin/settings', {
+      platformName,
+      supportEmail,
+      currency,
+      maintenance,
+      emailNotifications: emailNotifs,
+      smsNotifications: smsNotifs,
+      paymentAlerts,
+      overdueReminders,
+    }, {
+      onSuccess: () => toast({ title: t.savedMessage }),
+      onError: () => toast({ title: 'Error saving settings', variant: 'destructive' } as any),
+      onFinish: () => setSaving(false),
+    });
   };
 
   return (
@@ -73,7 +89,7 @@ const AdminSettings: React.FC<Props> = (initialProps) => {
                   <Label>{t.fields.maintenanceMode}</Label>
                   <Switch checked={maintenance} onCheckedChange={setMaintenance} />
                 </div>
-                <Button onClick={handleSave}>{t.saveButton}</Button>
+                <Button onClick={handleSave} disabled={saving}>{saving ? 'Saving...' : t.saveButton}</Button>
               </CardContent>
             </Card>
           </TabsContent>
@@ -97,7 +113,7 @@ const AdminSettings: React.FC<Props> = (initialProps) => {
                   <Label>{t.fields.overdueReminders}</Label>
                   <Switch checked={overdueReminders} onCheckedChange={setOverdueReminders} />
                 </div>
-                <Button onClick={handleSave}>{t.saveButton}</Button>
+                <Button onClick={handleSave} disabled={saving}>{saving ? 'Saving...' : t.saveButton}</Button>
               </CardContent>
             </Card>
           </TabsContent>
@@ -108,3 +124,4 @@ const AdminSettings: React.FC<Props> = (initialProps) => {
 };
 
 export default AdminSettings;
+

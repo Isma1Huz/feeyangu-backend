@@ -19,6 +19,7 @@ class PaymentTransaction extends Model
         'phone_number',
         'provider_reference',
         'completed_at',
+        'notes',
     ];
 
     protected function casts(): array

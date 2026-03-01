@@ -4,7 +4,11 @@ namespace App\Http\Controllers\Accountant;
 
 use App\Http\Controllers\Controller;
 use App\Models\PaymentTransaction;
+use App\Models\Student;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -58,7 +62,7 @@ class PaymentController extends Controller
                     'reference' => $payment->reference,
                     'studentId' => (string) $payment->student_id,
                     'studentName' => $payment->student->full_name,
-                    'parentName' => $payment->parent->name,
+                    'parentName' => $payment->parent?->name ?? 'N/A',
                     'amount' => $payment->amount / 100,
                     'method' => $payment->provider, // Frontend expects 'method' field
                     'provider' => $payment->provider,
@@ -77,7 +81,8 @@ class PaymentController extends Controller
             ->get(['id', 'first_name', 'last_name', 'admission_number'])
             ->map(fn($s) => [
                 'id' => (string) $s->id,
-                'name' => $s->full_name,
+                'firstName' => $s->first_name,
+                'lastName' => $s->last_name,
                 'admissionNumber' => $s->admission_number,
             ]);
 
@@ -85,6 +90,79 @@ class PaymentController extends Controller
             'payments' => $payments,
             'students' => $students,
         ]);
+    }
+
+    /**
+     * Record a manual payment (cash, bank-slip, etc.).
+     */
+    public function store(Request $request): RedirectResponse
+    {
+        $school = auth()->user()->school;
+
+        $validated = $request->validate([
+            'student_id' => 'required|exists:students,id',
+            'amount' => 'required|numeric|min:1',
+            'method' => 'required|in:mpesa,bank,cash,card',
+            'reference' => 'required|string|max:255',
+            'date' => 'required|date',
+            'notes' => 'nullable|string|max:1000',
+        ]);
+
+        // Verify student belongs to this school
+        $student = $school->students()->findOrFail($validated['student_id']);
+
+        // Derive a parent_id: take first linked parent, or null
+        $parent = $student->parents()->first();
+
+        PaymentTransaction::create([
+            'school_id' => $school->id,
+            'student_id' => $student->id,
+            'parent_id' => $parent?->id,
+            'amount' => (int) round($validated['amount'] * 100),
+            'provider' => $validated['method'],
+            'status' => 'completed',
+            'reference' => $validated['reference'],
+            'provider_reference' => $validated['reference'],
+            'phone_number' => null,
+            'notes' => $validated['notes'] ?? null,
+            'completed_at' => $validated['date'],
+        ]);
+
+        return redirect()->route('accountant.payments.index')
+            ->with('success', 'Payment recorded successfully.');
+    }
+
+    /**
+     * Approve a pending payment.
+     */
+    public function approve(PaymentTransaction $payment): RedirectResponse
+    {
+        if ($payment->school_id !== auth()->user()->school_id) {
+            abort(403, 'Unauthorized');
+        }
+
+        $payment->update([
+            'status' => 'completed',
+            'completed_at' => now(),
+        ]);
+
+        return redirect()->route('accountant.payments.index')
+            ->with('success', 'Payment approved.');
+    }
+
+    /**
+     * Reject a pending payment.
+     */
+    public function reject(PaymentTransaction $payment): RedirectResponse
+    {
+        if ($payment->school_id !== auth()->user()->school_id) {
+            abort(403, 'Unauthorized');
+        }
+
+        $payment->update(['status' => 'failed']);
+
+        return redirect()->route('accountant.payments.index')
+            ->with('success', 'Payment rejected.');
     }
 
     /**
@@ -108,12 +186,12 @@ class PaymentController extends Controller
                     'name' => $payment->student->full_name,
                     'admission_number' => $payment->student->admission_number,
                 ],
-                'parent' => [
+                'parent' => $payment->parent ? [
                     'id' => $payment->parent->id,
                     'name' => $payment->parent->name,
                     'email' => $payment->parent->email,
                     'phone' => $payment->parent->phone,
-                ],
+                ] : null,
                 'amount' => $payment->amount / 100,
                 'provider' => $payment->provider,
                 'status' => $payment->status,

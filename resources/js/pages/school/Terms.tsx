@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Head, usePage } from '@inertiajs/react';
+import { Head, usePage, router } from '@inertiajs/react';
 import type { InertiaSharedProps } from '@/types/inertia';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
 import { useT } from '@/contexts/LanguageContext';
@@ -41,15 +41,29 @@ const Terms: React.FC = () => {
 
   const handleSave = () => {
     if (!formName.trim()) return;
-    if (editing) { setTerms(prev => prev.map(t => t.id === editing.id ? { ...t, name: formName, year: Number(formYear), startDate: formStart, endDate: formEnd, status: formStatus } : t)); toast({ title: 'Term updated' }); }
-    else { setTerms(prev => [...prev, { id: `t${Date.now()}`, name: formName, year: Number(formYear), startDate: formStart, endDate: formEnd, status: formStatus }]); toast({ title: 'Term created' }); }
-    setFormOpen(false);
+    const data = { name: formName, year: Number(formYear), start_date: formStart, end_date: formEnd, status: formStatus };
+    if (editing) {
+      router.put(`/school/terms/${editing.id}`, data, {
+        onSuccess: () => { toast({ title: 'Term updated' }); setFormOpen(false); },
+        onError: () => toast({ title: 'Error', description: 'Failed to update term.', variant: 'destructive' } as any),
+        preserveState: false,
+      });
+    } else {
+      router.post('/school/terms', data, {
+        onSuccess: () => { toast({ title: 'Term created' }); setFormOpen(false); },
+        onError: () => toast({ title: 'Error', description: 'Failed to create term.', variant: 'destructive' } as any),
+        preserveState: false,
+      });
+    }
   };
 
   const handleDelete = () => {
     if (!deleteId) return;
-    setTerms(prev => prev.filter(t => t.id !== deleteId));
-    toast({ title: 'Term deleted' }); setDeleteOpen(false);
+    router.delete(`/school/terms/${deleteId}`, {
+      onSuccess: () => { toast({ title: 'Term deleted' }); setDeleteOpen(false); },
+      onError: () => toast({ title: 'Error', description: 'Failed to delete term. It may have fee structures attached.', variant: 'destructive' } as any),
+      preserveState: false,
+    });
   };
 
   const columns: DataTableColumn<AcademicTerm>[] = [
@@ -61,7 +75,10 @@ const Terms: React.FC = () => {
   ];
 
   const bulkActions: DataTableBulkAction[] = [
-    { label: COMMON_TEXT.actions.delete, icon: <Trash2 className="h-3.5 w-3.5" />, variant: 'destructive', onClick: (ids) => { setTerms(prev => prev.filter(t => !ids.includes(t.id))); toast({ title: `${ids.length} terms deleted` }); }},
+    { label: COMMON_TEXT.actions.delete, icon: <Trash2 className="h-3.5 w-3.5" />, variant: 'destructive', onClick: (ids) => {
+      ids.forEach(id => router.delete(`/school/terms/${id}`, { preserveState: false }));
+      toast({ title: `${ids.length} terms deleted` });
+    }},
   ];
 
   return (

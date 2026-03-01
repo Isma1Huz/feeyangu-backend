@@ -47,13 +47,21 @@ const Reconciliation: React.FC = () => {
   const unmatchedSystem = items.filter(i => i.status === 'unmatched_system');
 
   const confirmMatch = (id: string) => {
-    setItems(prev => prev.map(i => i.id === id ? { ...i, status: 'matched' as const, matchedBy: 'manual', matchedAt: new Date().toISOString() } : i));
-    toast({ title: 'Match confirmed' });
+    // For suggested items the id is the ReconciliationItem DB id
+    // We use the confirm endpoint to change status from 'suggested' to 'matched'
+    router.post('/accountant/reconciliation/confirm', { item_id: id }, {
+      onSuccess: () => toast({ title: 'Match confirmed' }),
+      onError: () => toast({ title: 'Error', description: 'Failed to confirm match.', variant: 'destructive' }),
+      preserveState: false,
+    });
   };
 
   const rejectMatch = (id: string) => {
-    setItems(prev => prev.map(i => i.id === id ? { ...i, status: 'unmatched_bank' as const, confidence: undefined } : i));
-    toast({ title: 'Match rejected' });
+    router.post('/accountant/reconciliation/unmatch', { item_id: id }, {
+      onSuccess: () => toast({ title: 'Match rejected' }),
+      onError: () => toast({ title: 'Error', description: 'Failed to reject match.', variant: 'destructive' }),
+      preserveState: false,
+    });
   };
 
   const handleImportStatement = () => {
@@ -65,28 +73,29 @@ const Reconciliation: React.FC = () => {
       toast({ title: 'Select Bank', description: 'Please select the bank for this statement.', variant: 'destructive' });
       return;
     }
-    // Simulate parsing the file
-    toast({
-      title: 'Bank Statement Imported',
-      description: `${importFile.name} from ${importBank} processed. ${Math.floor(Math.random() * 5 + 3)} new transactions found.`,
+    const formData = new FormData();
+    formData.append('file', importFile);
+    formData.append('bank', importBank);
+    if (importDateFrom) formData.append('date_from', importDateFrom);
+    if (importDateTo) formData.append('date_to', importDateTo);
+
+    router.post('/accountant/reconciliation/import-statement', formData as any, {
+      onSuccess: () => {
+        toast({ title: 'Bank Statement Imported', description: `${importFile.name} from ${importBank} processed.` });
+        setImportOpen(false);
+        setImportFile(null);
+      },
+      onError: () => toast({ title: 'Error', description: 'Failed to import statement.', variant: 'destructive' }),
+      preserveState: false,
     });
-    setImportOpen(false);
-    setImportFile(null);
   };
 
   const handleAutoMatch = () => {
-    // Simulate auto-matching by converting suggested → matched
-    const suggestedItems = items.filter(i => i.status === 'suggested');
-    if (suggestedItems.length === 0) {
-      toast({ title: 'No Matches Found', description: 'No suggested matches available for auto-matching.' });
-      return;
-    }
-    setItems(prev => prev.map(i => i.status === 'suggested' && i.confidence === 'high'
-      ? { ...i, status: 'matched' as const, matchedBy: 'auto', matchedAt: new Date().toISOString() }
-      : i
-    ));
-    const matched = suggestedItems.filter(i => i.confidence === 'high').length;
-    toast({ title: 'Auto-Match Complete', description: `${matched} high-confidence match${matched !== 1 ? 'es' : ''} confirmed. Review remaining suggested matches manually.` });
+    router.post('/accountant/reconciliation/auto-match', {}, {
+      onSuccess: () => toast({ title: 'Auto-Match Complete', description: 'High-confidence matches confirmed.' }),
+      onError: () => toast({ title: 'Error', description: 'Auto-match failed.', variant: 'destructive' }),
+      preserveState: false,
+    });
   };
 
   const openManualMatch = (item: ReconciliationItem) => {
@@ -107,20 +116,19 @@ const Reconciliation: React.FC = () => {
       toast({ title: 'Select a Payment', description: 'Please select a system payment to match with.', variant: 'destructive' });
       return;
     }
-    const payment = systemPayments.find(p => p.id === selectedPaymentId);
-    setItems(prev => prev.map(i => i.id === matchingItem.id ? {
-      ...i,
-      status: 'matched' as const,
-      systemPaymentId: selectedPaymentId,
-      systemPaymentRef: payment?.reference || '',
-      systemAmount: payment?.amount || 0,
-      systemStudentName: payment?.studentName || '',
-      matchedBy: 'manual',
-      matchedAt: new Date().toISOString(),
-      confidence: 'high' as const,
-    } : i));
-    toast({ title: 'Manual Match Created', description: `Matched with ${payment?.studentName} — ${payment?.reference}` });
-    setManualMatchOpen(false);
+    router.post('/accountant/reconciliation/match', {
+      bank_transaction_id: matchingItem.id.startsWith('bank-') ? matchingItem.id.slice(5) : matchingItem.id,
+      system_payment_id: selectedPaymentId,
+      confidence: 'high',
+    }, {
+      onSuccess: () => {
+        const payment = systemPayments.find(p => p.id === selectedPaymentId);
+        toast({ title: 'Manual Match Created', description: `Matched with ${payment?.studentName} — ${payment?.reference}` });
+        setManualMatchOpen(false);
+      },
+      onError: () => toast({ title: 'Error', description: 'Failed to create match.', variant: 'destructive' }),
+      preserveState: false,
+    });
   };
 
   const ReconciliationCard = ({ item }: { item: ReconciliationItem }) => (

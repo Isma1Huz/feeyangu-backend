@@ -70,26 +70,44 @@ const Students: React.FC = () => {
 
   const handleSave = () => {
     if (!formFirst.trim() || !formLast.trim()) return;
+
+    const gradeObj = allGrades.find(g => g.name === formGrade);
+    const data = {
+      first_name: formFirst,
+      last_name: formLast,
+      admission_number: formAdmission,
+      grade_id: gradeObj?.id || '',
+      class_id: formClass,
+      status: formStatus,
+    };
+
     if (editing) {
-      setStudents(prev => prev.map(s => s.id === editing.id ? { ...s, firstName: formFirst, lastName: formLast, admissionNumber: formAdmission, grade: formGrade, className: formClass, parentName: formParent, parentEmail: formParentEmail, status: formStatus } : s));
-      toast({ title: 'Student updated', description: `${formFirst} ${formLast} has been updated.` });
+      router.put(`/school/students/${editing.id}`, data, {
+        onSuccess: () => { toast({ title: 'Student updated', description: `${formFirst} ${formLast} has been updated.` }); setFormOpen(false); },
+        onError: () => toast({ title: 'Error', description: 'Failed to update student.', variant: 'destructive' } as any),
+        preserveState: false,
+      });
     } else {
-      const newStudent: Student = { id: `st${Date.now()}`, firstName: formFirst, lastName: formLast, admissionNumber: formAdmission, grade: formGrade, className: formClass, parentName: formParent, parentEmail: formParentEmail, status: formStatus, totalFees: 0, paidFees: 0, balance: 0 };
-      setStudents(prev => [...prev, newStudent]);
-      toast({ title: 'Student added', description: `${formFirst} ${formLast} has been enrolled.` });
+      router.post('/school/students', data, {
+        onSuccess: () => { toast({ title: 'Student added', description: `${formFirst} ${formLast} has been enrolled.` }); setFormOpen(false); },
+        onError: () => toast({ title: 'Error', description: 'Failed to add student.', variant: 'destructive' } as any),
+        preserveState: false,
+      });
     }
-    setFormOpen(false);
   };
 
   const handleDelete = () => {
     if (!deleteId) return;
-    setStudents(prev => prev.filter(s => s.id !== deleteId));
-    toast({ title: 'Student removed' });
-    setDeleteOpen(false);
+    router.delete(`/school/students/${deleteId}`, {
+      onSuccess: () => { toast({ title: 'Student removed' }); setDeleteOpen(false); },
+      onError: () => toast({ title: 'Error', description: 'Failed to delete student.', variant: 'destructive' } as any),
+      preserveState: false,
+    });
   };
 
   const handleBulkDelete = (ids: string[]) => {
-    setStudents(prev => prev.filter(s => !ids.includes(s.id)));
+    // Delete sequentially - in production a bulk-delete endpoint would be better
+    ids.forEach(id => router.delete(`/school/students/${id}`, { preserveState: false }));
     toast({ title: `${ids.length} students removed` });
   };
 
@@ -104,26 +122,7 @@ const Students: React.FC = () => {
   };
 
   const handleImport = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.csv';
-    input.onchange = (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        const text = ev.target?.result as string;
-        const lines = text.split('\n').slice(1).filter(l => l.trim());
-        const imported: Student[] = lines.map((line, i) => {
-          const [admission, first, last, grade, cls, parent, status] = line.split(',').map(s => s.trim());
-          return { id: `imp${Date.now()}_${i}`, admissionNumber: admission || '', firstName: first || '', lastName: last || '', grade: grade || '', className: cls || '', parentName: parent || '', parentEmail: '', status: (status === 'inactive' ? 'inactive' : 'active') as 'active' | 'inactive', totalFees: 0, paidFees: 0, balance: 0 };
-        });
-        setStudents(prev => [...prev, ...imported]);
-        toast({ title: `${imported.length} students imported` });
-      };
-      reader.readAsText(file);
-    };
-    input.click();
+    toast({ title: 'Import not available', description: 'Please add students individually via the Add Student button.', variant: 'destructive' } as any);
   };
 
   const columns: DataTableColumn<Student>[] = [

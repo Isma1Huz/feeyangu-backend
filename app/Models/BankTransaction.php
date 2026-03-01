@@ -10,11 +10,13 @@ class BankTransaction extends Model
 {
     protected $fillable = [
         'school_id',
+        'bank',
         'date',
         'description',
         'reference',
         'amount',
         'balance',
+        'type',
     ];
 
     protected function casts(): array

@@ -137,6 +137,30 @@ class ReconciliationController extends Controller
     }
 
     /**
+     * Confirm a suggested reconciliation match (change status to 'matched').
+     */
+    public function confirm(Request $request): RedirectResponse
+    {
+        $school = auth()->user()->school;
+
+        $validated = $request->validate([
+            'item_id' => 'required|string',
+        ]);
+
+        $item = ReconciliationItem::where('school_id', $school->id)
+            ->findOrFail($validated['item_id']);
+
+        $item->update([
+            'status' => 'matched',
+            'matched_by' => 'manual',
+            'matched_at' => now(),
+        ]);
+
+        return redirect()->route('accountant.reconciliation.index')
+            ->with('success', 'Match confirmed.');
+    }
+
+    /**
      * Match a bank transaction with a system payment.
      */
     public function match(Request $request): RedirectResponse
@@ -169,5 +193,93 @@ class ReconciliationController extends Controller
 
         return redirect()->route('accountant.reconciliation.index')
             ->with('success', 'Transaction matched successfully.');
+    }
+
+    /**
+     * Unmatch / reject a suggested or matched reconciliation item.
+     */
+    public function unmatch(Request $request): RedirectResponse
+    {
+        $school = auth()->user()->school;
+
+        $validated = $request->validate([
+            'item_id' => 'required|string',
+        ]);
+
+        // item_id could be the ReconciliationItem id
+        $item = ReconciliationItem::where('school_id', $school->id)
+            ->find($validated['item_id']);
+
+        if ($item) {
+            $item->delete();
+        }
+
+        return redirect()->route('accountant.reconciliation.index')
+            ->with('success', 'Match removed.');
+    }
+
+    /**
+     * Auto-match all high-confidence suggested items.
+     */
+    public function autoMatch(): RedirectResponse
+    {
+        $school = auth()->user()->school;
+
+        $matched = ReconciliationItem::where('school_id', $school->id)
+            ->where('status', 'suggested')
+            ->where('confidence', 'high')
+            ->update([
+                'status' => 'matched',
+                'matched_by' => 'auto',
+                'matched_at' => now(),
+            ]);
+
+        return redirect()->route('accountant.reconciliation.index')
+            ->with('success', "{$matched} items auto-matched.");
+    }
+
+    /**
+     * Import a bank statement file.
+     */
+    public function importStatement(Request $request): RedirectResponse
+    {
+        $school = auth()->user()->school;
+
+        $request->validate([
+            'file' => 'required|file|mimes:csv,txt|max:2048',
+            'bank' => 'required|string|max:100',
+            'date_from' => 'nullable|date',
+            'date_to' => 'nullable|date',
+        ]);
+
+        $file = $request->file('file');
+        $lines = array_filter(array_map('trim', explode("\n", file_get_contents($file->getPathname()))));
+        $imported = 0;
+
+        // Skip header row
+        $rows = array_values(array_slice(array_values($lines), 1));
+
+        foreach ($rows as $line) {
+            $cols = str_getcsv($line);
+            if (count($cols) < 3) continue;
+
+            [$date, $description, $amount] = $cols;
+            $reference = $cols[3] ?? 'IMPORT-' . uniqid();
+
+            $bankTxn = BankTransaction::create([
+                'school_id' => $school->id,
+                'reference' => $reference,
+                'description' => $description,
+                'amount' => (int) round(abs((float) str_replace(',', '', $amount)) * 100),
+                'date' => $date,
+                'bank' => $request->bank,
+                'type' => 'credit',
+            ]);
+
+            $imported++;
+        }
+
+        return redirect()->route('accountant.reconciliation.index')
+            ->with('success', "{$imported} transactions imported from {$request->bank}.");
     }
 }

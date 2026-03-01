@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Plus, Pencil, Trash2, Eye, Search } from 'lucide-react';
-import { Link, Head, usePage } from '@inertiajs/react';
+import { Link, Head, usePage, router } from '@inertiajs/react';
 import type { InertiaSharedProps } from '@/types/inertia';
 import { useT } from '@/contexts/LanguageContext';
 import type { FeeStructure, FeeItem, Grade, AcademicTerm } from '@/types';
@@ -34,8 +34,8 @@ const FeeStructures: React.FC = () => {
   const [viewing, setViewing] = useState<FeeStructure | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [formName, setFormName] = useState('');
-  const [formGrade, setFormGrade] = useState('');
-  const [formTerm, setFormTerm] = useState('');
+  const [formGradeId, setFormGradeId] = useState('');
+  const [formTermId, setFormTermId] = useState('');
   const [formStatus, setFormStatus] = useState<'active' | 'inactive'>('active');
   const [formItems, setFormItems] = useState<FeeItem[]>([]);
 
@@ -45,7 +45,13 @@ const FeeStructures: React.FC = () => {
 
   const openForm = (fs?: FeeStructure) => {
     setEditing(fs || null);
-    setFormName(fs?.name || ''); setFormGrade(fs?.grade || ''); setFormTerm(fs?.term || ''); setFormStatus(fs?.status || 'active');
+    setFormName(fs?.name || '');
+    // Map grade/term names to ids for the selects
+    const gradeObj = grades.find(g => g.name === fs?.grade);
+    const termObj = terms.find(tm => `${tm.name} ${tm.year}` === fs?.term || tm.name === fs?.term);
+    setFormGradeId(gradeObj?.id || '');
+    setFormTermId(termObj?.id || '');
+    setFormStatus(fs?.status || 'active');
     setFormItems(fs?.items || [{ id: `fi${Date.now()}`, name: '', amount: 0 }]);
     setFormOpen(true);
   };
@@ -56,17 +62,36 @@ const FeeStructures: React.FC = () => {
     setFormItems(prev => prev.map(i => i.id === id ? { ...i, [field]: value } : i));
 
   const handleSave = () => {
-    if (!formName.trim() || !formGrade || !formTerm) return;
-    const total = formItems.reduce((sum, i) => sum + Number(i.amount), 0);
-    if (editing) { setStructures(prev => prev.map(s => s.id === editing.id ? { ...s, name: formName, grade: formGrade, term: formTerm, status: formStatus, items: formItems, totalAmount: total } : s)); toast({ title: 'Fee structure updated' }); }
-    else { setStructures(prev => [...prev, { id: `fs${Date.now()}`, name: formName, grade: formGrade, term: formTerm, totalAmount: total, status: formStatus, items: formItems }]); toast({ title: 'Fee structure created' }); }
-    setFormOpen(false);
+    if (!formName.trim() || !formGradeId || !formTermId) return;
+    const data = {
+      name: formName,
+      grade_id: formGradeId,
+      term_id: formTermId,
+      status: formStatus,
+      items: formItems.map(i => ({ name: i.name, amount: Number(i.amount) })),
+    };
+    if (editing) {
+      router.put(`/school/fee-structures/${editing.id}`, data, {
+        onSuccess: () => { toast({ title: 'Fee structure updated' }); setFormOpen(false); },
+        onError: () => toast({ title: 'Error', description: 'Failed to update fee structure.', variant: 'destructive' } as any),
+        preserveState: false,
+      });
+    } else {
+      router.post('/school/fee-structures', data, {
+        onSuccess: () => { toast({ title: 'Fee structure created' }); setFormOpen(false); },
+        onError: () => toast({ title: 'Error', description: 'Failed to create fee structure.', variant: 'destructive' } as any),
+        preserveState: false,
+      });
+    }
   };
 
   const handleDelete = () => {
     if (!deleteId) return;
-    setStructures(prev => prev.filter(s => s.id !== deleteId));
-    toast({ title: 'Fee structure deleted' }); setDeleteOpen(false);
+    router.delete(`/school/fee-structures/${deleteId}`, {
+      onSuccess: () => { toast({ title: 'Fee structure deleted' }); setDeleteOpen(false); },
+      onError: () => toast({ title: 'Error', description: 'Failed to delete fee structure.', variant: 'destructive' } as any),
+      preserveState: false,
+    });
   };
 
   const columns: DataTableColumn<FeeStructure>[] = [
@@ -78,7 +103,10 @@ const FeeStructures: React.FC = () => {
   ];
 
   const bulkActions: DataTableBulkAction[] = [
-    { label: COMMON_TEXT.actions.delete, icon: <Trash2 className="h-3.5 w-3.5" />, variant: 'destructive', onClick: (ids) => { setStructures(prev => prev.filter(s => !ids.includes(s.id))); toast({ title: `${ids.length} fee structures deleted` }); }},
+    { label: COMMON_TEXT.actions.delete, icon: <Trash2 className="h-3.5 w-3.5" />, variant: 'destructive', onClick: (ids) => {
+      ids.forEach(id => router.delete(`/school/fee-structures/${id}`, { preserveState: false }));
+      toast({ title: `${ids.length} fee structures deleted` });
+    }},
   ];
 
   return (
@@ -129,8 +157,8 @@ const FeeStructures: React.FC = () => {
           <div className="space-y-4 py-2">
             <div className="space-y-2"><Label>{t.form.name}</Label><Input placeholder={t.form.namePlaceholder} value={formName} onChange={e => setFormName(e.target.value)} /></div>
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2"><Label>{t.form.grade}</Label><Select value={formGrade} onValueChange={setFormGrade}><SelectTrigger><SelectValue placeholder="Select grade" /></SelectTrigger><SelectContent>{grades.map(g => <SelectItem key={g.id} value={g.name}>{g.name}</SelectItem>)}</SelectContent></Select></div>
-              <div className="space-y-2"><Label>{t.form.term}</Label><Select value={formTerm} onValueChange={setFormTerm}><SelectTrigger><SelectValue placeholder="Select term" /></SelectTrigger><SelectContent>{terms.map(tm => <SelectItem key={tm.id} value={tm.name}>{tm.name}</SelectItem>)}</SelectContent></Select></div>
+              <div className="space-y-2"><Label>{t.form.grade}</Label><Select value={formGradeId} onValueChange={setFormGradeId}><SelectTrigger><SelectValue placeholder="Select grade" /></SelectTrigger><SelectContent>{grades.map(g => <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>)}</SelectContent></Select></div>
+              <div className="space-y-2"><Label>{t.form.term}</Label><Select value={formTermId} onValueChange={setFormTermId}><SelectTrigger><SelectValue placeholder="Select term" /></SelectTrigger><SelectContent>{terms.map(tm => <SelectItem key={tm.id} value={tm.id}>{tm.name} {tm.year}</SelectItem>)}</SelectContent></Select></div>
             </div>
             <div className="space-y-2"><Label>{t.form.status}</Label><Select value={formStatus} onValueChange={v => setFormStatus(v as 'active' | 'inactive')}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="active">{COMMON_TEXT.status.active}</SelectItem><SelectItem value="inactive">{COMMON_TEXT.status.inactive}</SelectItem></SelectContent></Select></div>
             <div className="space-y-3">
@@ -168,3 +196,4 @@ const FeeStructures: React.FC = () => {
 };
 
 export default FeeStructures;
+

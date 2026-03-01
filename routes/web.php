@@ -115,14 +115,26 @@ Route::prefix('accountant')
         Route::get('/invoicing', [AccountantInvoiceController::class, 'index'])->name('invoicing');
         Route::resource('invoices', AccountantInvoiceController::class);
         Route::post('/invoices/{invoice}/send', [AccountantInvoiceController::class, 'send'])->name('invoices.send');
+        Route::post('/invoices/{invoice}/void', [AccountantInvoiceController::class, 'void'])->name('invoices.void');
+        Route::post('/invoices/{invoice}/mark-paid', [AccountantInvoiceController::class, 'markPaid'])->name('invoices.mark-paid');
+        Route::post('/invoices/bulk-generate', [AccountantInvoiceController::class, 'bulkGenerate'])->name('invoices.bulk-generate');
+        Route::post('/invoices/bulk-send', [AccountantInvoiceController::class, 'bulkSend'])->name('invoices.bulk-send');
+        Route::post('/invoices/bulk-void', [AccountantInvoiceController::class, 'bulkVoid'])->name('invoices.bulk-void');
         
         // Payment viewing
         Route::get('/payments', [AccountantPaymentController::class, 'index'])->name('payments.index');
         Route::get('/payments/{payment}', [AccountantPaymentController::class, 'show'])->name('payments.show');
+        Route::post('/payments', [AccountantPaymentController::class, 'store'])->name('payments.store');
+        Route::post('/payments/{payment}/approve', [AccountantPaymentController::class, 'approve'])->name('payments.approve');
+        Route::post('/payments/{payment}/reject', [AccountantPaymentController::class, 'reject'])->name('payments.reject');
         
         // Reconciliation
         Route::get('/reconciliation', [AccountantReconciliationController::class, 'index'])->name('reconciliation.index');
         Route::post('/reconciliation/match', [AccountantReconciliationController::class, 'match'])->name('reconciliation.match');
+        Route::post('/reconciliation/confirm', [AccountantReconciliationController::class, 'confirm'])->name('reconciliation.confirm');
+        Route::post('/reconciliation/unmatch', [AccountantReconciliationController::class, 'unmatch'])->name('reconciliation.unmatch');
+        Route::post('/reconciliation/auto-match', [AccountantReconciliationController::class, 'autoMatch'])->name('reconciliation.auto-match');
+        Route::post('/reconciliation/import-statement', [AccountantReconciliationController::class, 'importStatement'])->name('reconciliation.import-statement');
         
         // Expense management
         Route::resource('expenses', AccountantExpenseController::class)->only(['index', 'store', 'update', 'destroy']);
