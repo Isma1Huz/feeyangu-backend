@@ -8,6 +8,7 @@ use App\Models\SchoolApiCredential;
 use App\Services\Payment\Contracts\PaymentProviderInterface;
 use App\Services\Payment\DTOs\PaymentInitResult;
 use App\Services\Payment\DTOs\PaymentStatusResult;
+use App\Services\Payment\InvoiceAllocationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -323,6 +324,9 @@ class KcbPaymentProvider implements PaymentProviderInterface
         );
 
         Log::info('KCB payment completed', ['transaction_id' => $transaction->id]);
+
+        // Allocate payment to open invoices.
+        app(InvoiceAllocationService::class)->allocate($transaction);
 
         return PaymentStatusResult::completed(
             $transaction->id,

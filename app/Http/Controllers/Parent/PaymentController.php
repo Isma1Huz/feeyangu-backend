@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Parent;
 use App\Http\Controllers\Controller;
 use App\Models\Student;
 use App\Models\PaymentTransaction;
+use App\Models\StudentPaymentAccount;
 use App\Services\Payment\PaymentProviderFactory;
 use App\Services\Payment\PaymentReferenceGenerator;
 use Illuminate\Http\Request;
@@ -38,8 +39,9 @@ class PaymentController extends Controller
         // Convert amount from KES to cents
         $amountInCents = (int) ($validated['amount'] * 100);
 
-        // Generate unique reference: {ADMISSION}-{SCHOOL_ID}-{CODE}
-        $reference = $this->generateUniqueReference($student);
+        // Get or create the stable per-student-per-school payment account reference.
+        $account   = $this->getOrCreatePaymentAccount($student);
+        $reference = $account->reference;
 
         // Create payment transaction
         $transaction = PaymentTransaction::create([
@@ -94,7 +96,24 @@ class PaymentController extends Controller
     }
 
     /**
-     * Generate a unique reference, retrying on collision (rare).
+     * Get or create the stable StudentPaymentAccount for this student.
+     * The reference is reused across all payments (PayBill + STK Push).
+     */
+    private function getOrCreatePaymentAccount(Student $student): StudentPaymentAccount
+    {
+        return StudentPaymentAccount::firstOrCreate(
+            [
+                'school_id'  => $student->school_id,
+                'student_id' => $student->id,
+            ],
+            [
+                'reference' => $this->generateUniqueReference($student),
+            ]
+        );
+    }
+
+    /**
+     * Generate a unique reference string, retrying on collision (rare).
      */
     private function generateUniqueReference(Student $student): string
     {
@@ -106,14 +125,13 @@ class PaymentController extends Controller
                 $student->school_id
             );
 
-            if (!PaymentTransaction::where('reference', $reference)->exists()) {
+            if (!StudentPaymentAccount::where('reference', $reference)->exists()) {
                 return $reference;
             }
         }
 
-        // Extremely unlikely to reach here; use a longer code as fallback
-        $extendedLength = 10;
-        return $this->referenceGenerator->generate($student->admission_number, $student->school_id, $extendedLength);
+        // Extremely unlikely; use a longer code as fallback.
+        return $this->referenceGenerator->generate($student->admission_number, $student->school_id, 10);
     }
 
     /**

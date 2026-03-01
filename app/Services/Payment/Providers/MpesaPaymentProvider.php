@@ -5,9 +5,11 @@ namespace App\Services\Payment\Providers;
 use App\Models\PaymentTransaction;
 use App\Models\Receipt;
 use App\Models\SchoolApiCredential;
+use App\Models\StudentPaymentAccount;
 use App\Services\Payment\Contracts\PaymentProviderInterface;
 use App\Services\Payment\DTOs\PaymentInitResult;
 use App\Services\Payment\DTOs\PaymentStatusResult;
+use App\Services\Payment\InvoiceAllocationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -386,36 +388,102 @@ class MpesaPaymentProvider implements PaymentProviderInterface
     /**
      * Handle Daraja C2B PayBill confirmation callback.
      *
-     * Daraja sends this when a customer pays via PayBill.
-     * The BillRefNumber field must match PaymentTransaction.reference.
+     * Each C2B confirmation creates a NEW completed PaymentTransaction so that
+     * partial payments (multiple PayBill payments for the same student/reference)
+     * are all recorded individually.
+     *
+     * Idempotency is enforced via the unique(provider, provider_reference) DB
+     * constraint: if the same TransID arrives twice it will silently be ignored.
+     *
+     * The BillRefNumber must match a StudentPaymentAccount.reference so we can
+     * resolve the school_id and student_id without relying on subdomain routing.
      */
     private function handleC2BCallback(array $payload): void
     {
         $billRefNumber = $payload['BillRefNumber'] ?? null;
         $transId       = $payload['TransID']       ?? null;
-        $amount        = $payload['TransAmount']   ?? null;
+        $rawAmount     = $payload['TransAmount']   ?? null;
 
-        if (!$billRefNumber) {
-            Log::error('M-Pesa C2B callback missing BillRefNumber', $payload);
+        if (!$billRefNumber || !$transId) {
+            Log::error('M-Pesa C2B callback missing required fields', $payload);
             return;
         }
 
-        $transaction = PaymentTransaction::where('reference', $billRefNumber)->first();
+        // Idempotency check: has this TransID already been processed?
+        if (PaymentTransaction::where('provider', 'mpesa')
+            ->where('provider_reference', $transId)
+            ->exists()
+        ) {
+            Log::info('M-Pesa C2B callback already processed (idempotent)', [
+                'TransID' => $transId,
+            ]);
+            return;
+        }
 
-        if (!$transaction) {
-            Log::error('M-Pesa C2B callback: no transaction matches BillRefNumber', [
+        // Resolve student via stable payment account reference.
+        $account = StudentPaymentAccount::where('reference', $billRefNumber)->first();
+
+        if (!$account) {
+            Log::error('M-Pesa C2B callback: no StudentPaymentAccount matches BillRefNumber', [
                 'BillRefNumber' => $billRefNumber,
             ]);
             return;
         }
 
-        $meta = [
-            'MpesaReceiptNumber' => $transId,
-            'TransAmount'        => $amount,
-            'MSISDN'             => $payload['MSISDN'] ?? null,
-        ];
+        // Convert amount to cents (TransAmount is a decimal string like "5000.00").
+        $amountInCents = (int) round((float) $rawAmount * 100);
 
-        $this->completeTransaction($transaction, $meta);
+        if ($amountInCents <= 0) {
+            Log::error('M-Pesa C2B callback: invalid amount', ['TransAmount' => $rawAmount]);
+            return;
+        }
+
+        DB::transaction(function () use ($account, $billRefNumber, $transId, $amountInCents, $payload) {
+            // Create a new completed PaymentTransaction for this specific payment.
+            $tx = PaymentTransaction::create([
+                'school_id'          => $account->school_id,
+                'student_id'         => $account->student_id,
+                'parent_id'          => null,
+                'amount'             => $amountInCents,
+                'provider'           => 'mpesa',
+                'status'             => 'completed',
+                'reference'          => $billRefNumber,
+                'phone_number'       => $payload['MSISDN'] ?? null,
+                'provider_reference' => $transId,
+                'completed_at'       => now(),
+                'metadata'           => [
+                    'MpesaReceiptNumber' => $transId,
+                    'TransAmount'        => $payload['TransAmount'] ?? null,
+                    'MSISDN'             => $payload['MSISDN']      ?? null,
+                    'TransactionType'    => $payload['TransactionType'] ?? 'Pay Bill',
+                    'completed_at'       => now()->toISOString(),
+                ],
+            ]);
+
+            $receiptNumber = 'RCT-' . date('Y') . '-'
+                . str_pad($tx->school_id, 3, '0', STR_PAD_LEFT) . '-'
+                . str_pad($tx->id, 6, '0', STR_PAD_LEFT);
+
+            Receipt::create([
+                'school_id'         => $tx->school_id,
+                'payment_transaction_id' => $tx->id,
+                'receipt_number'    => $receiptNumber,
+                'student_id'        => $tx->student_id,
+                'amount'            => $tx->amount,
+                'payment_method'    => 'M-Pesa',
+                'payment_reference' => $transId,
+                'issued_at'         => now(),
+            ]);
+
+            // Allocate to open invoices.
+            app(InvoiceAllocationService::class)->allocate($tx);
+
+            Log::info('M-Pesa C2B payment recorded', [
+                'transaction_id' => $tx->id,
+                'TransID'        => $transId,
+                'amount_kes'     => $amountInCents / 100,
+            ]);
+        });
     }
 
     // -------------------------------------------------------------------------
@@ -467,6 +535,9 @@ class MpesaPaymentProvider implements PaymentProviderInterface
                     'issued_at'        => now(),
                 ]
             );
+
+            // Allocate payment to open invoices.
+            app(InvoiceAllocationService::class)->allocate($tx);
 
             Log::info('M-Pesa payment completed', [
                 'transaction_id' => $tx->id,
