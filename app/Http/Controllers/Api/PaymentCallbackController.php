@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\PaymentWebhookLog;
+use App\Services\Payment\InvoiceAllocationService;
 use App\Services\Payment\PaymentProviderFactory;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -18,7 +19,8 @@ use Illuminate\Support\Facades\Log;
 class PaymentCallbackController extends Controller
 {
     public function __construct(
-        private PaymentProviderFactory $factory
+        private PaymentProviderFactory $factory,
+        private InvoiceAllocationService $allocationService
     ) {}
 
     /**
@@ -152,7 +154,7 @@ class PaymentCallbackController extends Controller
         }
 
         $transaction->update([
-            'status' => 'manual_confirm',
+            'status' => 'completed',
             'provider_reference' => $validated['provider_reference'],
             'completed_at' => now(),
         ]);
@@ -170,6 +172,9 @@ class PaymentCallbackController extends Controller
             'payment_reference' => $validated['provider_reference'],
             'issued_at' => now(),
         ]);
+
+        // Allocate payment to open invoices.
+        $this->allocationService->allocate($transaction->fresh());
 
         Log::info("Manual payment confirmation", [
             'transaction_id' => $transaction->id,

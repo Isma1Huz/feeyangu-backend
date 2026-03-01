@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class PaymentTransaction extends Model
@@ -55,6 +56,11 @@ class PaymentTransaction extends Model
     public function reconciliationItem(): HasOne
     {
         return $this->hasOne(ReconciliationItem::class, 'system_payment_id');
+    }
+
+    public function invoicePayments(): HasMany
+    {
+        return $this->hasMany(InvoicePayment::class);
     }
 
 }

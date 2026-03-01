@@ -60,6 +60,11 @@ class Student extends Model
         return $this->hasMany(PaymentTransaction::class);
     }
 
+    public function paymentAccount(): HasOne
+    {
+        return $this->hasOne(StudentPaymentAccount::class);
+    }
+
     public function receipts(): HasMany
     {
         return $this->hasMany(Receipt::class);

@@ -2,11 +2,14 @@
 
 namespace Tests\Feature\Payment;
 
+use App\Models\Invoice;
+use App\Models\InvoicePayment;
 use App\Models\PaymentTransaction;
 use App\Models\Receipt;
 use App\Models\School;
 use App\Models\SchoolApiCredential;
 use App\Models\Student;
+use App\Models\StudentPaymentAccount;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
@@ -290,23 +293,27 @@ class MpesaPaymentFlowTest extends TestCase
     // C2B PayBill callback
     // -------------------------------------------------------------------------
 
-    public function test_c2b_callback_completes_transaction_by_bill_ref_number(): void
+    public function test_c2b_callback_creates_new_transaction_via_payment_account(): void
     {
-        $transaction = $this->makeTransaction([
-            'status'    => 'pending',
-            'reference' => '995-' . $this->school->id . '-PAYBIL',
+        $reference = '995-' . $this->school->id . '-PAYBIL';
+
+        // Create the stable payment account for this student.
+        StudentPaymentAccount::create([
+            'school_id'  => $this->school->id,
+            'student_id' => $this->student->id,
+            'reference'  => $reference,
         ]);
 
         $c2bPayload = [
-            'TransactionType' => 'Pay Bill',
-            'TransID'         => 'RKTQDM7W6S',
-            'TransTime'       => '20241201063845',
-            'TransAmount'     => '5000.00',
+            'TransactionType'   => 'Pay Bill',
+            'TransID'           => 'RKTQDM7W6S',
+            'TransTime'         => '20241201063845',
+            'TransAmount'       => '5000.00',
             'BusinessShortCode' => '600638',
-            'BillRefNumber'   => $transaction->reference, // Must match our reference
-            'MSISDN'          => '254712345678',
-            'FirstName'       => 'Jane',
-            'LastName'        => 'Doe',
+            'BillRefNumber'     => $reference,
+            'MSISDN'            => '254712345678',
+            'FirstName'         => 'Jane',
+            'LastName'          => 'Doe',
         ];
 
         $response = $this->postJson(
@@ -316,35 +323,84 @@ class MpesaPaymentFlowTest extends TestCase
 
         $response->assertOk();
 
-        $transaction->refresh();
-        $this->assertSame('completed', $transaction->status);
-        $this->assertNotNull($transaction->completed_at);
-        $this->assertSame('RKTQDM7W6S', $transaction->provider_reference);
+        // A NEW completed transaction should be created.
+        $tx = PaymentTransaction::where('provider', 'mpesa')
+            ->where('provider_reference', 'RKTQDM7W6S')
+            ->first();
 
-        $receipt = Receipt::where('payment_transaction_id', $transaction->id)->first();
+        $this->assertNotNull($tx, 'A new PaymentTransaction should have been created');
+        $this->assertSame('completed', $tx->status);
+        $this->assertSame(500000, $tx->amount); // 5000.00 KES = 500000 cents
+        $this->assertNotNull($tx->completed_at);
+
+        $receipt = Receipt::where('payment_transaction_id', $tx->id)->first();
         $this->assertNotNull($receipt);
         $this->assertSame('RKTQDM7W6S', $receipt->payment_reference);
     }
 
     public function test_c2b_callback_is_idempotent(): void
     {
-        $transaction = $this->makeTransaction([
-            'status'    => 'pending',
-            'reference' => '995-' . $this->school->id . '-C2BIDEM',
+        $reference = '995-' . $this->school->id . '-C2BIDEM';
+
+        StudentPaymentAccount::create([
+            'school_id'  => $this->school->id,
+            'student_id' => $this->student->id,
+            'reference'  => $reference,
         ]);
 
         $c2bPayload = [
             'TransID'       => 'IDEMPOTENT1',
             'TransAmount'   => '5000.00',
-            'BillRefNumber' => $transaction->reference,
+            'BillRefNumber' => $reference,
             'MSISDN'        => '254712345678',
         ];
 
         $this->postJson("/api/payments/callback/mpesa/{$this->school->id}", $c2bPayload)->assertOk();
         $this->postJson("/api/payments/callback/mpesa/{$this->school->id}", $c2bPayload)->assertOk();
 
-        $receiptCount = Receipt::where('payment_transaction_id', $transaction->id)->count();
-        $this->assertSame(1, $receiptCount, 'Duplicate C2B callback must not create duplicate receipts');
+        // Exactly one PaymentTransaction and one receipt should exist for this TransID.
+        $txCount = PaymentTransaction::where('provider', 'mpesa')
+            ->where('provider_reference', 'IDEMPOTENT1')
+            ->count();
+        $this->assertSame(1, $txCount, 'Duplicate C2B callback must not create duplicate transactions');
+    }
+
+    public function test_c2b_partial_payments_create_separate_transactions(): void
+    {
+        $reference = '995-' . $this->school->id . '-PARTIAL';
+
+        StudentPaymentAccount::create([
+            'school_id'  => $this->school->id,
+            'student_id' => $this->student->id,
+            'reference'  => $reference,
+        ]);
+
+        // First partial payment: KES 2,000
+        $this->postJson("/api/payments/callback/mpesa/{$this->school->id}", [
+            'TransID'       => 'PARTIAL001',
+            'TransAmount'   => '2000.00',
+            'BillRefNumber' => $reference,
+            'MSISDN'        => '254712345678',
+        ])->assertOk();
+
+        // Second partial payment: KES 3,000
+        $this->postJson("/api/payments/callback/mpesa/{$this->school->id}", [
+            'TransID'       => 'PARTIAL002',
+            'TransAmount'   => '3000.00',
+            'BillRefNumber' => $reference,
+            'MSISDN'        => '254712345678',
+        ])->assertOk();
+
+        // Two separate transactions should exist for the same reference.
+        $txCount = PaymentTransaction::where('reference', $reference)
+            ->where('status', 'completed')
+            ->count();
+        $this->assertSame(2, $txCount, 'Each C2B payment should create its own transaction');
+
+        $totalPaid = PaymentTransaction::where('reference', $reference)
+            ->where('status', 'completed')
+            ->sum('amount');
+        $this->assertSame(500000, (int) $totalPaid); // 2000 + 3000 = 5000 KES = 500000 cents
     }
 
     // -------------------------------------------------------------------------
@@ -417,5 +473,154 @@ class MpesaPaymentFlowTest extends TestCase
 
         $receipt = Receipt::where('payment_transaction_id', $transaction->id)->first();
         $this->assertNotNull($receipt);
+    }
+
+    // -------------------------------------------------------------------------
+    // Invoice allocation tests
+    // -------------------------------------------------------------------------
+
+    /**
+     * Helper: create an invoice for the test student.
+     */
+    private function makeInvoice(int $totalCents, int $paidCents = 0, string $status = 'sent'): Invoice
+    {
+        return Invoice::create([
+            'school_id'      => $this->school->id,
+            'invoice_number' => 'INV-' . uniqid(),
+            'student_id'     => $this->student->id,
+            'grade'          => 'Form 1',
+            'term'           => 'Term 1',
+            'total_amount'   => $totalCents,
+            'paid_amount'    => $paidCents,
+            'balance'        => $totalCents - $paidCents,
+            'status'         => $status,
+            'due_date'       => now()->addDays(30),
+            'issued_date'    => now(),
+        ]);
+    }
+
+    public function test_invoice_allocated_on_stk_callback(): void
+    {
+        $invoice     = $this->makeInvoice(500000); // KES 5,000 invoice
+        $transaction = $this->makeTransaction([
+            'status'             => 'processing',
+            'provider_reference' => 'CR-ALLOC',
+        ]);
+
+        $callbackPayload = [
+            'Body' => [
+                'stkCallback' => [
+                    'CheckoutRequestID' => 'CR-ALLOC',
+                    'ResultCode'        => 0,
+                    'ResultDesc'        => 'Success',
+                    'CallbackMetadata'  => [
+                        'Item' => [
+                            ['Name' => 'Amount',             'Value' => 5000.00],
+                            ['Name' => 'MpesaReceiptNumber', 'Value' => 'ALLOCRCT1'],
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
+        $this->postJson("/api/payments/callback/mpesa/{$this->school->id}", $callbackPayload)->assertOk();
+
+        $invoice->refresh();
+        $this->assertSame(500000, $invoice->paid_amount);
+        $this->assertSame(0, $invoice->balance);
+        $this->assertSame('paid', $invoice->status);
+
+        $this->assertDatabaseHas('invoice_payments', [
+            'invoice_id'             => $invoice->id,
+            'payment_transaction_id' => $transaction->id,
+            'amount_applied'         => 500000,
+        ]);
+    }
+
+    public function test_partial_payments_allocate_across_multiple_invoices(): void
+    {
+        // Two invoices: KES 2,000 and KES 3,000
+        $invoice1 = $this->makeInvoice(200000, 0, 'sent');     // due earlier
+        $invoice2 = $this->makeInvoice(300000, 0, 'overdue');   // due later
+
+        // Make invoice1 due earlier so FIFO fills it first.
+        $invoice1->update(['due_date' => now()->subDays(10)]);
+        $invoice2->update(['due_date' => now()->addDays(10)]);
+
+        $reference = '995-' . $this->school->id . '-ALLOC2';
+
+        StudentPaymentAccount::create([
+            'school_id'  => $this->school->id,
+            'student_id' => $this->student->id,
+            'reference'  => $reference,
+        ]);
+
+        // First payment: KES 2,500 (covers invoice1 fully + KES 500 towards invoice2)
+        $this->postJson("/api/payments/callback/mpesa/{$this->school->id}", [
+            'TransID'       => 'ALLOC2A',
+            'TransAmount'   => '2500.00',
+            'BillRefNumber' => $reference,
+            'MSISDN'        => '254712345678',
+        ])->assertOk();
+
+        $invoice1->refresh();
+        $invoice2->refresh();
+
+        $this->assertSame(200000, $invoice1->paid_amount, 'Invoice 1 should be fully paid');
+        $this->assertSame(0, $invoice1->balance);
+        $this->assertSame('paid', $invoice1->status);
+
+        $this->assertSame(50000, $invoice2->paid_amount, 'Invoice 2 should be partially paid');
+        $this->assertSame(250000, $invoice2->balance);
+        $this->assertSame('partial', $invoice2->status);
+
+        // Second payment: KES 2,500 (finishes invoice2)
+        $this->postJson("/api/payments/callback/mpesa/{$this->school->id}", [
+            'TransID'       => 'ALLOC2B',
+            'TransAmount'   => '2500.00',
+            'BillRefNumber' => $reference,
+            'MSISDN'        => '254712345678',
+        ])->assertOk();
+
+        $invoice2->refresh();
+        $this->assertSame(300000, $invoice2->paid_amount, 'Invoice 2 should be fully paid after second payment');
+        $this->assertSame(0, $invoice2->balance);
+        $this->assertSame('paid', $invoice2->status);
+
+        // Two InvoicePayment records for invoice2 (one per partial payment).
+        $allocationCount = InvoicePayment::where('invoice_id', $invoice2->id)->count();
+        $this->assertSame(2, $allocationCount);
+    }
+
+    public function test_invoice_allocation_is_idempotent(): void
+    {
+        $invoice     = $this->makeInvoice(500000);
+        $transaction = $this->makeTransaction([
+            'status'             => 'processing',
+            'provider_reference' => 'CR-IDEM-ALLOC',
+        ]);
+
+        $callbackPayload = [
+            'Body' => [
+                'stkCallback' => [
+                    'CheckoutRequestID' => 'CR-IDEM-ALLOC',
+                    'ResultCode'        => 0,
+                    'ResultDesc'        => 'Success',
+                    'CallbackMetadata'  => [
+                        'Item' => [
+                            ['Name' => 'MpesaReceiptNumber', 'Value' => 'IDEMALLOC1'],
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
+        // Send callback twice.
+        $this->postJson("/api/payments/callback/mpesa/{$this->school->id}", $callbackPayload)->assertOk();
+        $this->postJson("/api/payments/callback/mpesa/{$this->school->id}", $callbackPayload)->assertOk();
+
+        // Allocation record should exist exactly once.
+        $allocationCount = InvoicePayment::where('invoice_id', $invoice->id)->count();
+        $this->assertSame(1, $allocationCount, 'Duplicate callback must not create duplicate allocations');
     }
 }
