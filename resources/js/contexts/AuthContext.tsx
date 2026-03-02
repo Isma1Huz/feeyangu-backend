@@ -24,7 +24,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // User data is accessed from usePage props in individual components
   return (
-    <AuthContext.Provider value={{ user: null, isAuthenticated: true, login, logout, switchRole }}>
+    <AuthContext.Provider value={{ user: null, isAuthenticated: false, login, logout, switchRole }}>
       {children}
     </AuthContext.Provider>
   );

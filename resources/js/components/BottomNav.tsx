@@ -72,7 +72,8 @@ const BottomNav: React.FC = () => {
         {items.map((item) => {
           const Icon = iconMap[item.icon] || LayoutDashboard;
           const isActive = url === item.url;
-          const shortLabel = item.title.split(' ')[0];
+          const titleParts = item.title.split(' ');
+          const shortLabel = titleParts[0].length <= 2 ? titleParts[titleParts.length - 1] : titleParts[0];
 
           return (
             <button

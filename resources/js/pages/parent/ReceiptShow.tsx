@@ -66,7 +66,7 @@ const ParentReceiptShow: React.FC = () => {
             <Button variant="outline" className="gap-2" onClick={() => window.print()}>
               <Printer className="h-4 w-4" /> Print
             </Button>
-            <Button variant="outline" className="gap-2" onClick={() => window.print()}>
+            <Button variant="outline" className="gap-2" onClick={() => window.location.href = `/parent/receipts/${receipt.id}/download`}>
               <Download className="h-4 w-4" /> Download
             </Button>
           </div>
