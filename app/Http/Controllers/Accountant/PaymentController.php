@@ -4,10 +4,13 @@ namespace App\Http\Controllers\Accountant;
 
 use App\Http\Controllers\Controller;
 use App\Models\PaymentTransaction;
+use App\Models\Receipt;
 use App\Models\Student;
+use App\Services\Payment\InvoiceAllocationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -114,19 +117,39 @@ class PaymentController extends Controller
         // Derive a parent_id: take first linked parent, or null
         $parent = $student->parents()->first();
 
-        PaymentTransaction::create([
-            'school_id' => $school->id,
-            'student_id' => $student->id,
-            'parent_id' => $parent?->id,
-            'amount' => (int) round($validated['amount'] * 100),
-            'provider' => $validated['method'],
-            'status' => 'completed',
-            'reference' => $validated['reference'],
-            'provider_reference' => $validated['reference'],
-            'phone_number' => null,
-            'notes' => $validated['notes'] ?? null,
-            'completed_at' => $validated['date'],
-        ]);
+        $amountCents = (int) round($validated['amount'] * 100);
+
+        DB::transaction(function () use ($validated, $school, $student, $parent, $amountCents) {
+            $transaction = PaymentTransaction::create([
+                'school_id' => $school->id,
+                'student_id' => $student->id,
+                'parent_id' => $parent?->id,
+                'amount' => $amountCents,
+                'provider' => $validated['method'],
+                'status' => 'completed',
+                'reference' => $validated['reference'],
+                'provider_reference' => $validated['reference'],
+                'phone_number' => null,
+                'notes' => $validated['notes'] ?? null,
+                'completed_at' => $validated['date'],
+            ]);
+
+            // Generate receipt
+            $receiptNumber = 'RCT-' . date('Y') . '-' . str_pad($school->id, 3, '0', STR_PAD_LEFT) . '-' . str_pad($transaction->id, 6, '0', STR_PAD_LEFT);
+            Receipt::create([
+                'school_id' => $school->id,
+                'payment_transaction_id' => $transaction->id,
+                'receipt_number' => $receiptNumber,
+                'student_id' => $student->id,
+                'amount' => $amountCents,
+                'payment_method' => $validated['method'],
+                'payment_reference' => $validated['reference'],
+                'issued_at' => now(),
+            ]);
+
+            // Allocate payment to open invoices
+            app(InvoiceAllocationService::class)->allocate($transaction);
+        });
 
         return redirect()->route('accountant.payments.index')
             ->with('success', 'Payment recorded successfully.');
@@ -141,10 +164,30 @@ class PaymentController extends Controller
             abort(403, 'Unauthorized');
         }
 
-        $payment->update([
-            'status' => 'completed',
-            'completed_at' => now(),
-        ]);
+        DB::transaction(function () use ($payment) {
+            $payment->update([
+                'status' => 'completed',
+                'completed_at' => now(),
+            ]);
+
+            // Generate receipt if one doesn't already exist
+            if (!$payment->receipt()->exists()) {
+                $receiptNumber = 'RCT-' . date('Y') . '-' . str_pad($payment->school_id, 3, '0', STR_PAD_LEFT) . '-' . str_pad($payment->id, 6, '0', STR_PAD_LEFT);
+                Receipt::create([
+                    'school_id' => $payment->school_id,
+                    'payment_transaction_id' => $payment->id,
+                    'receipt_number' => $receiptNumber,
+                    'student_id' => $payment->student_id,
+                    'amount' => $payment->amount,
+                    'payment_method' => $payment->provider,
+                    'payment_reference' => $payment->provider_reference ?? $payment->reference,
+                    'issued_at' => now(),
+                ]);
+            }
+
+            // Allocate payment to open invoices
+            app(InvoiceAllocationService::class)->allocate($payment->fresh());
+        });
 
         return redirect()->route('accountant.payments.index')
             ->with('success', 'Payment approved.');

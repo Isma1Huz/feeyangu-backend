@@ -37,7 +37,7 @@ class FeeOverdueNotification extends Notification implements ShouldQueue
         $balance = number_format($this->invoice->balance / 100, 2);
         $student = $this->invoice->student;
         $daysOverdue = now()->diffInDays($this->invoice->due_date);
-        $payUrl = route('parent.children.pay', $student->id);
+        $payUrl = route('parent.children.show', $student->id);
 
         return (new MailMessage)
             ->subject('Fee Payment Overdue - FeeYangu')

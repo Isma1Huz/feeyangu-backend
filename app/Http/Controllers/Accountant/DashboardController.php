@@ -80,11 +80,12 @@ class DashboardController extends Controller
             ];
         }
 
-        // Payment method distribution
+        // Payment method distribution – group all bank-transfer providers into one bucket
+        $bankProviders = ['kcb', 'equity', 'ncba', 'coop', 'bank'];
         $mpesaCount = $school->paymentTransactions()->where('provider', 'mpesa')->where('status', 'completed')->count();
-        $bankCount = $school->paymentTransactions()->where('provider', 'bank')->where('status', 'completed')->count();
-        $cashCount = $school->paymentTransactions()->where('provider', 'cash')->where('status', 'completed')->count();
-        $cardCount = $school->paymentTransactions()->where('provider', 'card')->where('status', 'completed')->count();
+        $bankCount  = $school->paymentTransactions()->whereIn('provider', $bankProviders)->where('status', 'completed')->count();
+        $cashCount  = $school->paymentTransactions()->where('provider', 'cash')->where('status', 'completed')->count();
+        $cardCount  = $school->paymentTransactions()->where('provider', 'card')->where('status', 'completed')->count();
         
         $totalCount = $mpesaCount + $bankCount + $cashCount + $cardCount;
         
@@ -160,7 +161,7 @@ class DashboardController extends Controller
             ->map(fn($payment) => [
                 'id' => (string) $payment->id,
                 'studentName' => $payment->student->full_name,
-                'parentName' => $payment->parent->name,
+                'parentName' => $payment->parent?->name ?? 'N/A',
                 'amount' => $payment->amount / 100,
                 'provider' => $payment->provider,
                 'status' => $payment->status,

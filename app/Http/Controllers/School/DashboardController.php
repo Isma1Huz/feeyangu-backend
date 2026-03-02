@@ -109,7 +109,7 @@ class DashboardController extends Controller
                 return [
                     'id' => $payment->id,
                     'student_name' => $payment->student->full_name,
-                    'parent_name' => $payment->parent->name,
+                    'parent_name' => $payment->parent?->name ?? 'N/A',
                     'amount' => $payment->amount / self::CENTS_TO_KES,
                     'provider' => $payment->provider,
                     'status' => $payment->status,
@@ -166,12 +166,15 @@ class DashboardController extends Controller
                 ];
             });
 
+        // Group all bank-transfer providers (online and manual) under one "Bank Transfer" bucket
+        $bankProviders = ['kcb', 'equity', 'ncba', 'coop', 'bank'];
         $methodSums = $school->paymentTransactions()
             ->selectRaw('provider, SUM(amount) as total_amount')
             ->where('status', 'completed')
-            ->whereIn('provider', ['mpesa', 'bank', 'cash', 'card'])
+            ->whereIn('provider', array_merge(['mpesa', 'cash', 'card'], $bankProviders))
             ->groupBy('provider')
             ->pluck('total_amount', 'provider');
+        $bankTransferTotal = collect($bankProviders)->sum(fn($p) => $methodSums[$p] ?? 0);
         $collectionByMethod = [
             [
                 'name' => 'M-Pesa',
@@ -180,7 +183,7 @@ class DashboardController extends Controller
             ],
             [
                 'name' => 'Bank Transfer',
-                'value' => ($methodSums['bank'] ?? 0) / self::CENTS_TO_KES,
+                'value' => $bankTransferTotal / self::CENTS_TO_KES,
                 'color' => 'hsl(200, 72%, 45%)',
             ],
             [
