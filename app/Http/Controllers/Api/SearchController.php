@@ -33,7 +33,7 @@ class SearchController extends Controller
                   ->orWhere('last_name', 'LIKE', "%{$query}%")
                   ->orWhere('admission_number', 'LIKE', "%{$query}%");
             })
-            ->with(['grade', 'gradeClass'])
+            ->with(['grade', 'class'])
             ->limit(10)
             ->get()
             ->map(function ($student) {
@@ -42,7 +42,7 @@ class SearchController extends Controller
                     'name' => $student->first_name . ' ' . $student->last_name,
                     'admission_number' => $student->admission_number,
                     'grade' => $student->grade->name ?? null,
-                    'class' => $student->gradeClass->name ?? null,
+                    'class' => $student->class->name ?? null,
                     'status' => $student->status,
                 ];
             });

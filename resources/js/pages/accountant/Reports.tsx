@@ -22,10 +22,11 @@ interface Report {
 
 interface Props extends InertiaSharedProps {
   reports: Report[];
+  grades: string[];
 }
 
 const Reports: React.FC = () => {
-  const { reports } = usePage<Props>().props;
+  const { reports, grades } = usePage<Props>().props;
   const { toast } = useToast();
   const T = useT();
   const t = T.ACCOUNTANT_REPORTS_TEXT;
@@ -37,7 +38,6 @@ const Reports: React.FC = () => {
   const [reportDateTo, setReportDateTo] = useState('2026-02-28');
   const [reportFormat, setReportFormat] = useState<'pdf' | 'excel' | 'csv'>('pdf');
   const [reportGrade, setReportGrade] = useState('all');
-  const [generating, setGenerating] = useState(false);
 
   const iconMap: Record<string, React.ComponentType<any>> = {
     TrendingUp,
@@ -57,53 +57,58 @@ const Reports: React.FC = () => {
     setGenerateOpen(true);
   };
 
-  const handleGenerate = async () => {
+  const handleGenerate = () => {
     if (!reportDateFrom || !reportDateTo) {
       toast({ title: 'Date Range Required', description: 'Please select a date range for the report.', variant: 'destructive' });
       return;
     }
-    setGenerating(true);
 
-    const data = {
+    const params = new URLSearchParams({
       reportType: selectedReport,
       dateFrom: reportDateFrom,
       dateTo: reportDateTo,
       format: reportFormat,
       grade: reportGrade,
-    };
-
-    router.post('/accountant/reports/generate', data, {
-      onSuccess: () => {
-        const label = (t.reports as Record<string, string>)[selectedReport] || selectedReport;
-        toast({
-          title: `${label} Generated`,
-          description: `Report for ${reportDateFrom} to ${reportDateTo} ready for download as ${reportFormat.toUpperCase()}.`,
-        });
-        setGenerating(false);
-        setGenerateOpen(false);
-      },
-      onError: () => {
-        toast({ title: 'Error', description: 'Failed to generate report.', variant: 'destructive' });
-        setGenerating(false);
-      },
     });
+
+    if (reportFormat === 'csv') {
+      // CSV: trigger a direct file download via GET
+      window.location.href = `/accountant/reports/download?${params.toString()}`;
+    } else {
+      // PDF/Excel: POST through Inertia so it shows flash success
+      router.post('/accountant/reports/generate', {
+        reportType: selectedReport,
+        dateFrom: reportDateFrom,
+        dateTo: reportDateTo,
+        format: reportFormat,
+        grade: reportGrade,
+      }, {
+        onSuccess: () => {
+          const label = (t.reports as Record<string, string>)[selectedReport] || selectedReport;
+          toast({
+            title: `${label} Generated`,
+            description: `Report for ${reportDateFrom} to ${reportDateTo} queued as ${reportFormat.toUpperCase()}.`,
+          });
+        },
+        onError: () => {
+          toast({ title: 'Error', description: 'Failed to generate report.', variant: 'destructive' });
+        },
+      });
+    }
+
+    setGenerateOpen(false);
   };
 
   const handleDownload = (reportKey: string) => {
-    const label = (t.reports as Record<string, string>)[reportKey] || reportKey;
-    
-    // Trigger CSV download via backend
+    // Trigger CSV download via GET download route
     const params = new URLSearchParams({
       reportType: reportKey,
       dateFrom: '2026-01-01',
       dateTo: new Date().toISOString().split('T')[0],
-      format: 'csv',
       grade: 'all',
     });
 
-    window.location.href = `/accountant/reports/generate?${params.toString()}`;
-    
-    toast({ title: 'Downloaded', description: `${label} report downloaded.` });
+    window.location.href = `/accountant/reports/download?${params.toString()}`;
   };
 
   return (
@@ -175,10 +180,7 @@ const Reports: React.FC = () => {
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Grades</SelectItem>
-                    <SelectItem value="Grade 5">Grade 5</SelectItem>
-                    <SelectItem value="Grade 6">Grade 6</SelectItem>
-                    <SelectItem value="Grade 7">Grade 7</SelectItem>
-                    <SelectItem value="Grade 8">Grade 8</SelectItem>
+                    {grades.map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
@@ -197,9 +199,7 @@ const Reports: React.FC = () => {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setGenerateOpen(false)}>Cancel</Button>
-            <Button onClick={handleGenerate} disabled={generating}>
-              {generating ? 'Generating...' : 'Generate & Download'}
-            </Button>
+            <Button onClick={handleGenerate}>Generate & Download</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

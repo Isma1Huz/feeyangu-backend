@@ -136,7 +136,7 @@ class DashboardController extends Controller
                     'id' => $payment->id,
                     'school_name' => $payment->school->name,
                     'student_name' => $payment->student->full_name,
-                    'parent_name' => $payment->parent->name,
+                    'parent_name' => $payment->parent?->name ?? 'N/A',
                     'amount' => $payment->amount / 100,
                     'status' => $payment->status,
                     'provider' => $payment->provider,

@@ -105,6 +105,15 @@ Route::prefix('school')
         Route::post('/users', [SchoolUserController::class, 'store'])->name('users.store');
         Route::put('/users/{user}', [SchoolUserController::class, 'update'])->name('users.update');
         Route::delete('/users/{user}', [SchoolUserController::class, 'destroy'])->name('users.destroy');
+
+        // PT Meetings
+        Route::get('/pt-meetings', [SchoolPTMeetingController::class, 'index'])->name('pt-meetings.index');
+
+        // Health
+        Route::get('/health', [SchoolHealthController::class, 'index'])->name('health.index');
+
+        // Portfolio
+        Route::get('/portfolio', [SchoolPortfolioController::class, 'index'])->name('portfolio.index');
     });
 
 // Accountant Routes
@@ -147,6 +156,7 @@ Route::prefix('accountant')
         // Reports
         Route::get('/reports', [AccountantReportController::class, 'index'])->name('reports.index');
         Route::post('/reports/generate', [AccountantReportController::class, 'generate'])->name('reports.generate');
+        Route::get('/reports/download', [AccountantReportController::class, 'download'])->name('reports.download');
         
         // Fee Structures (uses School controller)
         Route::get('/fee-structures', [SchoolFeeStructureController::class, 'index'])->name('fee-structures.index');

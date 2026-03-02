@@ -88,9 +88,10 @@ Route::middleware(['auth:sanctum', 'role:school_admin|accountant'])->prefix('bul
     Route::post('/update-student-status', [BulkOperationController::class, 'updateStudentStatus'])->name('api.bulk.update-student-status');
 });
 
-// Health Check API routes (public)
+// Health Check API routes
 Route::prefix('health')->group(function () {
     Route::get('/', [HealthCheckController::class, 'index'])->name('api.health.index');
-    Route::get('/stats', [HealthCheckController::class, 'stats'])->name('api.health.stats');
+    // Stats endpoint is restricted to authenticated users to protect sensitive system information
+    Route::middleware(['auth:sanctum'])->get('/stats', [HealthCheckController::class, 'stats'])->name('api.health.stats');
 });
 
