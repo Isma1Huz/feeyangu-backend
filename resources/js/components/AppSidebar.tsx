@@ -69,6 +69,7 @@ const AppSidebar: React.FC = () => {
       { title: t.SIDEBAR_TEXT.parent.items.children, url: '/parent/children', icon: 'Users' },
       { title: t.SIDEBAR_TEXT.parent.items.payments, url: '/parent/payments', icon: 'CreditCard' },
       { title: t.SIDEBAR_TEXT.parent.items.receipts, url: '/parent/receipts', icon: 'Receipt' },
+      { title: t.SIDEBAR_TEXT.parent.items.ptMeetings, url: '/parent/pt-meetings', icon: 'Calendar' },
     ]},
   ];
 

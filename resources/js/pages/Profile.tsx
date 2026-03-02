@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { User, Lock, Bell, Shield, Moon, Sun, Camera } from 'lucide-react';
 import { Head, usePage } from '@inertiajs/react';
 import type { InertiaSharedProps } from '@/types/inertia';
-import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useT } from '@/contexts/LanguageContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -83,7 +82,8 @@ const PROFILE_TEXT = {
 };
 
 const Profile: React.FC = () => {
-  const { user } = useAuth();
+  const { auth } = usePage().props as { auth: { user: { id: string; name: string; email: string; role: string } | null } };
+  const user = auth?.user ?? null;
   const { theme, setTheme } = useTheme();
   const t = useT();
   const { toast } = useToast();

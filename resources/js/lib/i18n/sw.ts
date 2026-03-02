@@ -18,7 +18,7 @@ const sw: Partial<Translations> & Record<string, any> = {
       finance: { label: 'Fedha', items: { feeStructures: 'Miundo ya Ada', payments: 'Malipo', receipts: 'Risiti' } },
       settings: { label: 'Mipangilio', items: { paymentMethods: 'Njia za Malipo', terms: 'Vipindi vya Masomo', settings: 'Mipangilio ya Shule' } },
     },
-    parent: { label: 'Menyu', items: { dashboard: 'Dashibodi', children: 'Watoto Wangu', payments: 'Historia ya Malipo', receipts: 'Risiti' } },
+    parent: { label: 'Menyu', items: { dashboard: 'Dashibodi', children: 'Watoto Wangu', payments: 'Historia ya Malipo', receipts: 'Risiti', ptMeetings: 'Mikutano na Walimu' } },
   },
 
   DASHBOARD_TEXT: {

@@ -63,7 +63,7 @@ const en = {
     },
     parent: {
       label: 'Menu',
-      items: { dashboard: 'Dashboard', children: 'My Children', payments: 'Payment History', receipts: 'Receipts' },
+      items: { dashboard: 'Dashboard', children: 'My Children', payments: 'Payment History', receipts: 'Receipts', ptMeetings: 'PT Meetings' },
     },
   },
 
