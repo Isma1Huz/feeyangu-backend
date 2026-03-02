@@ -24,6 +24,7 @@ interface PTSlot {
   id: string;
   date: string;
   startTime: string;
+  teacherName: string;
 }
 
 interface PTBooking {
@@ -91,8 +92,7 @@ const ParentPTMeetings: React.FC = () => {
                 const slot = slots.find(s => s.id === b.slotId);
                 return (
                   <TableRow key={b.id}>
-                    {/* TODO: Backend should provide teacher name in booking/slot object */}
-                    <TableCell className="text-sm">Jane Achieng</TableCell>
+                    <TableCell className="text-sm">{slot?.teacherName || '—'}</TableCell>
                     <TableCell className="text-sm">{b.studentId}</TableCell>
                     <TableCell className="text-sm font-mono">{slot?.date} {slot?.startTime}</TableCell>
                     <TableCell><Badge className={bookingColors[b.status]}>{b.status}</Badge></TableCell>

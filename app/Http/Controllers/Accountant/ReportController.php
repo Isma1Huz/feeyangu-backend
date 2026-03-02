@@ -24,8 +24,18 @@ class ReportController extends Controller
             abort(403, 'No school assigned to user');
         }
 
-        // Get last generated dates for each report type from the database
-        // For now, we'll use placeholder data since we don't have a reports table yet
+        // Fetch distinct grade names so the frontend modal can build a real grade filter
+        $grades = $school->students()
+            ->whereNotNull('grade_id')
+            ->with('grade:id,name')
+            ->get()
+            ->pluck('grade.name')
+            ->filter()
+            ->unique()
+            ->sort()
+            ->values()
+            ->toArray();
+
         $reports = [
             [
                 'key' => 'incomeStatement',
@@ -80,13 +90,15 @@ class ReportController extends Controller
 
         return Inertia::render('accountant/Reports', [
             'reports' => $reports,
+            'grades' => $grades,
         ]);
     }
 
     /**
-     * Generate a financial report based on the given parameters.
+     * Generate a financial report (POST). For CSV, redirects to the GET download endpoint.
+     * For pdf/excel, redirects back with a success flash message.
      */
-    public function generate(Request $request)
+    public function generate(Request $request): \Illuminate\Http\RedirectResponse
     {
         $school = auth()->user()->school;
 
@@ -102,26 +114,48 @@ class ReportController extends Controller
             'grade' => 'nullable|string',
         ]);
 
-        $reportType = $validated['reportType'];
-        $dateFrom = $validated['dateFrom'];
-        $dateTo = $validated['dateTo'];
-        $format = $validated['format'];
-        $grade = $validated['grade'] ?? 'all';
-
-        // Generate report data based on type
-        $data = $this->generateReportData($school, $reportType, $dateFrom, $dateTo, $grade);
-
-        // For CSV format, return the data directly
-        if ($format === 'csv') {
-            return $this->generateCSV($data, $reportType);
+        // For CSV, redirect to the GET download endpoint so the browser receives the file
+        if ($validated['format'] === 'csv') {
+            return redirect()->route('accountant.reports.download', [
+                'reportType' => $validated['reportType'],
+                'dateFrom'   => $validated['dateFrom'],
+                'dateTo'     => $validated['dateTo'],
+                'grade'      => $validated['grade'] ?? 'all',
+            ]);
         }
 
-        // For PDF/Excel, return success message (actual file generation would require libraries like TCPDF or PhpSpreadsheet)
-        return response()->json([
-            'success' => true,
-            'message' => "Report generated successfully for {$dateFrom} to {$dateTo}",
-            'data' => $data,
+        // For PDF/Excel (libraries not yet installed), return redirect back with success note
+        return redirect()->route('accountant.reports.index')
+            ->with('success', "Report '{$validated['reportType']}' generated for {$validated['dateFrom']} to {$validated['dateTo']}. Install barryvdh/laravel-dompdf (PDF) or maatwebsite/excel (Excel) to enable file downloads.");
+    }
+
+    /**
+     * Download a report as CSV via GET request (used by the download icon button).
+     */
+    public function download(Request $request)
+    {
+        $school = auth()->user()->school;
+
+        if (!$school) {
+            abort(403, 'No school assigned to user');
+        }
+
+        $validated = $request->validate([
+            'reportType' => 'required|string|in:incomeStatement,cashFlow,feeCollection,outstanding,paymentMethod,aging,audit',
+            'dateFrom' => 'required|date',
+            'dateTo' => 'required|date|after_or_equal:dateFrom',
+            'grade' => 'nullable|string',
         ]);
+
+        $data = $this->generateReportData(
+            $school,
+            $validated['reportType'],
+            $validated['dateFrom'],
+            $validated['dateTo'],
+            $validated['grade'] ?? 'all'
+        );
+
+        return $this->generateCSV($data, $validated['reportType']);
     }
 
     /**
@@ -330,7 +364,7 @@ class ReportController extends Controller
                 $txn->created_at->format('Y-m-d H:i:s'),
                 'Payment',
                 $txn->student->full_name,
-                $txn->parent->name,
+                $txn->parent?->name ?? 'N/A',
                 $txn->amount / 100,
                 $txn->provider,
                 $txn->status,
