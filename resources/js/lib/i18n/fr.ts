@@ -256,6 +256,225 @@ const fr: Partial<Translations> & Record<string, any> = {
   },
 
   LANGUAGE: { label: 'Langue', en: 'English', fr: 'Français', de: 'Deutsch', nl: 'Nederlands', sw: 'Kiswahili' },
+
+  // Teacher sidebar
+  SIDEBAR_TEACHER: {
+    label: 'Enseignement',
+    items: {
+      dashboard: 'Tableau de bord',
+      myClasses: 'Mes classes',
+      results: 'Saisie des résultats',
+      attendance: 'Présences',
+      portfolio: 'Portfolio CBC',
+      ptMeetings: 'Réunions parents-profs',
+      announcements: 'Annonces',
+      profile: 'Profil',
+    },
+  },
+
+  // Portfolio
+  PORTFOLIO_TEXT: {
+    pageTitle: 'Portfolio numérique CBC',
+    pageSubtitle: 'Gérez les portfolios d\'apprentissage des élèves dans toutes les matières CBC.',
+    completionRing: { complete: 'Terminé', inProgress: 'En cours', notStarted: 'Non commencé' },
+    evidence: {
+      add: 'Ajouter une preuve',
+      edit: 'Modifier la preuve',
+      delete: 'Supprimer la preuve',
+      publish: 'Publier',
+      types: { photo: 'Photo', video: 'Vidéo', document: 'Document', drawing: 'Dessin', craft_photo: 'Photo artisanale', written_work: 'Travail écrit', audio: 'Audio' },
+    },
+    ratings: { EE: 'EE', ME: 'ME', AE: 'AE', BE: 'BE', EEFull: 'Dépasse les attentes', MEFull: 'Atteint les attentes', AEFull: 'Approche les attentes', BEFull: 'En dessous des attentes' },
+    learningAreas: { empty: 'Aucune matière configurée', addArea: 'Ajouter une matière', configure: 'Configurer' },
+    parentView: { downloadButton: 'Télécharger le portfolio', draftHidden: 'Les brouillons sont masqués aux parents.', noEvidenceYet: 'Aucune preuve téléchargée pour ce point.' },
+    bulkUpload: { title: 'Téléchargement en masse', dropzone: 'Glissez-déposez des images ici ou cliquez', assignStudent: 'Assigner à l\'élève', saveAll: 'Tout enregistrer' },
+  },
+
+  // PT Meetings
+  PT_MEETINGS_TEXT: {
+    pageTitle: 'Réunions parents-professeurs',
+    bookMeeting: 'Réserver une réunion',
+    myMeetings: 'Mes réunions',
+    session: { create: 'Créer une session', open: 'Ouvrir les réservations', close: 'Fermer les réservations', complete: 'Marquer terminé', draft: 'Brouillon' },
+    slot: { available: 'Disponible', booked: 'Réservé', blocked: 'Bloqué', select: 'Choisir un créneau' },
+    booking: { confirm: 'Confirmer', cancel: 'Annuler', reschedule: 'Reporter', pending: 'En attente', confirmed: 'Confirmé' },
+    steps: { selectChild: 'Choisir l\'enfant', selectTeacher: 'Choisir le professeur', selectSlot: 'Choisir le créneau', confirm: 'Confirmer la réservation' },
+    notifications: { bookingRequest: 'Demande de réunion envoyée', confirmed: 'Réunion confirmée', reminder: 'Rappel de réunion', cancelled: 'Réunion annulée' },
+    calendar: { addToCalendar: 'Ajouter au calendrier' },
+  },
+
+  // Health
+  HEALTH_TEXT: {
+    pageTitle: 'Dossiers de santé',
+    healthProfile: 'Profil de santé',
+    condition: {
+      add: 'Ajouter une condition', edit: 'Modifier', deactivate: 'Désactiver',
+      types: { chronic: 'Chronique', allergy: 'Allergie', disability: 'Handicap', dietary: 'Alimentaire', mental_health: 'Santé mentale', other: 'Autre' },
+      severities: { mild: 'Léger', moderate: 'Modéré', severe: 'Grave', critical: 'Critique', life_threatening: 'Potentiellement mortel' },
+    },
+    allergy: {
+      add: 'Ajouter une allergie', remove: 'Supprimer l\'allergie', epiPen: 'EpiPen', responseProtocol: 'Protocole de réponse',
+      severities: { mild: 'Léger', moderate: 'Modéré', severe: 'Grave', critical: 'Critique', life_threatening: 'Potentiellement mortel' },
+    },
+    vaccination: { add: 'Ajouter un vaccin', edit: 'Modifier', statuses: { up_to_date: 'À jour', due_soon: 'Bientôt dû', overdue: 'En retard' }, dueDate: 'Date d\'échéance', upToDate: 'À jour' },
+    incident: {
+      record: 'Enregistrer un incident', resolve: 'Résoudre', followUp: 'Suivi', parentNotify: 'Parent informé',
+      types: { injury: 'Blessure', illness: 'Maladie', allergic_reaction: 'Réaction allergique', mental_health: 'Santé mentale', emergency: 'Urgence', other: 'Autre' },
+    },
+    emergency: { contacts: 'Contacts d\'urgence', addContact: 'Ajouter un contact', priority: 'Priorité' },
+    documents: { upload: 'Télécharger un document', download: 'Télécharger', types: { medical_certificate: 'Certificat médical', vaccination_card: 'Carnet de vaccination', doctor_letter: 'Lettre du médecin', disability_assessment: 'Évaluation du handicap', insurance_card: 'Carte d\'assurance', other: 'Autre' } },
+    tripSheet: { generate: 'Générer la fiche de sortie', selectClass: 'Sélectionner la classe', format: 'Format' },
+    parentView: { flagUpdate: 'Signaler une mise à jour', downloadSummary: 'Télécharger le résumé de santé', updatePending: 'Mise à jour en attente' },
+    alerts: { severeCondition: 'Condition grave', lifeThreateningAllergy: 'Allergie potentiellement mortelle', vaccinationDue: 'Vaccination due' },
+  },
+
+  // Teacher dashboard
+  TEACHER_DASHBOARD_TEXT: {
+    title: 'Tableau de bord enseignant',
+    subtitle: 'Bienvenue. Voici votre aperçu d\'enseignement.',
+    kpi: { myClasses: 'Mes classes', myStudents: 'Mes élèves', assessmentsSubmitted: 'Évaluations soumises', attendanceRate: 'Taux de présence' },
+    schedule: 'Emploi du temps du jour',
+    classPerformance: 'Performance de la classe',
+    attendanceTrend: 'Tendance des présences',
+    gradeDistribution: 'Distribution des notes (CBC)',
+    lowAttendance: 'Élèves avec faible présence (<80%)',
+    pendingPortfolios: 'Portfolios en attente de révision',
+  },
+
+  // Teacher pages
+  TEACHER_CLASSES_TEXT: {
+    title: 'Mes classes',
+    subtitle: 'Consultez et gérez vos classes.',
+    classDetail: 'Détail de la classe',
+    tabs: { students: 'Élèves', results: 'Résultats', attendance: 'Présences', portfolio: 'Portfolio', announcements: 'Annonces' },
+  },
+
+  TEACHER_RESULTS_TEXT: {
+    title: 'Saisie des résultats',
+    subtitle: 'Entrez et soumettez les résultats des examens.',
+    steps: { selectExam: 'Choisir l\'examen', enterScores: 'Saisir les notes', review: 'Réviser et soumettre' },
+    fields: { term: 'Trimestre', exam: 'Examen', subject: 'Matière', class: 'Classe', score: 'Note', grade: 'Niveau', remarks: 'Remarques' },
+    actions: { saveDraft: 'Enregistrer brouillon', submit: 'Soumettre pour révision', bulkUpload: 'Import CSV en masse' },
+    cbcMode: { strand: 'Axe', rating: 'Évaluation' },
+  },
+
+  TEACHER_ATTENDANCE_TEXT: {
+    title: 'Enregistrement des présences',
+    subtitle: 'Enregistrez les présences quotidiennes.',
+    modes: { manual: 'Saisie manuelle', upload: 'Importer une feuille' },
+    status: { present: 'Présent', absent: 'Absent', late: 'En retard', excused: 'Excusé' },
+    actions: { submit: 'Soumettre les présences', uploadFile: 'Importer un fichier' },
+    history: 'Historique des présences',
+  },
+
+  TEACHER_ANNOUNCEMENTS_TEXT: {
+    title: 'Annonces',
+    subtitle: 'Envoyez des annonces aux parents et aux élèves.',
+    create: 'Créer une annonce',
+    fields: { title: 'Titre', body: 'Message', target: 'Public cible', priority: 'Priorité', category: 'Catégorie' },
+    priorities: { normal: 'Normal', important: 'Important', urgent: 'Urgent' },
+    categories: { general: 'Général', cbcMaterials: 'Matériel CBC', event: 'Événement', health: 'Avis de santé', academic: 'Académique', portfolio: 'Portfolio' },
+  },
+
+  // Accountant sidebar
+  SIDEBAR_ACCOUNTANT: {
+    label: 'Finance',
+    items: {
+      dashboard: 'Tableau de bord',
+      feeStructures: 'Structures tarifaires',
+      invoicing: 'Facturation',
+      payments: 'Paiements',
+      reconciliation: 'Rapprochement',
+      reports: 'Rapports financiers',
+      expenses: 'Dépenses',
+      integrations: 'Intégrations',
+      paymentGateway: 'Config. paiement',
+    },
+  },
+
+  // Accountant pages
+  ACCOUNTANT_DASHBOARD_TEXT: {
+    title: 'Tableau de bord comptable',
+    subtitle: 'Opérations financières quotidiennes et aperçu du rapprochement.',
+    kpi: {
+      dailyCollections: 'Collectes du jour',
+      pendingReconciliation: 'Rapprochement en attente',
+      unmatchedTransactions: 'Transactions non appariées',
+      outstandingInvoices: 'Factures impayées',
+      paymentSuccessRate: 'Taux de succès des paiements',
+      pettyCashBalance: 'Solde petite caisse',
+    },
+    collectionTrend: 'Collecte vs Facturé',
+    paymentMethods: 'Répartition des modes de paiement',
+    receivablesAging: 'Vieillissement des créances',
+    recentActivity: 'Activité de paiement du jour',
+    reconciliationQueue: 'File de rapprochement',
+    integrationStatus: 'Statut des intégrations',
+  },
+
+  ACCOUNTANT_INVOICING_TEXT: {
+    title: 'Gestion des factures',
+    subtitle: 'Générez, envoyez et gérez les factures de frais.',
+    searchPlaceholder: 'Rechercher par numéro de facture ou élève...',
+    generateInvoices: 'Générer des factures',
+    sendReminder: 'Envoyer un rappel',
+    table: { invoiceNo: 'N° facture', student: 'Élève', grade: 'Niveau', term: 'Trimestre', total: 'Total', paid: 'Payé', balance: 'Solde', status: 'Statut', dueDate: 'Date d\'échéance', actions: 'Actions' },
+    filters: { allStatus: 'Tous les statuts', allGrades: 'Tous les niveaux' },
+    actions: { send: 'Envoyer', void: 'Annuler', download: 'Télécharger PDF', markPaid: 'Marquer payé', viewDetails: 'Voir les détails' },
+    emptyState: { title: 'Aucune facture', description: 'Générez des factures en début de trimestre.' },
+  },
+
+  ACCOUNTANT_RECONCILIATION_TEXT: {
+    title: 'Rapprochement bancaire',
+    subtitle: 'Associez les transactions bancaires aux paiements du système.',
+    importStatement: 'Importer un relevé bancaire',
+    autoMatch: 'Auto-associer',
+    tabs: { matched: 'Associés', suggested: 'Suggestions', unmatchedBank: 'Banque non associée', unmatchedSystem: 'Système non associé' },
+    confidence: { high: 'Élevé', medium: 'Moyen', low: 'Faible' },
+    actions: { confirmMatch: 'Confirmer', rejectMatch: 'Rejeter', manualMatch: 'Association manuelle', markComplete: 'Terminer le rapprochement' },
+  },
+
+  ACCOUNTANT_REPORTS_TEXT: {
+    title: 'Rapports financiers',
+    subtitle: 'Générez et exportez des rapports financiers complets.',
+    reports: {
+      incomeStatement: 'Compte de résultat',
+      cashFlow: 'Tableau des flux de trésorerie',
+      feeCollection: 'Rapport de collecte des frais',
+      outstanding: 'Rapport des frais impayés',
+      paymentMethod: 'Analyse des modes de paiement',
+      aging: 'Rapport de vieillissement des créances',
+      audit: 'Rapport de piste d\'audit',
+    },
+    actions: { generate: 'Générer le rapport', export: 'Exporter', schedule: 'Planifier', compare: 'Comparer les périodes' },
+  },
+
+  ACCOUNTANT_EXPENSES_TEXT: {
+    title: 'Suivi des dépenses',
+    subtitle: 'Enregistrez et catégorisez les dépenses scolaires.',
+    addExpense: 'Ajouter une dépense',
+    table: { date: 'Date', category: 'Catégorie', description: 'Description', amount: 'Montant', vendor: 'Fournisseur', status: 'Statut', actions: 'Actions' },
+    emptyState: { title: 'Aucune dépense enregistrée', description: 'Commencez le suivi des dépenses.' },
+  },
+
+  ACCOUNTANT_INTEGRATIONS_TEXT: {
+    title: 'Intégrations comptables',
+    subtitle: 'Connectez et gérez les intégrations de logiciels comptables.',
+    connect: 'Connecter',
+    disconnect: 'Déconnecter',
+    syncNow: 'Synchroniser maintenant',
+    lastSynced: 'Dernière synchronisation',
+    syncFrequency: 'Fréquence de synchronisation',
+    itemsSynced: 'Éléments synchronisés',
+    syncErrors: 'Erreurs de synchronisation',
+  },
+
+  ACCOUNTANT_PAYMENTS_TEXT: {
+    title: 'Traitement des paiements',
+    subtitle: 'Enregistrez et approuvez les transactions de paiement.',
+    recordPayment: 'Enregistrer un paiement',
+    approvalQueue: 'File d\'approbation',
+  },
 };
 
 export default fr;
