@@ -26,6 +26,7 @@ class KcbPaymentProvider implements PaymentProviderInterface
     private string $apiSecret;
     private string $baseUrl;
     private string $accountNumber;
+    private int $currentSchoolId = 0;
 
     public function __construct()
     {
@@ -40,6 +41,8 @@ class KcbPaymentProvider implements PaymentProviderInterface
      */
     private function loadCredentialsForSchool(int $schoolId): void
     {
+        $this->currentSchoolId = $schoolId;
+
         $cred = SchoolApiCredential::where('school_id', $schoolId)
             ->where('provider', 'kcb')
             ->where('enabled', true)
@@ -149,6 +152,8 @@ class KcbPaymentProvider implements PaymentProviderInterface
             );
         }
 
+        $this->loadCredentialsForSchool($transaction->school_id);
+
         if (!$this->validateConfiguration()) {
             return PaymentStatusResult::processing($transaction->id, 'KCB Bank not configured');
         }
@@ -230,12 +235,14 @@ class KcbPaymentProvider implements PaymentProviderInterface
      */
     public function reversePayment(string $reference, string $reason = ''): bool
     {
-        if (!$this->validateConfiguration()) {
+        $transaction = PaymentTransaction::where('provider_reference', $reference)->first();
+        if (!$transaction) {
             return false;
         }
 
-        $transaction = PaymentTransaction::where('provider_reference', $reference)->first();
-        if (!$transaction) {
+        $this->loadCredentialsForSchool($transaction->school_id);
+
+        if (!$this->validateConfiguration()) {
             return false;
         }
 
@@ -271,11 +278,12 @@ class KcbPaymentProvider implements PaymentProviderInterface
     }
 
     /**
-     * Get OAuth access token.
+     * Get OAuth access token, cached per school to avoid credential cross-contamination.
      */
     private function getAccessToken(): ?string
     {
-        return Cache::remember('kcb_access_token', 3500, function () {
+        $cacheKey = "kcb_access_token_{$this->currentSchoolId}";
+        return Cache::remember($cacheKey, 3500, function () {
             try {
                 $response = Http::asForm()->post("{$this->baseUrl}/oauth/token", [
                     'grant_type' => 'client_credentials',

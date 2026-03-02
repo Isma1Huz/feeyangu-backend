@@ -39,11 +39,11 @@ class InvoiceController extends Controller
             });
         }
 
-        // Get all invoices with camelCase field names to match frontend
-        $invoices = $query->with(['student', 'invoiceItems'])
+        // Get invoices with camelCase field names to match frontend (paginated to prevent unbounded loads)
+        $invoicesPaginated = $query->with(['student', 'invoiceItems'])
             ->latest('issued_date')
-            ->get()
-            ->map(function ($invoice) {
+            ->paginate(50)
+            ->through(function ($invoice) {
                 return [
                     'id' => (string) $invoice->id,
                     'invoiceNumber' => $invoice->invoice_number,
@@ -63,6 +63,7 @@ class InvoiceController extends Controller
                     ]),
                 ];
             });
+        $invoices = $invoicesPaginated->items();
 
         // Get active students
         $students = $school->students()
@@ -381,7 +382,7 @@ class InvoiceController extends Controller
     }
 
     /**
-     * Send invoice to parent via email/SMS.
+     * Send invoice to parent via email.
      */
     public function send(Invoice $invoice): RedirectResponse
     {
@@ -390,11 +391,16 @@ class InvoiceController extends Controller
             abort(403, 'Unauthorized access to this invoice');
         }
 
-        // TODO: Implement actual email/SMS sending logic
         $invoice->update([
             'status' => 'sent',
             'sent_via' => 'email',
         ]);
+
+        // Notify all parents linked to this student
+        $invoice->load('student.parents');
+        foreach ($invoice->student->parents as $parent) {
+            $parent->notify(new \App\Notifications\InvoiceSentNotification($invoice));
+        }
 
         return redirect()->route('accountant.invoices.show', $invoice)
             ->with('success', 'Invoice sent successfully.');
@@ -539,10 +545,18 @@ class InvoiceController extends Controller
             'ids.*' => 'required|exists:invoices,id',
         ]);
 
-        $school->invoices()
+        $invoices = $school->invoices()
             ->whereIn('id', $validated['ids'])
             ->where('status', 'draft')
-            ->update(['status' => 'sent', 'sent_via' => 'email']);
+            ->with('student.parents')
+            ->get();
+
+        foreach ($invoices as $invoice) {
+            $invoice->update(['status' => 'sent', 'sent_via' => 'email']);
+            foreach ($invoice->student->parents as $parent) {
+                $parent->notify(new \App\Notifications\InvoiceSentNotification($invoice));
+            }
+        }
 
         return redirect()->route('accountant.invoicing')
             ->with('success', 'Invoices sent successfully.');

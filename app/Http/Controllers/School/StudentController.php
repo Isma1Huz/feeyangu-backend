@@ -84,14 +84,14 @@ class StudentController extends Controller
         $school = auth()->user()->school;
         
         $grades = $school->grades()
-            ->with('classes')
+            ->with('gradeClasses')
             ->orderBy('sort_order')
             ->get()
             ->map(function ($grade) {
                 return [
                     'id' => $grade->id,
                     'name' => $grade->name,
-                    'classes' => $grade->classes->map(fn($class) => [
+                    'classes' => $grade->gradeClasses->map(fn($class) => [
                         'id' => $class->id,
                         'name' => $class->name,
                     ]),
@@ -230,14 +230,14 @@ class StudentController extends Controller
         $school = auth()->user()->school;
         
         $grades = $school->grades()
-            ->with('classes')
+            ->with('gradeClasses')
             ->orderBy('sort_order')
             ->get()
             ->map(function ($grade) {
                 return [
                     'id' => $grade->id,
                     'name' => $grade->name,
-                    'classes' => $grade->classes->map(fn($class) => [
+                    'classes' => $grade->gradeClasses->map(fn($class) => [
                         'id' => $class->id,
                         'name' => $class->name,
                     ]),

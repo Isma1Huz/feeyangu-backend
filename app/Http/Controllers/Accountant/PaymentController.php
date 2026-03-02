@@ -55,11 +55,11 @@ class PaymentController extends Controller
             });
         }
 
-        // Get all payments with camelCase field names
-        $payments = $query->with(['student', 'parent', 'receipt'])
+        // Get payments with camelCase field names (paginated to prevent unbounded loads)
+        $paymentsPaginated = $query->with(['student', 'parent', 'receipt'])
             ->latest()
-            ->get()
-            ->map(function ($payment) {
+            ->paginate(50)
+            ->through(function ($payment) {
                 return [
                     'id' => (string) $payment->id,
                     'reference' => $payment->reference,
@@ -77,6 +77,7 @@ class PaymentController extends Controller
                     'notes' => $payment->notes ?? '',
                 ];
             });
+        $payments = $paymentsPaginated->items();
 
         // Get active students
         $students = $school->students()
