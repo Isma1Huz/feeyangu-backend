@@ -18,7 +18,7 @@ const nl: Partial<Translations> & Record<string, any> = {
       finance: { label: 'Financiën', items: { feeStructures: 'Tariefstructuren', payments: 'Betalingen', receipts: 'Bonnen' } },
       settings: { label: 'Instellingen', items: { paymentMethods: 'Betaalmethoden', terms: 'Schoolperiodes', settings: 'Schoolinstellingen' } },
     },
-    parent: { label: 'Menu', items: { dashboard: 'Dashboard', children: 'Mijn kinderen', payments: 'Betalingsgeschiedenis', receipts: 'Bonnen' } },
+    parent: { label: 'Menu', items: { dashboard: 'Dashboard', children: 'Mijn kinderen', payments: 'Betalingsgeschiedenis', receipts: 'Bonnen', ptMeetings: 'Oudergesprekken' } },
   },
 
   DASHBOARD_TEXT: {

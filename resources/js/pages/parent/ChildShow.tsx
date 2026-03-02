@@ -17,7 +17,7 @@ import { cn } from '@/lib/utils';
 import AppLayout from '@/layouts/AppLayout';
 import {
   ArrowLeft, ArrowRight, CheckCircle2, Smartphone, Building2,
-  Loader2, AlertTriangle, Download, Phone, Shield,
+  Loader2, AlertTriangle, Download, Phone, Shield, Heart, FolderOpen,
 } from 'lucide-react';
 
 type PaymentStep = 'select' | 'method' | 'pay' | 'processing' | 'success' | 'manual_confirm';
@@ -368,6 +368,16 @@ const ChildShow: React.FC = () => {
           </div>
         </div>
 
+        {/* Quick links to other child views */}
+        <div className="flex gap-2 flex-wrap">
+          <Button variant="outline" size="sm" className="gap-2" onClick={() => router.visit(`/parent/children/${child.id}/health`)}>
+            <Heart className="h-3.5 w-3.5" /> Health Profile
+          </Button>
+          <Button variant="outline" size="sm" className="gap-2" onClick={() => router.visit(`/parent/children/${child.id}/portfolio`)}>
+            <FolderOpen className="h-3.5 w-3.5" /> Portfolio
+          </Button>
+        </div>
+
       {/* Summary */}
       <Card className="border-none shadow-sm bg-gradient-to-r from-primary/5 to-secondary/5">
         <CardContent className="p-6">
@@ -397,35 +407,37 @@ const ChildShow: React.FC = () => {
         <CardHeader className="pb-2">
           <CardTitle className="text-base font-semibold">Invoices</CardTitle>
         </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Invoice #</TableHead>
-                <TableHead>Issued</TableHead>
-                <TableHead>Due Date</TableHead>
-                <TableHead className="text-right">Total</TableHead>
-                <TableHead className="text-right">Paid</TableHead>
-                <TableHead className="text-right">Balance</TableHead>
-                <TableHead>Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {invoices.map((invoice) => {
-                return (
-                  <TableRow key={invoice.id}>
-                    <TableCell className="font-medium">{invoice.invoice_number}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{invoice.issued_date}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{invoice.due_date}</TableCell>
-                    <TableCell className="text-right font-mono-amount">{CURRENCY} {invoice.total_amount.toLocaleString()}</TableCell>
-                    <TableCell className="text-right font-mono-amount text-success">{CURRENCY} {invoice.paid_amount.toLocaleString()}</TableCell>
-                    <TableCell className="text-right font-mono-amount font-semibold">{CURRENCY} {invoice.balance.toLocaleString()}</TableCell>
-                    <TableCell><StatusBadge status={invoice.status} /></TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
+        <CardContent className="p-0 sm:p-6">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Invoice #</TableHead>
+                  <TableHead className="hidden sm:table-cell">Issued</TableHead>
+                  <TableHead>Due Date</TableHead>
+                  <TableHead className="text-right hidden sm:table-cell">Total</TableHead>
+                  <TableHead className="text-right hidden sm:table-cell">Paid</TableHead>
+                  <TableHead className="text-right">Balance</TableHead>
+                  <TableHead>Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {invoices.map((invoice) => {
+                  return (
+                    <TableRow key={invoice.id}>
+                      <TableCell className="font-medium text-xs sm:text-sm">{invoice.invoice_number}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground hidden sm:table-cell">{invoice.issued_date}</TableCell>
+                      <TableCell className="text-xs sm:text-sm text-muted-foreground">{invoice.due_date}</TableCell>
+                      <TableCell className="text-right font-mono-amount text-sm hidden sm:table-cell">{CURRENCY} {invoice.total_amount.toLocaleString()}</TableCell>
+                      <TableCell className="text-right font-mono-amount text-sm text-success hidden sm:table-cell">{CURRENCY} {invoice.paid_amount.toLocaleString()}</TableCell>
+                      <TableCell className="text-right font-mono-amount text-sm font-semibold">{CURRENCY} {invoice.balance.toLocaleString()}</TableCell>
+                      <TableCell><StatusBadge status={invoice.status} /></TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
 

@@ -3,7 +3,6 @@ import { Link, Head, router, usePage } from '@inertiajs/react';
 import type { InertiaSharedProps } from '@/types/inertia';
 import { useT } from '@/contexts/LanguageContext';
 import parentBannerBg from '@/assets/parent-banner-bg.jpg';
-import { useAuth } from '@/contexts/AuthContext';
 import StatusBadge from '@/components/StatusBadge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -54,7 +53,6 @@ const ParentDashboard: React.FC = () => {
   const t = T.DASHBOARD_TEXT.parent;
   const COMMON_TEXT = T.COMMON_TEXT;
   const PAYMENT_METHOD_LABELS = T.PAYMENT_METHOD_LABELS;
-  const { user } = useAuth();
 
   return (
     <AppLayout>
@@ -200,29 +198,31 @@ const ParentDashboard: React.FC = () => {
 
       <Card className="shadow-sm">
         <CardHeader className="pb-2"><CardTitle className="text-base font-semibold">{t.recentPayments}</CardTitle></CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{T.PAYMENTS_TEXT.table.date}</TableHead>
-                <TableHead>{T.PAYMENTS_TEXT.table.amount}</TableHead>
-                <TableHead>{T.PAYMENTS_TEXT.table.method}</TableHead>
-                <TableHead>{T.PAYMENTS_TEXT.table.status}</TableHead>
-                <TableHead>{T.PAYMENTS_TEXT.table.reference}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {recentPayments.map((p) => (
-                <TableRow key={p.id}>
-                  <TableCell className="text-sm">{p.date}</TableCell>
-                  <TableCell className="text-sm font-mono-amount">{COMMON_TEXT.currency} {p.amount.toLocaleString()}</TableCell>
-                  <TableCell className="text-sm">{PAYMENT_METHOD_LABELS[p.method]}</TableCell>
-                  <TableCell><StatusBadge status={p.status} /></TableCell>
-                  <TableCell className="text-sm text-muted-foreground font-mono-amount">{p.reference}</TableCell>
+        <CardContent className="p-0 sm:p-6">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{T.PAYMENTS_TEXT.table.date}</TableHead>
+                  <TableHead>{T.PAYMENTS_TEXT.table.amount}</TableHead>
+                  <TableHead className="hidden sm:table-cell">{T.PAYMENTS_TEXT.table.method}</TableHead>
+                  <TableHead>{T.PAYMENTS_TEXT.table.status}</TableHead>
+                  <TableHead className="hidden md:table-cell">{T.PAYMENTS_TEXT.table.reference}</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {recentPayments.map((p) => (
+                  <TableRow key={p.id}>
+                    <TableCell className="text-sm">{p.date}</TableCell>
+                    <TableCell className="text-sm font-mono-amount">{COMMON_TEXT.currency} {p.amount.toLocaleString()}</TableCell>
+                    <TableCell className="text-sm hidden sm:table-cell">{PAYMENT_METHOD_LABELS[p.method]}</TableCell>
+                    <TableCell><StatusBadge status={p.status} /></TableCell>
+                    <TableCell className="text-sm text-muted-foreground font-mono-amount hidden md:table-cell">{p.reference}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
       </div>

@@ -60,7 +60,7 @@ const fr: Partial<Translations> & Record<string, any> = {
       finance: { label: 'Finances', items: { feeStructures: 'Structures tarifaires', payments: 'Paiements', receipts: 'Reçus' } },
       settings: { label: 'Paramètres', items: { paymentMethods: 'Moyens de paiement', terms: 'Trimestres', settings: 'Paramètres école' } },
     },
-    parent: { label: 'Menu', items: { dashboard: 'Tableau de bord', children: 'Mes enfants', payments: 'Historique des paiements', receipts: 'Reçus' } },
+    parent: { label: 'Menu', items: { dashboard: 'Tableau de bord', children: 'Mes enfants', payments: 'Historique des paiements', receipts: 'Reçus', ptMeetings: 'Réunions Parents' } },
   },
 
   DASHBOARD_TEXT: {
