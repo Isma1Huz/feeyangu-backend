@@ -28,12 +28,9 @@ use App\Http\Controllers\Parent\DashboardController as ParentDashboardController
 use App\Http\Controllers\Parent\ChildrenController as ParentChildrenController;
 use App\Http\Controllers\Parent\PaymentController as ParentPaymentController;
 use App\Http\Controllers\Parent\ReceiptController as ParentReceiptController;
-use App\Http\Controllers\School\PTMeetingController as SchoolPTMeetingController;
-use App\Http\Controllers\School\HealthController as SchoolHealthController;
-use App\Http\Controllers\School\PortfolioController as SchoolPortfolioController;
-use App\Http\Controllers\Parent\PTMeetingController as ParentPTMeetingController;
 use App\Http\Controllers\Parent\HealthController as ParentHealthController;
 use App\Http\Controllers\Parent\PortfolioController as ParentPortfolioController;
+use App\Http\Controllers\Parent\PTMeetingsController as ParentPTMeetingsController;
 use Illuminate\Support\Facades\Route;
 
 // Welcome/Landing page
@@ -193,12 +190,16 @@ Route::prefix('parent')
         Route::get('/receipts/{receipt}', [ParentReceiptController::class, 'show'])->name('receipts.show');
         Route::get('/receipts/{receipt}/download', [ParentReceiptController::class, 'download'])->name('receipts.download');
 
-        // PT Meetings
-        Route::get('/pt-meetings', [ParentPTMeetingController::class, 'index'])->name('pt-meetings.index');
-
-        // Health & Portfolio (student-specific)
+        // Health routes (per student)
         Route::get('/children/{student}/health', [ParentHealthController::class, 'show'])->name('children.health');
+
+        // Portfolio routes (per student)
         Route::get('/children/{student}/portfolio', [ParentPortfolioController::class, 'show'])->name('children.portfolio');
+
+        // PT Meetings routes
+        Route::get('/pt-meetings', [ParentPTMeetingsController::class, 'index'])->name('pt-meetings.index');
+        Route::post('/pt-meetings', [ParentPTMeetingsController::class, 'store'])->name('pt-meetings.store');
+        Route::post('/pt-meetings/{booking}/cancel', [ParentPTMeetingsController::class, 'cancel'])->name('pt-meetings.cancel');
     });
 
 // Fallback route - redirect to appropriate dashboard based on user role

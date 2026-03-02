@@ -18,7 +18,7 @@ const nl: Partial<Translations> & Record<string, any> = {
       finance: { label: 'Financiën', items: { feeStructures: 'Tariefstructuren', payments: 'Betalingen', receipts: 'Bonnen' } },
       settings: { label: 'Instellingen', items: { paymentMethods: 'Betaalmethoden', terms: 'Schoolperiodes', settings: 'Schoolinstellingen' } },
     },
-    parent: { label: 'Menu', items: { dashboard: 'Dashboard', children: 'Mijn kinderen', payments: 'Betalingsgeschiedenis', receipts: 'Bonnen' } },
+    parent: { label: 'Menu', items: { dashboard: 'Dashboard', children: 'Mijn kinderen', payments: 'Betalingsgeschiedenis', receipts: 'Bonnen', ptMeetings: 'Oudergesprekken' } },
   },
 
   DASHBOARD_TEXT: {
@@ -150,6 +150,225 @@ const nl: Partial<Translations> & Record<string, any> = {
   },
 
   LANGUAGE: { label: 'Taal', en: 'English', fr: 'Français', de: 'Deutsch', nl: 'Nederlands', sw: 'Kiswahili' },
+
+  // Teacher sidebar
+  SIDEBAR_TEACHER: {
+    label: 'Onderwijs',
+    items: {
+      dashboard: 'Dashboard',
+      myClasses: 'Mijn klassen',
+      results: 'Resultaten invoeren',
+      attendance: 'Aanwezigheid',
+      portfolio: 'CBC Portfolio',
+      ptMeetings: 'Oudergesprekken',
+      announcements: 'Aankondigingen',
+      profile: 'Profiel',
+    },
+  },
+
+  // Portfolio
+  PORTFOLIO_TEXT: {
+    pageTitle: 'CBC Digitaal Portfolio',
+    pageSubtitle: 'Beheer leerportfolios voor alle CBC-leergebieden.',
+    completionRing: { complete: 'Voltooid', inProgress: 'Bezig', notStarted: 'Niet begonnen' },
+    evidence: {
+      add: 'Bewijs toevoegen',
+      edit: 'Bewijs bewerken',
+      delete: 'Bewijs verwijderen',
+      publish: 'Publiceren',
+      types: { photo: 'Foto', video: 'Video', document: 'Document', drawing: 'Tekening', craft_photo: 'Knutselfoto', written_work: 'Schriftelijk werk', audio: 'Audio' },
+    },
+    ratings: { EE: 'EE', ME: 'ME', AE: 'AE', BE: 'BE', EEFull: 'Overtreft verwachtingen', MEFull: 'Voldoet aan verwachtingen', AEFull: 'Nadert verwachtingen', BEFull: 'Onder verwachtingen' },
+    learningAreas: { empty: 'Geen leergebieden geconfigureerd', addArea: 'Leergebied toevoegen', configure: 'Configureren' },
+    parentView: { downloadButton: 'Portfolio downloaden', draftHidden: 'Concepten zijn verborgen voor ouders.', noEvidenceYet: 'Nog geen bewijs geüpload voor dit onderdeel.' },
+    bulkUpload: { title: 'Bulk uploaden', dropzone: 'Afbeeldingen hierheen slepen of klikken', assignStudent: 'Aan leerling toewijzen', saveAll: 'Alles opslaan' },
+  },
+
+  // PT Meetings
+  PT_MEETINGS_TEXT: {
+    pageTitle: 'Oudergesprekken',
+    bookMeeting: 'Gesprek boeken',
+    myMeetings: 'Mijn gesprekken',
+    session: { create: 'Sessie aanmaken', open: 'Openen voor boeking', close: 'Boeking sluiten', complete: 'Markeer als voltooid', draft: 'Concept' },
+    slot: { available: 'Beschikbaar', booked: 'Geboekt', blocked: 'Geblokkeerd', select: 'Tijdslot kiezen' },
+    booking: { confirm: 'Bevestigen', cancel: 'Annuleren', reschedule: 'Verzetten', pending: 'In afwachting', confirmed: 'Bevestigd' },
+    steps: { selectChild: 'Kind kiezen', selectTeacher: 'Leerkracht kiezen', selectSlot: 'Tijdslot kiezen', confirm: 'Boeking bevestigen' },
+    notifications: { bookingRequest: 'Gesprekverzoek verzonden', confirmed: 'Gesprek bevestigd', reminder: 'Gesprekherinnering', cancelled: 'Gesprek geannuleerd' },
+    calendar: { addToCalendar: 'Aan kalender toevoegen' },
+  },
+
+  // Health
+  HEALTH_TEXT: {
+    pageTitle: 'Gezondheids- en medische dossiers',
+    healthProfile: 'Gezondheidsprofiel',
+    condition: {
+      add: 'Aandoening toevoegen', edit: 'Bewerken', deactivate: 'Deactiveren',
+      types: { chronic: 'Chronisch', allergy: 'Allergie', disability: 'Beperking', dietary: 'Voeding', mental_health: 'Geestelijke gezondheid', other: 'Overig' },
+      severities: { mild: 'Licht', moderate: 'Matig', severe: 'Ernstig', critical: 'Kritiek', life_threatening: 'Levensbedreigend' },
+    },
+    allergy: {
+      add: 'Allergie toevoegen', remove: 'Allergie verwijderen', epiPen: 'EpiPen', responseProtocol: 'Reactieprotocol',
+      severities: { mild: 'Licht', moderate: 'Matig', severe: 'Ernstig', critical: 'Kritiek', life_threatening: 'Levensbedreigend' },
+    },
+    vaccination: { add: 'Vaccinatie toevoegen', edit: 'Bewerken', statuses: { up_to_date: 'Actueel', due_soon: 'Binnenkort', overdue: 'Achterstallig' }, dueDate: 'Vervaldatum', upToDate: 'Actueel' },
+    incident: {
+      record: 'Incident vastleggen', resolve: 'Oplossen', followUp: 'Opvolgen', parentNotify: 'Ouder geïnformeerd',
+      types: { injury: 'Letsel', illness: 'Ziekte', allergic_reaction: 'Allergische reactie', mental_health: 'Geestelijke gezondheid', emergency: 'Noodgeval', other: 'Overig' },
+    },
+    emergency: { contacts: 'Noodcontacten', addContact: 'Contact toevoegen', priority: 'Prioriteit' },
+    documents: { upload: 'Document uploaden', download: 'Downloaden', types: { medical_certificate: 'Medisch attest', vaccination_card: 'Vaccinatieboekje', doctor_letter: 'Doktersbrief', disability_assessment: 'Beperking beoordeling', insurance_card: 'Verzekeringskaart', other: 'Overig' } },
+    tripSheet: { generate: 'Uitstaplijst genereren', selectClass: 'Klas selecteren', format: 'Formaat' },
+    parentView: { flagUpdate: 'Update melden', downloadSummary: 'Gezondheidsoverzicht downloaden', updatePending: 'Update in behandeling' },
+    alerts: { severeCondition: 'Ernstige aandoening', lifeThreateningAllergy: 'Levensbedreigende allergie', vaccinationDue: 'Vaccinatie vervallen' },
+  },
+
+  // Teacher dashboard
+  TEACHER_DASHBOARD_TEXT: {
+    title: 'Leerkrachtdashboard',
+    subtitle: 'Welkom terug. Hier is uw onderwijsoverzicht.',
+    kpi: { myClasses: 'Mijn klassen', myStudents: 'Mijn leerlingen', assessmentsSubmitted: 'Ingediende beoordelingen', attendanceRate: 'Aanwezigheidspercentage' },
+    schedule: 'Rooster van vandaag',
+    classPerformance: 'Klassenprestaties',
+    attendanceTrend: 'Aanwezigheidstrend',
+    gradeDistribution: 'Cijferverdeling (CBC)',
+    lowAttendance: 'Leerlingen met lage aanwezigheid (<80%)',
+    pendingPortfolios: 'Portfoliobeoordelingen in behandeling',
+  },
+
+  // Teacher pages
+  TEACHER_CLASSES_TEXT: {
+    title: 'Mijn klassen',
+    subtitle: 'Uw toegewezen klassen bekijken en beheren.',
+    classDetail: 'Klasdetails',
+    tabs: { students: 'Leerlingen', results: 'Resultaten', attendance: 'Aanwezigheid', portfolio: 'Portfolio', announcements: 'Aankondigingen' },
+  },
+
+  TEACHER_RESULTS_TEXT: {
+    title: 'Resultaten invoeren',
+    subtitle: 'Examenresultaten invoeren en indienen.',
+    steps: { selectExam: 'Examen kiezen', enterScores: 'Cijfers invoeren', review: 'Beoordelen & indienen' },
+    fields: { term: 'Periode', exam: 'Examen', subject: 'Vak', class: 'Klas', score: 'Cijfer', grade: 'Niveau', remarks: 'Opmerkingen' },
+    actions: { saveDraft: 'Opslaan als concept', submit: 'Indienen voor beoordeling', bulkUpload: 'Bulk CSV upload' },
+    cbcMode: { strand: 'Onderdeel', rating: 'Beoordeling' },
+  },
+
+  TEACHER_ATTENDANCE_TEXT: {
+    title: 'Aanwezigheid registreren',
+    subtitle: 'Dagelijkse aanwezigheid van leerlingen registreren.',
+    modes: { manual: 'Handmatige invoer', upload: 'Lijst uploaden' },
+    status: { present: 'Aanwezig', absent: 'Afwezig', late: 'Te laat', excused: 'Verontschuldigd' },
+    actions: { submit: 'Aanwezigheid indienen', uploadFile: 'Bestand uploaden' },
+    history: 'Aanwezigheidsgeschiedenis',
+  },
+
+  TEACHER_ANNOUNCEMENTS_TEXT: {
+    title: 'Aankondigingen',
+    subtitle: 'Aankondigingen versturen aan ouders en leerlingen.',
+    create: 'Aankondiging aanmaken',
+    fields: { title: 'Titel', body: 'Bericht', target: 'Doelgroep', priority: 'Prioriteit', category: 'Categorie' },
+    priorities: { normal: 'Normaal', important: 'Belangrijk', urgent: 'Urgent' },
+    categories: { general: 'Algemeen', cbcMaterials: 'CBC-materialen', event: 'Evenement', health: 'Gezondheidsmededeling', academic: 'Academisch', portfolio: 'Portfolio' },
+  },
+
+  // Accountant sidebar
+  SIDEBAR_ACCOUNTANT: {
+    label: 'Financiën',
+    items: {
+      dashboard: 'Dashboard',
+      feeStructures: 'Tariefstructuren',
+      invoicing: 'Facturering',
+      payments: 'Betalingen',
+      reconciliation: 'Afstemming',
+      reports: 'Financiële rapporten',
+      expenses: 'Uitgaven',
+      integrations: 'Integraties',
+      paymentGateway: 'Betalingsconfiguratie',
+    },
+  },
+
+  // Accountant pages
+  ACCOUNTANT_DASHBOARD_TEXT: {
+    title: 'Boekhoudersdashboard',
+    subtitle: 'Dagelijkse financiële operaties en afstemmingsoverzicht.',
+    kpi: {
+      dailyCollections: 'Dagelijkse inningen',
+      pendingReconciliation: 'Afstemming in behandeling',
+      unmatchedTransactions: 'Niet-afgestemde transacties',
+      outstandingInvoices: 'Openstaande facturen',
+      paymentSuccessRate: 'Betalingsslagingspercentage',
+      pettyCashBalance: 'Kleine kassaldo',
+    },
+    collectionTrend: 'Inning vs. gefactureerd',
+    paymentMethods: 'Verdeling betaalmethoden',
+    receivablesAging: 'Ouderdom vorderingen',
+    recentActivity: 'Betalingsactiviteit van vandaag',
+    reconciliationQueue: 'Afstemmingswachtrij',
+    integrationStatus: 'Integratiestatus',
+  },
+
+  ACCOUNTANT_INVOICING_TEXT: {
+    title: 'Factuurbeheer',
+    subtitle: 'Schoolgeldfacturen genereren, verzenden en beheren.',
+    searchPlaceholder: 'Zoek op factuurnummer of leerling...',
+    generateInvoices: 'Facturen genereren',
+    sendReminder: 'Herinnering sturen',
+    table: { invoiceNo: 'Factuur-nr.', student: 'Leerling', grade: 'Niveau', term: 'Periode', total: 'Totaal', paid: 'Betaald', balance: 'Saldo', status: 'Status', dueDate: 'Vervaldatum', actions: 'Acties' },
+    filters: { allStatus: 'Alle statussen', allGrades: 'Alle niveaus' },
+    actions: { send: 'Versturen', void: 'Annuleren', download: 'PDF downloaden', markPaid: 'Markeer als betaald', viewDetails: 'Details bekijken' },
+    emptyState: { title: 'Geen facturen', description: 'Genereer facturen aan het begin van elke periode.' },
+  },
+
+  ACCOUNTANT_RECONCILIATION_TEXT: {
+    title: 'Bankafstemming',
+    subtitle: 'Banktransacties koppelen aan systeembetalingen.',
+    importStatement: 'Bankafschrift importeren',
+    autoMatch: 'Automatisch koppelen',
+    tabs: { matched: 'Gekoppeld', suggested: 'Voorgestelde koppelingen', unmatchedBank: 'Bank niet gekoppeld', unmatchedSystem: 'Systeem niet gekoppeld' },
+    confidence: { high: 'Hoog', medium: 'Gemiddeld', low: 'Laag' },
+    actions: { confirmMatch: 'Bevestigen', rejectMatch: 'Afwijzen', manualMatch: 'Handmatig koppelen', markComplete: 'Afstemming afronden' },
+  },
+
+  ACCOUNTANT_REPORTS_TEXT: {
+    title: 'Financiële rapporten',
+    subtitle: 'Uitgebreide financiële rapporten genereren en exporteren.',
+    reports: {
+      incomeStatement: 'Resultatenrekening',
+      cashFlow: 'Kasstroomoverzicht',
+      feeCollection: 'Inningsrapport',
+      outstanding: 'Openstaande-vorderingen-rapport',
+      paymentMethod: 'Betaalmethodeanalyse',
+      aging: 'Ouderdomsrapport vorderingen',
+      audit: 'Auditrapport',
+    },
+    actions: { generate: 'Rapport genereren', export: 'Exporteren', schedule: 'Plannen', compare: 'Perioden vergelijken' },
+  },
+
+  ACCOUNTANT_EXPENSES_TEXT: {
+    title: 'Uitgavenbeheer',
+    subtitle: 'Schooluitgaven vastleggen en categoriseren.',
+    addExpense: 'Uitgave toevoegen',
+    table: { date: 'Datum', category: 'Categorie', description: 'Omschrijving', amount: 'Bedrag', vendor: 'Leverancier', status: 'Status', actions: 'Acties' },
+    emptyState: { title: 'Geen uitgaven vastgelegd', description: 'Begin met het bijhouden van schooluitgaven.' },
+  },
+
+  ACCOUNTANT_INTEGRATIONS_TEXT: {
+    title: 'Boekhoudintegraties',
+    subtitle: 'Boekhoudingssoftware-integraties verbinden en beheren.',
+    connect: 'Verbinden',
+    disconnect: 'Verbreken',
+    syncNow: 'Nu synchroniseren',
+    lastSynced: 'Laatst gesynchroniseerd',
+    syncFrequency: 'Synchronisatiefrequentie',
+    itemsSynced: 'Gesynchroniseerde items',
+    syncErrors: 'Synchronisatiefouten',
+  },
+
+  ACCOUNTANT_PAYMENTS_TEXT: {
+    title: 'Betalingsverwerking',
+    subtitle: 'Betalingstransacties vastleggen en goedkeuren.',
+    recordPayment: 'Betaling vastleggen',
+    approvalQueue: 'Goedkeuringswachtrij',
+  },
 };
 
 export default nl;
