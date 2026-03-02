@@ -150,6 +150,225 @@ const sw: Partial<Translations> & Record<string, any> = {
   },
 
   LANGUAGE: { label: 'Lugha', en: 'English', fr: 'Français', de: 'Deutsch', nl: 'Nederlands', sw: 'Kiswahili' },
+
+  // Teacher sidebar
+  SIDEBAR_TEACHER: {
+    label: 'Ufundishaji',
+    items: {
+      dashboard: 'Dashibodi',
+      myClasses: 'Madarasa Yangu',
+      results: 'Ingiza Matokeo',
+      attendance: 'Mahudhurio',
+      portfolio: 'Portfolio ya CBC',
+      ptMeetings: 'Mikutano ya Wazazi-Walimu',
+      announcements: 'Matangazo',
+      profile: 'Wasifu',
+    },
+  },
+
+  // Portfolio
+  PORTFOLIO_TEXT: {
+    pageTitle: 'Portfolio ya Dijitali ya CBC',
+    pageSubtitle: 'Simamia portfolio za kujifunza kwa maeneo yote ya CBC.',
+    completionRing: { complete: 'Imekamilika', inProgress: 'Inaendelea', notStarted: 'Haijaanza' },
+    evidence: {
+      add: 'Ongeza Ushahidi',
+      edit: 'Hariri Ushahidi',
+      delete: 'Futa Ushahidi',
+      publish: 'Chapisha',
+      types: { photo: 'Picha', video: 'Video', document: 'Hati', drawing: 'Mchoro', craft_photo: 'Picha ya Ufundi', written_work: 'Kazi ya Maandishi', audio: 'Sauti' },
+    },
+    ratings: { EE: 'EE', ME: 'ME', AE: 'AE', BE: 'BE', EEFull: 'Zaidi ya Matarajio', MEFull: 'Fikia Matarajio', AEFull: 'Karibu na Matarajio', BEFull: 'Chini ya Matarajio' },
+    learningAreas: { empty: 'Hakuna maeneo yaliyosanidiwa', addArea: 'Ongeza Eneo', configure: 'Sanidi' },
+    parentView: { downloadButton: 'Pakua Portfolio', draftHidden: 'Rasimu zimefichwa kutoka kwa wazazi.', noEvidenceYet: 'Hakuna ushahidi uliopakiwa bado.' },
+    bulkUpload: { title: 'Pakia Ushahidi kwa Wingi', dropzone: 'Buruta picha hapa au bonyeza kutafuta', assignStudent: 'Tenga kwa Mwanafunzi', saveAll: 'Hifadhi Zote' },
+  },
+
+  // PT Meetings
+  PT_MEETINGS_TEXT: {
+    pageTitle: 'Mikutano ya Wazazi-Walimu',
+    bookMeeting: 'Panga Mkutano',
+    myMeetings: 'Mikutano Yangu',
+    session: { create: 'Unda Kikao', open: 'Fungua Upangaji', close: 'Funga Upangaji', complete: 'Weka Alama ya Kukamilika', draft: 'Rasimu' },
+    slot: { available: 'Inapatikana', booked: 'Imepangwa', blocked: 'Imezuiwa', select: 'Chagua Wakati' },
+    booking: { confirm: 'Thibitisha', cancel: 'Ghairi', reschedule: 'Panga Upya', pending: 'Inasubiri', confirmed: 'Imethibitishwa' },
+    steps: { selectChild: 'Chagua Mtoto', selectTeacher: 'Chagua Mwalimu', selectSlot: 'Chagua Wakati', confirm: 'Thibitisha Mpango' },
+    notifications: { bookingRequest: 'Ombi la mkutano limetumwa', confirmed: 'Mkutano umethibitishwa', reminder: 'Kikumbusho cha mkutano', cancelled: 'Mkutano umeghairiwa' },
+    calendar: { addToCalendar: 'Ongeza kwenye Kalenda' },
+  },
+
+  // Health
+  HEALTH_TEXT: {
+    pageTitle: 'Rekodi za Afya na Matibabu',
+    healthProfile: 'Wasifu wa Afya',
+    condition: {
+      add: 'Ongeza Hali', edit: 'Hariri', deactivate: 'Lemaza',
+      types: { chronic: 'Sugu', allergy: 'Mzio', disability: 'Ulemavu', dietary: 'Lishe', mental_health: 'Afya ya Akili', other: 'Nyingine' },
+      severities: { mild: 'Kidogo', moderate: 'Wastani', severe: 'Kali', critical: 'Muhimu', life_threatening: 'Hatari kwa Maisha' },
+    },
+    allergy: {
+      add: 'Ongeza Mzio', remove: 'Ondoa Mzio', epiPen: 'EpiPen', responseProtocol: 'Itifaki ya Mwitikio',
+      severities: { mild: 'Kidogo', moderate: 'Wastani', severe: 'Kali', critical: 'Muhimu', life_threatening: 'Hatari kwa Maisha' },
+    },
+    vaccination: { add: 'Ongeza Chanjo', edit: 'Hariri', statuses: { up_to_date: 'Imesasishwa', due_soon: 'Inakaribia', overdue: 'Imechelewa' }, dueDate: 'Tarehe ya Mwisho', upToDate: 'Imesasishwa' },
+    incident: {
+      record: 'Rekodi Tukio', resolve: 'Suluhisha', followUp: 'Fuatilia', parentNotify: 'Mzazi Amearifu',
+      types: { injury: 'Jeraha', illness: 'Ugonjwa', allergic_reaction: 'Mmenyuko wa Mzio', mental_health: 'Afya ya Akili', emergency: 'Dharura', other: 'Nyingine' },
+    },
+    emergency: { contacts: 'Nambari za Dharura', addContact: 'Ongeza Nambari', priority: 'Kipaumbele' },
+    documents: { upload: 'Pakia Hati', download: 'Pakua', types: { medical_certificate: 'Cheti cha Matibabu', vaccination_card: 'Kadi ya Chanjo', doctor_letter: 'Barua ya Daktari', disability_assessment: 'Tathmini ya Ulemavu', insurance_card: 'Kadi ya Bima', other: 'Nyingine' } },
+    tripSheet: { generate: 'Tengeneza Orodha ya Safari', selectClass: 'Chagua Darasa', format: 'Muundo' },
+    parentView: { flagUpdate: 'Ripoti Sasisho', downloadSummary: 'Pakua Muhtasari wa Afya', updatePending: 'Sasisho Linasubiri' },
+    alerts: { severeCondition: 'Hali Kali', lifeThreateningAllergy: 'Mzio Hatari kwa Maisha', vaccinationDue: 'Chanjo Imefika' },
+  },
+
+  // Teacher dashboard
+  TEACHER_DASHBOARD_TEXT: {
+    title: 'Dashibodi ya Mwalimu',
+    subtitle: 'Karibu tena. Hapa ni muhtasari wa ufundishaji wako.',
+    kpi: { myClasses: 'Madarasa Yangu', myStudents: 'Wanafunzi Wangu', assessmentsSubmitted: 'Tathmini Zilizotumwa', attendanceRate: 'Kiwango cha Mahudhurio' },
+    schedule: 'Ratiba ya Leo',
+    classPerformance: 'Utendaji wa Darasa',
+    attendanceTrend: 'Mwenendo wa Mahudhurio',
+    gradeDistribution: 'Usambazaji wa Alama (CBC)',
+    lowAttendance: 'Wanafunzi wenye Mahudhurio Kidogo (<80%)',
+    pendingPortfolios: 'Mapitio ya Portfolio Yanayosubiri',
+  },
+
+  // Teacher pages
+  TEACHER_CLASSES_TEXT: {
+    title: 'Madarasa Yangu',
+    subtitle: 'Angalia na simamia madarasa yako.',
+    classDetail: 'Maelezo ya Darasa',
+    tabs: { students: 'Wanafunzi', results: 'Matokeo', attendance: 'Mahudhurio', portfolio: 'Portfolio', announcements: 'Matangazo' },
+  },
+
+  TEACHER_RESULTS_TEXT: {
+    title: 'Ingiza Matokeo',
+    subtitle: 'Ingiza na tuma matokeo ya mitihani.',
+    steps: { selectExam: 'Chagua Mtihani', enterScores: 'Ingiza Alama', review: 'Kagua na Tuma' },
+    fields: { term: 'Kipindi', exam: 'Mtihani', subject: 'Somo', class: 'Darasa', score: 'Alama', grade: 'Daraja', remarks: 'Maoni' },
+    actions: { saveDraft: 'Hifadhi Rasimu', submit: 'Tuma kwa Mapitio', bulkUpload: 'Pakia CSV kwa Wingi' },
+    cbcMode: { strand: 'Mhimili', rating: 'Tathmini' },
+  },
+
+  TEACHER_ATTENDANCE_TEXT: {
+    title: 'Kurekodi Mahudhurio',
+    subtitle: 'Rekodi mahudhurio ya kila siku ya wanafunzi.',
+    modes: { manual: 'Kuingiza kwa Mkono', upload: 'Pakia Orodha' },
+    status: { present: 'Yupo', absent: 'Hayupo', late: 'Amechelewa', excused: 'Ameruhusiwa' },
+    actions: { submit: 'Tuma Mahudhurio', uploadFile: 'Pakia Faili' },
+    history: 'Historia ya Mahudhurio',
+  },
+
+  TEACHER_ANNOUNCEMENTS_TEXT: {
+    title: 'Matangazo',
+    subtitle: 'Tuma matangazo kwa wazazi na wanafunzi.',
+    create: 'Tengeneza Tangazo',
+    fields: { title: 'Kichwa', body: 'Ujumbe', target: 'Walengwa', priority: 'Kipaumbele', category: 'Kategoria' },
+    priorities: { normal: 'Kawaida', important: 'Muhimu', urgent: 'Haraka' },
+    categories: { general: 'Jumla', cbcMaterials: 'Vifaa vya CBC', event: 'Tukio', health: 'Arifa ya Afya', academic: 'Masomo', portfolio: 'Portfolio' },
+  },
+
+  // Accountant sidebar
+  SIDEBAR_ACCOUNTANT: {
+    label: 'Fedha',
+    items: {
+      dashboard: 'Dashibodi',
+      feeStructures: 'Miundo ya Ada',
+      invoicing: 'Ankara',
+      payments: 'Malipo',
+      reconciliation: 'Ulinganisho',
+      reports: 'Ripoti za Fedha',
+      expenses: 'Matumizi',
+      integrations: 'Miunganiko',
+      paymentGateway: 'Mipangilio ya Malipo',
+    },
+  },
+
+  // Accountant pages
+  ACCOUNTANT_DASHBOARD_TEXT: {
+    title: 'Dashibodi ya Mhasibu',
+    subtitle: 'Shughuli za fedha za kila siku na muhtasari wa ulinganisho.',
+    kpi: {
+      dailyCollections: 'Makusanyo ya Leo',
+      pendingReconciliation: 'Ulinganisho Unasubiri',
+      unmatchedTransactions: 'Miamala Isiyolingana',
+      outstandingInvoices: 'Ankara Zilizobaki',
+      paymentSuccessRate: 'Kiwango cha Mafanikio ya Malipo',
+      pettyCashBalance: 'Salio la Fedha Kidogo',
+    },
+    collectionTrend: 'Makusanyo dhidi ya Ankara',
+    paymentMethods: 'Usambazaji wa Njia za Malipo',
+    receivablesAging: 'Umri wa Madeni',
+    recentActivity: 'Shughuli za Malipo za Leo',
+    reconciliationQueue: 'Foleni ya Ulinganisho',
+    integrationStatus: 'Hali ya Miunganiko',
+  },
+
+  ACCOUNTANT_INVOICING_TEXT: {
+    title: 'Usimamizi wa Ankara',
+    subtitle: 'Tengeneza, tuma na simamia ankara za ada.',
+    searchPlaceholder: 'Tafuta kwa nambari ya ankara au mwanafunzi...',
+    generateInvoices: 'Tengeneza Ankara',
+    sendReminder: 'Tuma Kikumbusho',
+    table: { invoiceNo: 'Ankara #', student: 'Mwanafunzi', grade: 'Daraja', term: 'Kipindi', total: 'Jumla', paid: 'Imelipwa', balance: 'Salio', status: 'Hali', dueDate: 'Tarehe ya Mwisho', actions: 'Vitendo' },
+    filters: { allStatus: 'Hali Zote', allGrades: 'Daraja Zote' },
+    actions: { send: 'Tuma', void: 'Batilisha', download: 'Pakua PDF', markPaid: 'Weka Alama ya Kulipwa', viewDetails: 'Angalia Maelezo' },
+    emptyState: { title: 'Hakuna ankara', description: 'Tengeneza ankara mwanzoni mwa kila kipindi.' },
+  },
+
+  ACCOUNTANT_RECONCILIATION_TEXT: {
+    title: 'Ulinganisho wa Benki',
+    subtitle: 'Linganisha miamala ya benki na malipo ya mfumo.',
+    importStatement: 'Ingiza Taarifa ya Benki',
+    autoMatch: 'Linganisha Kiotomatiki',
+    tabs: { matched: 'Zimelingana', suggested: 'Mapendekezo', unmatchedBank: 'Benki Hazijalinganishwa', unmatchedSystem: 'Mfumo Haujaolingana' },
+    confidence: { high: 'Juu', medium: 'Wastani', low: 'Chini' },
+    actions: { confirmMatch: 'Thibitisha', rejectMatch: 'Kataa', manualMatch: 'Linganisha kwa Mkono', markComplete: 'Kamilisha Ulinganisho' },
+  },
+
+  ACCOUNTANT_REPORTS_TEXT: {
+    title: 'Ripoti za Fedha',
+    subtitle: 'Tengeneza na hamisha ripoti kamili za fedha.',
+    reports: {
+      incomeStatement: 'Taarifa ya Mapato',
+      cashFlow: 'Taarifa ya Mtiririko wa Fedha',
+      feeCollection: 'Ripoti ya Ukusanyaji wa Ada',
+      outstanding: 'Ripoti ya Ada Zilizobaki',
+      paymentMethod: 'Uchambuzi wa Njia za Malipo',
+      aging: 'Ripoti ya Umri wa Madeni',
+      audit: 'Ripoti ya Ukaguzi',
+    },
+    actions: { generate: 'Tengeneza Ripoti', export: 'Hamisha', schedule: 'Panga', compare: 'Linganisha Vipindi' },
+  },
+
+  ACCOUNTANT_EXPENSES_TEXT: {
+    title: 'Ufuatiliaji wa Matumizi',
+    subtitle: 'Rekodi na panga matumizi ya shule.',
+    addExpense: 'Ongeza Matumizi',
+    table: { date: 'Tarehe', category: 'Kategoria', description: 'Maelezo', amount: 'Kiasi', vendor: 'Muuzaji', status: 'Hali', actions: 'Vitendo' },
+    emptyState: { title: 'Hakuna matumizi yaliyorekodiwa', description: 'Anza kufuatilia matumizi ya shule.' },
+  },
+
+  ACCOUNTANT_INTEGRATIONS_TEXT: {
+    title: 'Miunganiko ya Uhasibu',
+    subtitle: 'Unganisha na simamia miunganiko ya programu za uhasibu.',
+    connect: 'Unganisha',
+    disconnect: 'Tenganisha',
+    syncNow: 'Sawazisha Sasa',
+    lastSynced: 'Ilisawazishwa Mara ya Mwisho',
+    syncFrequency: 'Mara za Usawazishaji',
+    itemsSynced: 'Vipengele Vilivyosawazishwa',
+    syncErrors: 'Makosa ya Usawazishaji',
+  },
+
+  ACCOUNTANT_PAYMENTS_TEXT: {
+    title: 'Usindikaji wa Malipo',
+    subtitle: 'Rekodi na idhinisha miamala ya malipo.',
+    recordPayment: 'Rekodi Malipo',
+    approvalQueue: 'Foleni ya Idhini',
+  },
 };
 
 export default sw;
