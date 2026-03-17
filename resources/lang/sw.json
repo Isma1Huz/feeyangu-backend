@@ -1,0 +1,58 @@
+{
+    "auth": {
+        "failed": "Taarifa hizi hazifanani na kumbukumbu zetu.",
+        "password": "Nenosiri lililotolewa si sahihi.",
+        "throttle": "Majaribio mengi sana ya kuingia. Tafadhali jaribu tena baada ya sekunde :seconds."
+    },
+    "validation": {
+        "required": "Sehemu ya :attribute inahitajika.",
+        "email": "Sehemu ya :attribute lazima iwe anwani ya barua pepe halali.",
+        "min": {
+            "string": "Sehemu ya :attribute lazima iwe na angalau herufi :min."
+        },
+        "max": {
+            "string": "Sehemu ya :attribute haipaswi kuzidi herufi :max."
+        },
+        "unique": "Sehemu ya :attribute imeshatumika.",
+        "confirmed": "Uthibitisho wa :attribute haufanani.",
+        "numeric": "Sehemu ya :attribute lazima iwe nambari.",
+        "integer": "Sehemu ya :attribute lazima iwe nambari nzima.",
+        "exists": "Sehemu ya :attribute iliyochaguliwa si halali.",
+        "in": "Sehemu ya :attribute iliyochaguliwa si halali.",
+        "date": "Sehemu ya :attribute si tarehe halali."
+    },
+    "pagination": {
+        "previous": "Iliyotangulia",
+        "next": "Inayofuata"
+    },
+    "passwords": {
+        "reset": "Nenosiri lako limewekwa upya.",
+        "sent": "Tumetuma kiungo cha kuweka upya nenosiri lako kwa barua pepe.",
+        "throttled": "Tafadhali subiri kabla ya kujaribu tena.",
+        "token": "Alama hii ya kuweka upya nenosiri si halali.",
+        "user": "Hatuwezi kupata mtumiaji mwenye anwani hiyo ya barua pepe."
+    },
+    "tenant": {
+        "not_found": "Shule haikupatikana.",
+        "suspended": "Akaunti ya shule yako imesimamishwa. Tafadhali wasiliana na msaada.",
+        "inactive": "Akaunti ya shule yako haifanyi kazi.",
+        "no_school": "Hakuna shule iliyopewa akaunti yako."
+    },
+    "module": {
+        "not_enabled": "Moduli ya :module haijawezeshwa kwa shule yako.",
+        "dependency_missing": "Haiwezekani kuwasha :module kwa sababu :dependency haijawashwa.",
+        "cannot_disable_core": "Moduli kuu haziwezi kuzimwa.",
+        "has_dependents": "Haiwezekani kuzima :module kwa sababu :dependents inategemea.",
+        "enabled": "Moduli ya :module imewezeshwa.",
+        "disabled": "Moduli ya :module imezimwa."
+    },
+    "general": {
+        "unauthorized": "Huna ruhusa ya kufanya kitendo hiki.",
+        "not_found": "Rasilimali iliyoombwa haikupatikana.",
+        "server_error": "Hitilafu isiyotarajiwa ilitokea. Tafadhali jaribu tena baadaye.",
+        "success": "Operesheni imekamilika kwa mafanikio.",
+        "created": ":resource imeundwa kwa mafanikio.",
+        "updated": ":resource imesasishwa kwa mafanikio.",
+        "deleted": ":resource imefutwa kwa mafanikio."
+    }
+}

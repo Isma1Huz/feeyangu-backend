@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Services\TenantService;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -31,22 +32,42 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        $user = $request->user();
+
+        // Build the list of enabled module keys for the current school
+        $enabledModules = [];
+        if ($user && $user->school) {
+            try {
+                $tenantService  = app(TenantService::class);
+                $enabledModules = $tenantService
+                    ->getEnabledModules($user->school)
+                    ->pluck('key')
+                    ->toArray();
+            } catch (\Throwable) {
+                // Modules table may not exist yet during initial migration
+                $enabledModules = [];
+            }
+        }
+
         return array_merge(parent::share($request), [
             'auth' => [
-                'user' => $request->user() ? [
-                    'id' => $request->user()->id,
-                    'name' => $request->user()->name,
-                    'email' => $request->user()->email,
-                    'role' => $request->user()->roles->pluck('name')->first(),
-                    'school' => $request->user()->school ? [
-                        'id' => $request->user()->school->id,
-                        'name' => $request->user()->school->name,
+                'user' => $user ? [
+                    'id'      => $user->id,
+                    'name'    => $user->name,
+                    'email'   => $user->email,
+                    'role'    => $user->roles->pluck('name')->first(),
+                    'school'  => $user->school ? [
+                        'id'   => $user->school->id,
+                        'name' => $user->school->name,
                     ] : null,
                 ] : null,
             ],
+            'modules' => $enabledModules,
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),
-                'error' => fn () => $request->session()->get('error'),
+                'error'   => fn () => $request->session()->get('error'),
+                'warning' => fn () => $request->session()->get('warning'),
+                'info'    => fn () => $request->session()->get('info'),
             ],
         ]);
     }

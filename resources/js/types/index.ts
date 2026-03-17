@@ -1,5 +1,52 @@
 export type UserRole = 'super_admin' | 'school_admin' | 'parent' | 'accountant';
 
+// ─── Module ────────────────────────────────────────────────────────────────────
+
+export type ModuleKey =
+  | 'academics'
+  | 'finance'
+  | 'attendance'
+  | 'transport'
+  | 'communication'
+  | 'nemis'
+  | 'parent_portal'
+  | 'student_portal'
+  | 'staff_portal'
+  | 'store'
+  | 'hostel'
+  | 'alumni'
+  | 'examination'
+  | 'sports'
+  | 'health'
+  | 'tasks'
+  | 'diary'
+  | 'pt_meetings';
+
+export interface Module {
+  id: number;
+  name: string;
+  key: ModuleKey;
+  icon: string;
+  description: string;
+  dependencies: ModuleKey[];
+  permissions: string[];
+  settings: Record<string, unknown>;
+  sort_order: number;
+  is_core: boolean;
+  is_active: boolean;
+  /** Pivot data when loaded via school's module relationship */
+  pivot?: {
+    is_enabled: boolean;
+    settings: Record<string, unknown> | null;
+    permissions_override: string[] | null;
+  };
+}
+
+// ─── Tenant / School ───────────────────────────────────────────────────────────
+
+export type SchoolStatus = 'active' | 'suspended' | 'trial' | 'inactive';
+export type SubscriptionPlan = 'basic' | 'standard' | 'premium' | 'enterprise';
+
 export interface User {
   id: string;
   name: string;
@@ -8,6 +55,9 @@ export interface User {
   avatar?: string;
   schoolId?: string;
   schoolName?: string;
+  school?: { id: number; name: string } | null;
+  /** All permission names assigned to this user */
+  permissions?: string[];
 }
 
 export interface Student {
@@ -48,10 +98,15 @@ export interface School {
   id: string;
   name: string;
   owner: string;
-  status: 'active' | 'suspended' | 'pending';
+  status: SchoolStatus;
   studentCount: number;
   feesCollected: number;
   location: string;
+  logo?: string;
+  email?: string;
+  phone?: string;
+  subscription_plan?: SubscriptionPlan;
+  enabled_modules?: ModuleKey[];
 }
 
 export interface Notification {

@@ -1,10 +1,12 @@
 // Global Inertia Types
-import { User as AuthUser } from './index'
+import { User as AuthUser, ModuleKey } from './index'
 
 export interface PageProps<T = Record<string, unknown>> {
   auth: {
     user: AuthUser | null
   }
+  /** Array of enabled module keys for the current school */
+  modules: ModuleKey[]
   flash: {
     success?: string
     error?: string
