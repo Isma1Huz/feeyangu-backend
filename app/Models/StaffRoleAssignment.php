@@ -2,11 +2,13 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\Pivot;
 
-class StaffRoleAssignment extends Model
+class StaffRoleAssignment extends Pivot
 {
+    protected $table = 'staff_role_assignments';
+
     public $timestamps = false;
 
     protected $fillable = [

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -9,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class SchoolRole extends Model
 {
+    use HasFactory;
     protected $fillable = [
         'tenant_id',
         'name',
@@ -52,8 +54,8 @@ class SchoolRole extends Model
     public function staff(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'staff_role_assignments', 'role_id', 'staff_id')
-            ->withPivot(['assigned_by', 'assigned_at', 'expires_at'])
-            ->withTimestamps();
+            ->using(StaffRoleAssignment::class)
+            ->withPivot(['assigned_by', 'assigned_at', 'expires_at']);
     }
 
     public function parentRoles(): BelongsToMany
