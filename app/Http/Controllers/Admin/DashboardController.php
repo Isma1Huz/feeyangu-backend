@@ -152,4 +152,14 @@ class DashboardController extends Controller
             'recentActivity' => $recentActivity,
         ]);
     }
+
+
+    /**
+     * Display a listing of schools.
+     */
+    public function home()
+    {
+        return Inertia::render('Index');
+    }
+
 }

@@ -1,21 +1,32 @@
-import { Head, Link } from '@inertiajs/react';
+import Navbar from "@/components/Landing/Navbar";
+import HeroSection from "@/components/Landing/HeroSection";
+import FeaturesSection from "@/components/Landing/FeaturesSection";
+import StorySection from "@/components/Landing/StorySection";
+import WhatIsSection from "@/components/Landing/WhatIsSection";
+import WhoIsForSection from "@/components/Landing/WhoIsForSection";
+import PillarsSection from "@/components/Landing/PillarsSection";
+import TestimonialsSection from "@/components/Landing/TestimonialsSection";
+import PricingSection from "@/components/Landing/PricingSection";
+import Footer from "@/components/Landing/Footer";
+import BenefitsSection from "@/components/Landing/BenefitsSection";
 
-export default function Index() {
+const Index = () => {
   return (
-    <>
-      <Head title="Welcome to FeeYangu" />
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/10 to-background">
-        <div className="text-center">
-          <h1 className="text-4xl font-bold mb-4">Welcome to FeeYangu</h1>
-          <p className="text-muted-foreground mb-8">School Fee Management System</p>
-          <Link
-            href="/login"
-            className="inline-flex items-center justify-center rounded-md bg-primary px-8 py-3 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
-          >
-            Get Started
-          </Link>
-        </div>
-      </div>
-    </>
+    <div className="min-h-screen bg-[#F4F2EA]">
+      <Navbar />
+      <HeroSection />
+      <FeaturesSection />
+      <StorySection />
+      <WhatIsSection />
+      <WhoIsForSection />
+      <PillarsSection />
+      <TestimonialsSection />
+      <BenefitsSection />
+      <PricingSection />
+      
+      <Footer />
+    </div>
   );
-}
+};
+
+export default Index;

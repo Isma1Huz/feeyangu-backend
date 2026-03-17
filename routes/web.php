@@ -34,9 +34,8 @@ use App\Http\Controllers\Parent\PTMeetingsController as ParentPTMeetingsControll
 use Illuminate\Support\Facades\Route;
 
 // Welcome/Landing page
-Route::get('/', function () {
-    return redirect()->route('login');
-});
+Route::get('/', [AdminDashboardController::class, 'home'])->name('home');
+
 
 // Super Admin Routes
 Route::prefix('admin')
