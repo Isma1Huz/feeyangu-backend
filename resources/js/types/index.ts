@@ -315,3 +315,194 @@ export interface ModuleTenantOverride {
   school_id: number;
   status: ModuleOverrideStatus;
 }
+
+// ─── Academics ────────────────────────────────────────────────────────────────
+
+export type CurriculumType = 'cbc' | '844' | 'cambridge';
+export type ExamType = 'cat' | 'end_term' | 'mock' | 'final';
+export type ExamStatus = 'draft' | 'published' | 'in_progress' | 'completed';
+export type LessonPlanStatus = 'draft' | 'published';
+export type TimetableDayOfWeek = 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday';
+
+export interface Curriculum {
+  id: number;
+  school_id: number;
+  name: string;
+  code: string;
+  type: CurriculumType;
+  description: string | null;
+  is_active: boolean;
+  settings: Record<string, unknown> | null;
+  subjects_count?: number;
+}
+
+export interface LearningArea {
+  id: number;
+  curriculum_id: number;
+  name: string;
+  code: string;
+  description: string | null;
+  sort_order: number;
+  strands?: Strand[];
+  curriculum?: { id: number; name: string };
+}
+
+export interface Strand {
+  id: number;
+  learning_area_id: number;
+  name: string;
+  code: string;
+  description: string | null;
+  sort_order: number;
+  sub_strands?: SubStrand[];
+}
+
+export interface SubStrand {
+  id: number;
+  strand_id: number;
+  name: string;
+  code: string;
+  description: string | null;
+  sort_order: number;
+  learning_outcomes?: LearningOutcome[];
+}
+
+export interface LearningOutcome {
+  id: number;
+  sub_strand_id: number;
+  name: string;
+  code: string;
+  description: string | null;
+}
+
+export interface AcademicSubject {
+  id: number;
+  school_id: number;
+  curriculum_id: number | null;
+  name: string;
+  code: string;
+  is_core: boolean;
+  credits: number;
+  description: string | null;
+  curriculum?: { id: number; name: string } | null;
+}
+
+export interface GradeScaleLevel {
+  grade: string;
+  min: number;
+  max: number;
+  points?: number;
+  remarks?: string;
+}
+
+export interface GradeScale {
+  id: number;
+  school_id: number;
+  curriculum_id: number | null;
+  name: string;
+  levels: GradeScaleLevel[];
+  is_default: boolean;
+  curriculum?: { id: number; name: string } | null;
+}
+
+export interface AcademicExam {
+  id: number;
+  school_id: number;
+  name: string;
+  type: ExamType;
+  term: number;
+  year: number;
+  start_date: string | null;
+  end_date: string | null;
+  status: ExamStatus;
+  settings: Record<string, unknown> | null;
+  papers_count?: number;
+}
+
+export interface ExamPaper {
+  id: number;
+  exam_id: number;
+  subject_id: number;
+  name: string;
+  max_marks: number;
+  weight: number;
+  date: string | null;
+  start_time: string | null;
+  duration: number | null;
+  venue: string | null;
+  subject?: { id: number; name: string };
+  marks_entered?: number;
+  average?: number;
+}
+
+export interface StudentMark {
+  id: number;
+  exam_paper_id: number;
+  student_id: number;
+  marks_obtained: number | null;
+  grade: string | null;
+  remarks: string | null;
+  is_absent: boolean;
+}
+
+export interface TimetableEntry {
+  id: number;
+  school_id: number;
+  grade_class_id: number | null;
+  subject_id: number;
+  teacher_id: number | null;
+  day_of_week: TimetableDayOfWeek;
+  time_slot: string;
+  duration: number;
+  room: string | null;
+  effective_from: string;
+  effective_to: string | null;
+  class?: { id: number; name: string } | null;
+  subject?: { id: number; name: string };
+  teacher?: { id: number; name: string } | null;
+}
+
+export interface LessonPlan {
+  id: number;
+  school_id: number;
+  teacher_id: number;
+  subject_id: number;
+  grade_class_id: number | null;
+  topic: string;
+  sub_topic: string | null;
+  learning_objectives: string[] | null;
+  resources: string[] | null;
+  lesson_structure: Record<string, unknown> | null;
+  assessment_methods: string[] | null;
+  differentiation: string | null;
+  reflection: string | null;
+  status: LessonPlanStatus;
+  date: string;
+  subject?: { id: number; name: string };
+  class?: { id: number; name: string } | null;
+  teacher?: { id: number; name: string };
+}
+
+export interface SchemeOfWork {
+  id: number;
+  school_id: number;
+  teacher_id: number;
+  subject_id: number;
+  grade_class_id: number | null;
+  term: number;
+  year: number;
+  weeks: Record<string, unknown>[] | null;
+  status: LessonPlanStatus;
+  subject?: { id: number; name: string };
+  class?: { id: number; name: string } | null;
+}
+
+export interface ClassSubject {
+  id: number;
+  grade_class_id: number;
+  subject_id: number;
+  teacher_id: number | null;
+  periods_per_week: number;
+  subject?: { id: number; name: string };
+  teacher?: { id: number; name: string } | null;
+}

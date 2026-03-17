@@ -8,6 +8,7 @@ use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -56,10 +57,16 @@ class UserController extends Controller
             'name' => $s->name,
         ]);
 
+        // Get all assignable roles (excluding super_admin)
+        $availableRoles = Role::where('name', '!=', 'super_admin')
+            ->orderBy('name')
+            ->pluck('name');
+
         return Inertia::render('admin/Users', [
             'users' => $users->items(),
             'filters' => $request->only(['role', 'search']),
             'schools' => $schools,
+            'availableRoles' => $availableRoles,
         ]);
     }
 
@@ -72,9 +79,11 @@ class UserController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|email|max:255|unique:users,email',
             'password' => ['required', Password::min(8)],
-            'role' => 'required|in:accountant,school_admin,parent',
+            'role' => ['required', 'string', Rule::notIn(['super_admin']), Rule::exists('roles', 'name')],
             'school_id' => 'nullable|exists:schools,id',
         ]);
+
+        $role = Role::where('name', $validated['role'])->firstOrFail();
 
         $user = User::create([
             'name' => $validated['name'],
@@ -84,7 +93,7 @@ class UserController extends Controller
             'email_verified_at' => now(), // Auto-verify admin-created users
         ]);
 
-        $user->assignRole($validated['role']);
+        $user->assignRole($role);
 
         return redirect()->route('admin.users.index')
             ->with('success', 'User created successfully.');
@@ -98,7 +107,7 @@ class UserController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|max:255|unique:users,email,' . $user->id,
-            'role' => 'required|in:accountant,school_admin,parent',
+            'role' => ['required', 'string', Rule::notIn(['super_admin']), Rule::exists('roles', 'name')],
             'school_id' => 'nullable|exists:schools,id',
             'status' => 'required|in:active,inactive',
         ]);
@@ -110,8 +119,9 @@ class UserController extends Controller
             'email_verified_at' => $validated['status'] === 'active' ? ($user->email_verified_at ?? now()) : null,
         ]);
 
-        // Sync role
-        $user->syncRoles([$validated['role']]);
+        // Sync role (fetch existing role - validated it exists above)
+        $role = Role::where('name', $validated['role'])->firstOrFail();
+        $user->syncRoles([$role]);
 
         return redirect()->route('admin.users.index')
             ->with('success', 'User updated successfully.');

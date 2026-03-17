@@ -56,6 +56,13 @@ const AppSidebar: React.FC = () => {
       { title: 'Dashboard', url: '/school/dashboard', icon: 'LayoutDashboard' },
     ]},
     { label: 'Academics', moduleKey: 'academics', items: [
+      { title: 'Academics Hub', url: '/school/academics', icon: 'BookOpen', moduleKey: 'academics' },
+      { title: 'Curricula', url: '/school/academics/curricula', icon: 'BookOpen', moduleKey: 'academics' },
+      { title: 'Subjects', url: '/school/academics/subjects', icon: 'ClipboardList', moduleKey: 'academics' },
+      { title: 'Exams', url: '/school/academics/exams', icon: 'FileText', moduleKey: 'academics' },
+      { title: 'Grade Scales', url: '/school/academics/grade-scales', icon: 'Scale', moduleKey: 'academics' },
+      { title: 'Lesson Plans', url: '/school/academics/lesson-plans', icon: 'ClipboardList', moduleKey: 'academics' },
+      { title: 'Timetable', url: '/school/academics/timetable', icon: 'Calendar', moduleKey: 'academics' },
       { title: 'Grades & Classes', url: '/school/grades', icon: 'GraduationCap', moduleKey: 'academics' },
       { title: 'Terms', url: '/school/terms', icon: 'Calendar', moduleKey: 'academics' },
       { title: 'Students', url: '/school/students', icon: 'Users', moduleKey: 'academics' },

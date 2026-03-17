@@ -8,6 +8,16 @@ use App\Http\Controllers\Admin\ModuleController as AdminModuleController;
 use App\Http\Controllers\Admin\ModuleManagementController as AdminModuleManagementController;
 use App\Http\Controllers\Admin\SubscriptionPlanController as AdminSubscriptionPlanController;
 use App\Http\Controllers\Admin\SchoolUsageController as AdminSchoolUsageController;
+use App\Http\Controllers\School\Academics\AcademicsDashboardController as SchoolAcademicsDashboardController;
+use App\Http\Controllers\School\Academics\CurriculumController as SchoolCurriculumController;
+use App\Http\Controllers\School\Academics\SubjectController as SchoolSubjectController;
+use App\Http\Controllers\School\Academics\ExamController as SchoolExamController;
+use App\Http\Controllers\School\Academics\MarkEntryController as SchoolMarkEntryController;
+use App\Http\Controllers\School\Academics\TimetableController as SchoolTimetableController;
+use App\Http\Controllers\School\Academics\GradeScaleController as SchoolGradeScaleController;
+use App\Http\Controllers\School\Academics\LearningAreaController as SchoolLearningAreaController;
+use App\Http\Controllers\School\Academics\ClassSubjectController as SchoolClassSubjectController;
+use App\Http\Controllers\School\Academics\LessonPlanController as SchoolLessonPlanController;
 use App\Http\Controllers\School\DashboardController as SchoolDashboardController;
 use App\Http\Controllers\School\StudentController as SchoolStudentController;
 use App\Http\Controllers\School\GradeController as SchoolGradeController;
@@ -105,6 +115,12 @@ Route::prefix('school')
         
         // Class management
         Route::resource('classes', SchoolGradeClassController::class);
+
+        // Class subject assignments
+        Route::get('/classes/{gradeClass}/subjects', [SchoolClassSubjectController::class, 'index'])->name('classes.subjects.index');
+        Route::post('/classes/{gradeClass}/subjects', [SchoolClassSubjectController::class, 'store'])->name('classes.subjects.store');
+        Route::put('/classes/{gradeClass}/subjects/{classSubject}', [SchoolClassSubjectController::class, 'update'])->name('classes.subjects.update');
+        Route::delete('/classes/{gradeClass}/subjects/{classSubject}', [SchoolClassSubjectController::class, 'destroy'])->name('classes.subjects.destroy');
         
         // Academic term management
         Route::resource('terms', SchoolAcademicTermController::class);
@@ -133,6 +149,7 @@ Route::prefix('school')
         // Settings
         Route::get('/settings', [SchoolSettingsController::class, 'index'])->name('settings.index');
         Route::put('/settings', [SchoolSettingsController::class, 'update'])->name('settings.update');
+        Route::post('/settings/logo', [SchoolSettingsController::class, 'uploadLogo'])->name('settings.logo');
         
         // Billing
         Route::get('/billing', [SchoolBillingController::class, 'index'])->name('billing.index');
@@ -180,6 +197,53 @@ Route::prefix('school')
         Route::get('/subscription', [SchoolSubscriptionController::class, 'index'])->name('subscription.index');
         Route::get('/subscription/upgrade', [SchoolSubscriptionController::class, 'upgrade'])->name('subscription.upgrade');
         Route::post('/subscription/upgrade', [SchoolSubscriptionController::class, 'processUpgrade'])->name('subscription.process-upgrade');
+
+        // Academics
+        Route::prefix('academics')->name('academics.')->group(function () {
+            Route::get('/', [SchoolAcademicsDashboardController::class, 'index'])->name('dashboard');
+
+            Route::get('/curricula', [SchoolCurriculumController::class, 'index'])->name('curricula.index');
+            Route::post('/curricula', [SchoolCurriculumController::class, 'store'])->name('curricula.store');
+            Route::put('/curricula/{curriculum}', [SchoolCurriculumController::class, 'update'])->name('curricula.update');
+            Route::delete('/curricula/{curriculum}', [SchoolCurriculumController::class, 'destroy'])->name('curricula.destroy');
+
+            Route::get('/subjects', [SchoolSubjectController::class, 'index'])->name('subjects.index');
+            Route::post('/subjects', [SchoolSubjectController::class, 'store'])->name('subjects.store');
+            Route::put('/subjects/{subject}', [SchoolSubjectController::class, 'update'])->name('subjects.update');
+            Route::delete('/subjects/{subject}', [SchoolSubjectController::class, 'destroy'])->name('subjects.destroy');
+
+            Route::get('/exams', [SchoolExamController::class, 'index'])->name('exams.index');
+            Route::post('/exams', [SchoolExamController::class, 'store'])->name('exams.store');
+            Route::get('/exams/{exam}', [SchoolExamController::class, 'show'])->name('exams.show');
+            Route::put('/exams/{exam}', [SchoolExamController::class, 'update'])->name('exams.update');
+            Route::delete('/exams/{exam}', [SchoolExamController::class, 'destroy'])->name('exams.destroy');
+            Route::post('/exams/{exam}/publish', [SchoolExamController::class, 'publish'])->name('exams.publish');
+
+            Route::get('/exam-papers/{examPaper}/marks', [SchoolMarkEntryController::class, 'index'])->name('marks.index');
+            Route::post('/exam-papers/{examPaper}/marks', [SchoolMarkEntryController::class, 'save'])->name('marks.save');
+
+            Route::get('/timetable', [SchoolTimetableController::class, 'index'])->name('timetable.index');
+            Route::post('/timetable', [SchoolTimetableController::class, 'store'])->name('timetable.store');
+            Route::put('/timetable/{timetableEntry}', [SchoolTimetableController::class, 'update'])->name('timetable.update');
+            Route::delete('/timetable/{timetableEntry}', [SchoolTimetableController::class, 'destroy'])->name('timetable.destroy');
+
+            Route::get('/grade-scales', [SchoolGradeScaleController::class, 'index'])->name('grade-scales.index');
+            Route::post('/grade-scales', [SchoolGradeScaleController::class, 'store'])->name('grade-scales.store');
+            Route::put('/grade-scales/{gradeScale}', [SchoolGradeScaleController::class, 'update'])->name('grade-scales.update');
+            Route::delete('/grade-scales/{gradeScale}', [SchoolGradeScaleController::class, 'destroy'])->name('grade-scales.destroy');
+
+            // Learning Areas (nested under curricula)
+            Route::get('/curricula/{curriculum}/learning-areas', [SchoolLearningAreaController::class, 'index'])->name('learning-areas.index');
+            Route::post('/curricula/{curriculum}/learning-areas', [SchoolLearningAreaController::class, 'store'])->name('learning-areas.store');
+            Route::put('/curricula/{curriculum}/learning-areas/{learningArea}', [SchoolLearningAreaController::class, 'update'])->name('learning-areas.update');
+            Route::delete('/curricula/{curriculum}/learning-areas/{learningArea}', [SchoolLearningAreaController::class, 'destroy'])->name('learning-areas.destroy');
+
+            // Lesson Plans
+            Route::get('/lesson-plans', [SchoolLessonPlanController::class, 'index'])->name('lesson-plans.index');
+            Route::post('/lesson-plans', [SchoolLessonPlanController::class, 'store'])->name('lesson-plans.store');
+            Route::put('/lesson-plans/{lessonPlan}', [SchoolLessonPlanController::class, 'update'])->name('lesson-plans.update');
+            Route::delete('/lesson-plans/{lessonPlan}', [SchoolLessonPlanController::class, 'destroy'])->name('lesson-plans.destroy');
+        });
     });
 
 // Accountant Routes
