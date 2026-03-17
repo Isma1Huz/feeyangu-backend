@@ -27,6 +27,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'parent.access' => \App\Http\Middleware\EnsureParentAccess::class,
             'payment.callback' => \App\Http\Middleware\VerifyPaymentCallback::class,
             'module' => \App\Http\Middleware\ModuleMiddleware::class,
+            'subscription.limit' => \App\Http\Middleware\CheckSubscriptionLimits::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

@@ -206,3 +206,112 @@ export interface Receipt {
   paymentReference: string;
   items: { name: string; amount: number }[];
 }
+
+// ─── Subscription Plans ────────────────────────────────────────────────────────
+
+export interface SubscriptionPlanModel {
+  id: number;
+  name: string;
+  code: string;
+  description: string | null;
+  price_monthly: number;
+  price_yearly: number;
+  student_limit: number;  // 0 = unlimited
+  staff_limit: number;    // 0 = unlimited
+  storage_limit_mb: number; // 0 = unlimited
+  features: string[] | null;
+  is_active: boolean;
+  sort_order: number;
+  schools_count?: number;
+  included_modules?: Module[];
+}
+
+export interface PlanModule {
+  plan_id: number;
+  module_id: number;
+  is_included: boolean;
+}
+
+// ─── School Roles ──────────────────────────────────────────────────────────────
+
+export interface SchoolRole {
+  id: number;
+  tenant_id: number;
+  name: string;
+  description: string | null;
+  is_system: boolean;
+  created_by: number | null;
+  staff_assignments_count?: number;
+  permissions?: Permission[];
+  staff?: User[];
+  parent_roles?: SchoolRole[];
+}
+
+export interface Permission {
+  id: number;
+  name: string;
+  guard_name: string;
+}
+
+export interface StaffRoleAssignment {
+  staff_id: number;
+  role_id: number;
+  assigned_by: number | null;
+  assigned_at: string;
+  expires_at: string | null;
+  role?: SchoolRole;
+  assigned_by_user?: User;
+}
+
+export interface StaffDirectPermission {
+  staff_id: number;
+  permission_id: number;
+  assigned_by: number | null;
+  assigned_at: string;
+  expires_at: string | null;
+  permission?: Permission;
+  assigned_by_user?: User;
+}
+
+// ─── Dashboard Config ──────────────────────────────────────────────────────────
+
+export type DashboardUserType = 'parent' | 'student' | 'teacher' | 'staff' | 'principal';
+
+export interface DashboardConfig {
+  id: number;
+  tenant_id: number;
+  user_type: DashboardUserType;
+  config_key: string;
+  config_value: boolean;
+}
+
+// ─── Usage ─────────────────────────────────────────────────────────────────────
+
+export interface UsageMetric {
+  current: number;
+  limit: number;  // 0 = unlimited
+  percent: number;
+  unlimited?: boolean;
+  near_limit?: boolean;
+  at_limit?: boolean;
+}
+
+export interface SchoolUsageSummary {
+  id: number;
+  name: string;
+  plan_name: string;
+  subscription_status: string;
+  subscription_end_date: string | null;
+  students: UsageMetric;
+  staff: UsageMetric;
+}
+
+// ─── Module Overrides ──────────────────────────────────────────────────────────
+
+export type ModuleOverrideStatus = 'enabled' | 'disabled' | 'inherit';
+
+export interface ModuleTenantOverride {
+  module_id: number;
+  school_id: number;
+  status: ModuleOverrideStatus;
+}

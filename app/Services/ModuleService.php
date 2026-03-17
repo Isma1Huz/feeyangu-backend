@@ -3,7 +3,10 @@
 namespace App\Services;
 
 use App\Models\Module;
+use App\Models\ModuleTenantOverride;
 use App\Models\School;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\Cache;
 
 class ModuleService
 {
@@ -262,5 +265,149 @@ class ModuleService
         $module = Module::where('key', $moduleKey)->first();
 
         return $module?->permissions ?? [];
+    }
+
+    /**
+     * Get all modules that are enabled for a tenant, factoring in:
+     *  a) Modules included in the tenant's plan OR purchased as add-ons
+     *  b) NOT disabled globally or per-tenant override
+     */
+    public function getEnabledModulesForTenant(School $school): Collection
+    {
+        return Cache::remember(
+            "school:{$school->id}:accessible_modules",
+            now()->addMinutes(30),
+            function () use ($school) {
+                return Module::active()
+                    ->where('is_globally_disabled', false)
+                    ->get()
+                    ->filter(function (Module $module) use ($school) {
+                        // Core modules always accessible
+                        if ($module->is_core) {
+                            return true;
+                        }
+
+                        // Check per-tenant override
+                        $tenantOverride = $module->tenantOverrides()
+                            ->where('school_id', $school->id)
+                            ->first();
+
+                        if ($tenantOverride) {
+                            if ($tenantOverride->status === 'disabled') {
+                                return false;
+                            }
+                            if ($tenantOverride->status === 'enabled') {
+                                return true;
+                            }
+                            // 'inherit' — fall through to plan check
+                        }
+
+                        // Check plan or add-on
+                        return app(SubscriptionService::class)->isModuleAccessible($school, $module->key);
+                    })
+                    ->sortBy('sort_order')
+                    ->values();
+            }
+        );
+    }
+
+    /**
+     * Check if a module is globally disabled (applies to all schools).
+     */
+    public function isGloballyDisabled(string $moduleKey): bool
+    {
+        $module = Module::where('key', $moduleKey)->first();
+
+        return $module?->is_globally_disabled ?? false;
+    }
+
+    /**
+     * Check if a module is disabled for a specific tenant (per-tenant override only).
+     */
+    public function isTenantDisabled(School $school, string $moduleKey): bool
+    {
+        $module = Module::where('key', $moduleKey)->first();
+
+        if (!$module) {
+            return true;
+        }
+
+        $override = ModuleTenantOverride::where('module_id', $module->id)
+            ->where('school_id', $school->id)
+            ->first();
+
+        return $override?->status === 'disabled';
+    }
+
+    /**
+     * Enable or disable a module globally (for ALL schools).
+     *
+     * @param  string $moduleKey
+     * @param  bool   $disabled   true = globally disabled, false = globally enabled
+     */
+    public function setGlobalOverride(string $moduleKey, bool $disabled): bool
+    {
+        $module = Module::where('key', $moduleKey)->first();
+
+        if (!$module || $module->is_core) {
+            return false;
+        }
+
+        $module->update(['is_globally_disabled' => $disabled]);
+
+        // Clear cache for all schools
+        School::all()->each(fn (School $s) => Cache::forget("school:{$s->id}:accessible_modules"));
+
+        return true;
+    }
+
+    /**
+     * Set a per-tenant module override.
+     *
+     * @param  School $tenant
+     * @param  string $moduleKey
+     * @param  string $status    'enabled' | 'disabled' | 'inherit'
+     */
+    public function setTenantOverride(School $tenant, string $moduleKey, string $status): bool
+    {
+        $module = Module::where('key', $moduleKey)->first();
+
+        if (!$module) {
+            return false;
+        }
+
+        if ($status === 'inherit') {
+            ModuleTenantOverride::where('module_id', $module->id)
+                ->where('school_id', $tenant->id)
+                ->delete();
+        } else {
+            ModuleTenantOverride::updateOrCreate(
+                ['module_id' => $module->id, 'school_id' => $tenant->id],
+                ['status' => $status]
+            );
+        }
+
+        Cache::forget("school:{$tenant->id}:accessible_modules");
+        Cache::forget("school:{$tenant->id}:enabled_modules");
+
+        return true;
+    }
+
+    /**
+     * Reset all tenant overrides for a module (everyone goes back to plan-based access).
+     */
+    public function resetAllTenantOverrides(string $moduleKey): bool
+    {
+        $module = Module::where('key', $moduleKey)->first();
+
+        if (!$module) {
+            return false;
+        }
+
+        ModuleTenantOverride::where('module_id', $module->id)->delete();
+
+        School::all()->each(fn (School $s) => Cache::forget("school:{$s->id}:accessible_modules"));
+
+        return true;
     }
 }

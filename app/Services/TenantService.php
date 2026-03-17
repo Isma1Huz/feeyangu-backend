@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Module;
 use App\Models\School;
+use App\Models\SubscriptionPlan;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
@@ -127,5 +128,40 @@ class TenantService
     public function clearModuleCache(int $schoolId): void
     {
         Cache::forget("school:{$schoolId}:enabled_modules");
+        Cache::forget("school:{$schoolId}:accessible_modules");
+    }
+
+    /**
+     * Assign modules based on a SubscriptionPlan ID (and optional add-on module keys).
+     */
+    public function assignModulesToSchoolByPlanId(School $school, int $planId, array $addonModuleKeys = []): void
+    {
+        $plan = SubscriptionPlan::with('includedModules')->find($planId);
+
+        if (!$plan) {
+            return;
+        }
+
+        $activeModules   = Module::active()->get();
+        $coreModuleIds   = $activeModules->where('is_core', true)->pluck('id')->toArray();
+        $planModuleIds   = $plan->includedModules->pluck('id')->toArray();
+        $addonModuleIds  = $activeModules->whereIn('key', $addonModuleKeys)->pluck('id')->toArray();
+
+        $enabledIds = array_unique(array_merge($coreModuleIds, $planModuleIds, $addonModuleIds));
+
+        $syncData = [];
+        foreach ($activeModules as $module) {
+            $syncData[$module->id] = [
+                'is_enabled' => in_array($module->id, $enabledIds),
+                'settings'   => null,
+                'permissions_override' => null,
+            ];
+        }
+
+        DB::transaction(function () use ($school, $syncData) {
+            $school->modules()->sync($syncData);
+        });
+
+        $this->clearModuleCache($school->id);
     }
 }
