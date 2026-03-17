@@ -29,11 +29,16 @@ class ProcessBulkMarks implements ShouldQueue
 
         $saved = 0;
         foreach ($this->marksData as $mark) {
+            $marksObtained = $mark['is_absent'] ? null : ($mark['marks_obtained'] ?? null);
+            // Cap marks at the exam paper's maximum
+            if ($marksObtained !== null && $marksObtained > $examPaper->max_marks) {
+                $marksObtained = $examPaper->max_marks;
+            }
             StudentMark::updateOrCreate(
                 ['exam_paper_id' => $this->examPaperId, 'student_id' => $mark['student_id']],
                 [
                     'school_id' => $this->schoolId,
-                    'marks_obtained' => $mark['is_absent'] ? null : ($mark['marks_obtained'] ?? null),
+                    'marks_obtained' => $marksObtained,
                     'is_absent' => $mark['is_absent'] ?? false,
                     'remarks' => $mark['remarks'] ?? null,
                     'entered_by' => $this->submittedBy,

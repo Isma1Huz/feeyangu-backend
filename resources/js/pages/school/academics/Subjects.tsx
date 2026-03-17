@@ -103,7 +103,7 @@ const Subjects: React.FC = () => {
                   <SelectContent>{(curricula ?? []).map(c => <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
-              <div><Label>Credits</Label><Input type="number" value={form.credits} onChange={e => setForm(f => ({ ...f, credits: Number(e.target.value) }))} /></div>
+              <div><Label>Credits</Label><Input type="number" value={form.credits} min={0} onChange={e => { const val = parseInt(e.target.value, 10); setForm(f => ({ ...f, credits: isNaN(val) ? 0 : val })); }} /></div>
               <div><Label>Description</Label><Textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} /></div>
               <div className="flex items-center gap-2"><Checkbox checked={form.is_core} onCheckedChange={v => setForm(f => ({ ...f, is_core: !!v }))} id="is_core" /><Label htmlFor="is_core">Core Subject</Label></div>
             </div>

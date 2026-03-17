@@ -55,10 +55,12 @@ class MarkEntryController extends Controller
             abort(403);
         }
 
+        $maxMarks = $examPaper->max_marks;
+
         $data = $request->validate([
             'marks' => 'required|array',
             'marks.*.student_id' => 'required|exists:students,id',
-            'marks.*.marks_obtained' => 'nullable|numeric|min:0',
+            'marks.*.marks_obtained' => ['nullable', 'numeric', 'min:0', "max:{$maxMarks}"],
             'marks.*.is_absent' => 'boolean',
             'marks.*.remarks' => 'nullable|string',
         ]);
