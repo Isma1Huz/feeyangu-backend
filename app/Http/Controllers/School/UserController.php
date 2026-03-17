@@ -10,9 +10,15 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
 use Inertia\Inertia;
 use Inertia\Response;
+use Spatie\Permission\Models\Role;
 
 class UserController extends Controller
 {
+    /**
+     * Roles that school admins are allowed to assign (excluding platform-level roles).
+     */
+    private const ALLOWED_ROLES = ['accountant', 'teacher', 'deputy_principal', 'librarian', 'nurse', 'driver'];
+
     /**
      * Display a listing of users in the school.
      */
@@ -45,14 +51,20 @@ class UserController extends Controller
             ];
         });
 
+        // Get all assignable roles (school-level roles)
+        $availableRoles = Role::whereIn('name', self::ALLOWED_ROLES)
+            ->orderBy('name')
+            ->pluck('name');
+
         return Inertia::render('school/Users', [
             'users' => $users,
             'filters' => $request->only(['search']),
+            'availableRoles' => $availableRoles,
         ]);
     }
 
     /**
-     * Store a newly created accountant user in the school.
+     * Store a newly created staff user in the school.
      */
     public function store(Request $request): RedirectResponse
     {
@@ -66,7 +78,13 @@ class UserController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|email|max:255|unique:users,email',
             'password' => ['required', Password::min(8)],
+            'role' => 'nullable|string|in:' . implode(',', self::ALLOWED_ROLES),
         ]);
+
+        $roleName = $validated['role'] ?? 'accountant';
+
+        // Ensure the role exists in spatie roles (create if not yet seeded)
+        $role = Role::firstOrCreate(['name' => $roleName]);
 
         $user = User::create([
             'name' => $validated['name'],
@@ -76,11 +94,10 @@ class UserController extends Controller
             'email_verified_at' => now(),
         ]);
 
-        // School admin can only create accountants
-        $user->assignRole('accountant');
+        $user->assignRole($role);
 
         return redirect()->route('school.users.index')
-            ->with('success', 'Accountant created successfully.');
+            ->with('success', ucfirst(str_replace('_', ' ', $roleName)) . ' created successfully.');
     }
 
     /**
@@ -97,6 +114,7 @@ class UserController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|max:255|unique:users,email,' . $user->id,
+            'role' => 'nullable|string|in:' . implode(',', self::ALLOWED_ROLES),
             'status' => 'required|in:active,inactive',
         ]);
 
@@ -106,8 +124,14 @@ class UserController extends Controller
             'email_verified_at' => $validated['status'] === 'active' ? ($user->email_verified_at ?? now()) : null,
         ]);
 
+        // Update role if provided and different
+        if (!empty($validated['role'])) {
+            $role = Role::firstOrCreate(['name' => $validated['role']]);
+            $user->syncRoles([$role]);
+        }
+
         return redirect()->route('school.users.index')
-            ->with('success', 'User updated successfully.');
+            ->with('success', 'Staff member updated successfully.');
     }
 
     /**
@@ -130,6 +154,6 @@ class UserController extends Controller
         $user->delete();
 
         return redirect()->route('school.users.index')
-            ->with('success', 'User deleted successfully.');
+            ->with('success', 'Staff member deleted successfully.');
     }
 }

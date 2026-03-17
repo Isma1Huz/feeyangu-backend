@@ -30,12 +30,13 @@ interface SchoolOption {
 interface Props extends InertiaSharedProps {
   users?: AdminUser[];
   schools?: SchoolOption[];
+  availableRoles?: string[];
 }
 
 const AdminUsers: React.FC<Props> = () => {
   const { toast } = useToast();
   const { ADMIN_USERS_TEXT: t, COMMON_TEXT } = useT();
-  const { users: initialUsers = [], schools: schoolOptions = [] } = usePage<Props>().props;
+  const { users: initialUsers = [], schools: schoolOptions = [], availableRoles = ['accountant', 'school_admin', 'parent'] } = usePage<Props>().props;
   
   const [users, setUsers] = useState<AdminUser[]>(initialUsers);
   const [search, setSearch] = useState('');
@@ -210,9 +211,9 @@ const AdminUsers: React.FC<Props> = () => {
                 <Select value={form.role} onValueChange={v => setForm(p => ({ ...p, role: v }))}>
                   <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="accountant">Accountant</SelectItem>
-                    <SelectItem value="school_admin">School Admin</SelectItem>
-                    <SelectItem value="parent">Parent</SelectItem>
+                    {availableRoles.map(r => (
+                      <SelectItem key={r} value={r}>{r.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
