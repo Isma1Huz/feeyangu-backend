@@ -55,6 +55,12 @@ Route::prefix('admin')
     ->name('admin.')
     ->group(function () {
         Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
+        // School usage — must be declared BEFORE the schools resource route to avoid
+        // the {school} wildcard matching 'usage' as a school identifier.
+        Route::get('/schools/usage', [AdminSchoolUsageController::class, 'index'])->name('schools.usage');
+        Route::get('/schools/usage/export', [AdminSchoolUsageController::class, 'exportUsage'])->name('schools.usage.export');
+        Route::get('/schools/{tenant}/usage', [AdminSchoolUsageController::class, 'show'])->name('schools.usage.show');
+
         Route::resource('schools', AdminSchoolController::class);
         Route::get('/users', [AdminUserController::class, 'index'])->name('users.index');
         Route::post('/users', [AdminUserController::class, 'store'])->name('users.store');
@@ -78,11 +84,6 @@ Route::prefix('admin')
             ->parameters(['subscription-plans' => 'id']);
         Route::post('/subscription-plans/{id}/duplicate', [AdminSubscriptionPlanController::class, 'duplicate'])->name('subscription-plans.duplicate');
         Route::get('/subscription-plans/{id}/preview-update', [AdminSubscriptionPlanController::class, 'previewChanges'])->name('subscription-plans.preview');
-
-        // School usage
-        Route::get('/schools/usage', [AdminSchoolUsageController::class, 'index'])->name('schools.usage');
-        Route::get('/schools/{tenant}/usage', [AdminSchoolUsageController::class, 'show'])->name('schools.usage.show');
-        Route::get('/schools/usage/export', [AdminSchoolUsageController::class, 'exportUsage'])->name('schools.usage.export');
     });
 
 // School Admin Routes
@@ -166,6 +167,7 @@ Route::prefix('school')
         Route::delete('/staff/{staff}/roles/{role}', [SchoolStaffPermissionController::class, 'removeRole'])->name('staff.roles.remove');
         Route::post('/staff/{staff}/permissions/{permission}', [SchoolStaffPermissionController::class, 'addDirectPermission'])->name('staff.permissions.add');
         Route::delete('/staff/{staff}/permissions/{permission}', [SchoolStaffPermissionController::class, 'removeDirectPermission'])->name('staff.permissions.remove');
+        Route::get('/staff/{staff}/permissions/effective', [SchoolStaffPermissionController::class, 'getEffectivePermissions'])->name('staff.permissions.effective');
 
         // Dashboard configuration
         Route::get('/dashboard-config', [SchoolDashboardConfigController::class, 'index'])->name('dashboard-config.index');
