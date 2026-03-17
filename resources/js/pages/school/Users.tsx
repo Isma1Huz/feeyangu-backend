@@ -25,16 +25,26 @@ interface SchoolUser {
 interface Props extends InertiaSharedProps {
   users: SchoolUser[];
   filters?: Record<string, string>;
+  availableRoles?: string[];
 }
+
+const ROLE_LABELS: Record<string, string> = {
+  accountant: 'Accountant',
+  teacher: 'Teacher',
+  deputy_principal: 'Deputy Principal',
+  librarian: 'Librarian',
+  nurse: 'Nurse',
+  driver: 'Driver',
+};
 
 const SchoolUsers: React.FC = () => {
   const { toast } = useToast();
-  const { users: initialUsers = [] } = usePage<Props>().props;
+  const { users: initialUsers = [], availableRoles = ['accountant'] } = usePage<Props>().props;
 
   const [search, setSearch] = useState('');
   const [formOpen, setFormOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<SchoolUser | null>(null);
-  const [form, setForm] = useState({ name: '', email: '', password: '', status: 'active' });
+  const [form, setForm] = useState({ name: '', email: '', password: '', role: 'accountant', status: 'active' });
   const [submitting, setSubmitting] = useState(false);
 
   const filtered = initialUsers.filter(u =>
@@ -43,13 +53,13 @@ const SchoolUsers: React.FC = () => {
 
   const openCreate = () => {
     setEditingUser(null);
-    setForm({ name: '', email: '', password: '', status: 'active' });
+    setForm({ name: '', email: '', password: '', role: availableRoles[0] ?? 'accountant', status: 'active' });
     setFormOpen(true);
   };
 
   const openEdit = (u: SchoolUser) => {
     setEditingUser(u);
-    setForm({ name: u.name, email: u.email, password: '', status: u.status });
+    setForm({ name: u.name, email: u.email, password: '', role: u.role, status: u.status });
     setFormOpen(true);
   };
 
@@ -61,10 +71,11 @@ const SchoolUsers: React.FC = () => {
       router.put(`/school/users/${editingUser.id}`, {
         name: form.name,
         email: form.email,
+        role: form.role,
         status: form.status,
       }, {
-        onSuccess: () => { toast({ title: 'User updated' }); setFormOpen(false); },
-        onError: () => toast({ title: 'Error updating user', variant: 'destructive' } as any),
+        onSuccess: () => { toast({ title: 'Staff member updated' }); setFormOpen(false); },
+        onError: () => toast({ title: 'Error updating staff member', variant: 'destructive' } as any),
         onFinish: () => setSubmitting(false),
         preserveState: false,
       });
@@ -73,9 +84,10 @@ const SchoolUsers: React.FC = () => {
         name: form.name,
         email: form.email,
         password: form.password,
+        role: form.role,
       }, {
-        onSuccess: () => { toast({ title: 'Accountant created' }); setFormOpen(false); },
-        onError: () => toast({ title: 'Error creating accountant', variant: 'destructive' } as any),
+        onSuccess: () => { toast({ title: 'Staff member created' }); setFormOpen(false); },
+        onError: () => toast({ title: 'Error creating staff member', variant: 'destructive' } as any),
         onFinish: () => setSubmitting(false),
         preserveState: false,
       });
@@ -83,10 +95,11 @@ const SchoolUsers: React.FC = () => {
   };
 
   const handleDelete = (u: SchoolUser) => {
-    if (!confirm('Are you sure you want to delete this user?')) return;
+    if (!confirm('Are you sure you want to delete this staff member?')) return;
     router.delete(`/school/users/${u.id}`, {
-      onSuccess: () => toast({ title: 'User deleted' }),
-      onError: () => toast({ title: 'Error deleting user', variant: 'destructive' } as any),
+      onSuccess: () => toast({ title: 'Staff member deleted' }),
+      onError: () => toast({ title: 'Error deleting staff member', variant: 'destructive' } as any),
+      preserveState: false,
     });
   };
 
@@ -97,10 +110,10 @@ const SchoolUsers: React.FC = () => {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold tracking-tight">Staff Management</h1>
-            <p className="text-muted-foreground text-sm mt-1">Manage accountants and staff for your school.</p>
+            <p className="text-muted-foreground text-sm mt-1">Manage staff members and their roles for your school.</p>
           </div>
           <Button onClick={openCreate} size="sm" className="gap-2">
-            <Plus className="h-4 w-4" /> Add Accountant
+            <Plus className="h-4 w-4" /> Add Staff
           </Button>
         </div>
 
@@ -118,7 +131,7 @@ const SchoolUsers: React.FC = () => {
             <CardContent className="flex flex-col items-center justify-center py-12">
               <User className="h-10 w-10 text-muted-foreground mb-3" />
               <p className="font-medium">No staff members found</p>
-              <p className="text-sm text-muted-foreground mt-1">Add accountants to manage your school's finances.</p>
+              <p className="text-sm text-muted-foreground mt-1">Add staff members to manage your school.</p>
             </CardContent>
           </Card>
         ) : (
@@ -136,8 +149,8 @@ const SchoolUsers: React.FC = () => {
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
-                    <Badge variant={u.role === 'accountant' ? 'default' : 'secondary'} className="text-xs capitalize">
-                      {u.role}
+                    <Badge variant="secondary" className="text-xs capitalize">
+                      {ROLE_LABELS[u.role] ?? u.role}
                     </Badge>
                     <Badge variant={u.status === 'active' ? 'outline' : 'secondary'} className={`text-xs ${u.status === 'active' ? 'border-green-500/30 text-green-700' : ''}`}>
                       {u.status}
@@ -161,7 +174,7 @@ const SchoolUsers: React.FC = () => {
         <Dialog open={formOpen} onOpenChange={setFormOpen}>
           <DialogContent className="max-w-md">
             <DialogHeader>
-              <DialogTitle>{editingUser ? 'Edit Staff Member' : 'Add Accountant'}</DialogTitle>
+              <DialogTitle>{editingUser ? 'Edit Staff Member' : 'Add Staff Member'}</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
               <div>
@@ -178,6 +191,17 @@ const SchoolUsers: React.FC = () => {
                   <Input type="password" value={form.password} onChange={e => setForm(p => ({ ...p, password: e.target.value }))} placeholder="Min. 8 characters" className="mt-1" />
                 </div>
               )}
+              <div>
+                <Label>Role</Label>
+                <Select value={form.role} onValueChange={v => setForm(p => ({ ...p, role: v }))}>
+                  <SelectTrigger className="mt-1"><SelectValue placeholder="Select role" /></SelectTrigger>
+                  <SelectContent>
+                    {(availableRoles.length > 0 ? availableRoles : ['accountant']).map(r => (
+                      <SelectItem key={r} value={r}>{ROLE_LABELS[r] ?? r.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               {editingUser && (
                 <div>
                   <Label>Status</Label>
@@ -189,11 +213,6 @@ const SchoolUsers: React.FC = () => {
                     </SelectContent>
                   </Select>
                 </div>
-              )}
-              {!editingUser && (
-                <p className="text-xs text-muted-foreground">
-                  The new user will be created as an <strong>Accountant</strong> for your school.
-                </p>
               )}
             </div>
             <DialogFooter>

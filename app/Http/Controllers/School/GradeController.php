@@ -19,7 +19,10 @@ class GradeController extends Controller
         $school = auth()->user()->school;
 
         $grades = $school->grades()
-            ->withCount(['students', 'gradeClasses'])
+            ->withCount(['students'])
+            ->with(['gradeClasses' => function ($q) {
+                $q->withCount('students');
+            }])
             ->orderBy('sort_order')
             ->get()
             ->map(function ($grade) {
@@ -27,7 +30,14 @@ class GradeController extends Controller
                     'id' => (string) $grade->id,
                     'name' => $grade->name,
                     'studentCount' => $grade->students_count,
-                    'classes' => [], // Will be loaded on demand
+                    'classes' => $grade->gradeClasses->map(fn ($cls) => [
+                        'id' => (string) $cls->id,
+                        'name' => $cls->name,
+                        'gradeId' => (string) $grade->id,
+                        'gradeName' => $grade->name,
+                        'teacher' => $cls->teacher_name ?? '',
+                        'studentCount' => $cls->students_count ?? 0,
+                    ])->values(),
                 ];
             });
 
@@ -74,7 +84,7 @@ class GradeController extends Controller
             abort(403, 'Unauthorized access to this grade');
         }
 
-        $grade->load(['classes.students', 'students']);
+        $grade->load(['gradeClasses.students', 'students']);
 
         return Inertia::render('school/GradeShow', [
             'grade' => [
@@ -82,9 +92,9 @@ class GradeController extends Controller
                 'name' => $grade->name,
                 'sort_order' => $grade->sort_order,
                 'students_count' => $grade->students->count(),
-                'classes_count' => $grade->classes->count(),
+                'classes_count' => $grade->gradeClasses->count(),
             ],
-            'classes' => $grade->classes->map(fn($class) => [
+            'classes' => $grade->gradeClasses->map(fn($class) => [
                 'id' => $class->id,
                 'name' => $class->name,
                 'teacher_name' => $class->teacher_name,
@@ -136,7 +146,7 @@ class GradeController extends Controller
 
         $grade->update($validated);
 
-        return redirect()->route('school.grades.show', $grade)
+        return redirect()->route('school.grades.index')
             ->with('success', 'Grade updated successfully.');
     }
 

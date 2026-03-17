@@ -133,6 +133,7 @@ Route::prefix('school')
         // Settings
         Route::get('/settings', [SchoolSettingsController::class, 'index'])->name('settings.index');
         Route::put('/settings', [SchoolSettingsController::class, 'update'])->name('settings.update');
+        Route::post('/settings/logo', [SchoolSettingsController::class, 'uploadLogo'])->name('settings.logo');
         
         // Billing
         Route::get('/billing', [SchoolBillingController::class, 'index'])->name('billing.index');

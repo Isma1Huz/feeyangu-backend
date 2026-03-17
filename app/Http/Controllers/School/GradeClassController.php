@@ -82,7 +82,7 @@ class GradeClassController extends Controller
 
         GradeClass::create($validated);
 
-        return redirect()->route('school.classes.index')
+        return redirect()->route('school.grades.index')
             ->with('success', 'Class created successfully.');
     }
 
@@ -169,7 +169,7 @@ class GradeClassController extends Controller
 
         $class->update($validated);
 
-        return redirect()->route('school.classes.show', $class)
+        return redirect()->route('school.grades.index')
             ->with('success', 'Class updated successfully.');
     }
 
@@ -185,13 +185,13 @@ class GradeClassController extends Controller
 
         // Check if class has students
         if ($class->students()->count() > 0) {
-            return redirect()->route('school.classes.index')
+            return redirect()->route('school.grades.index')
                 ->with('error', 'Cannot delete class with enrolled students.');
         }
 
         $class->delete();
 
-        return redirect()->route('school.classes.index')
+        return redirect()->route('school.grades.index')
             ->with('success', 'Class deleted successfully.');
     }
 }
