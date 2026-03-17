@@ -18,7 +18,9 @@ interface PageWithFlash {
  * and displays them as toast notifications.
  */
 const FlashMessages: React.FC = () => {
-  const { flash } = usePage<PageWithFlash>().props;
+  const { flash } = usePage<any>().props;
+
+  console.log('Flash messages:', flash); // Debug log to check flash content
   const { toast } = useToast();
 
   useEffect(() => {
