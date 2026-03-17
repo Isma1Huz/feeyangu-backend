@@ -29,19 +29,25 @@ class ReceiptController extends Controller
             });
         }
 
-        $receipts = $query->with(['student', 'paymentTransaction'])
+        $receipts = $query->with(['student', 'paymentTransaction', 'receiptItems'])
             ->latest('issued_at')
             ->paginate(20)
             ->through(function ($receipt) {
                 return [
-                    'id' => $receipt->id,
+                    'id' => (string) $receipt->id,
                     'receiptNumber' => $receipt->receipt_number,
+                    'date' => $receipt->issued_at->format('M d, Y'),
+                    'studentId' => (string) $receipt->student_id,
                     'studentName' => $receipt->student->full_name,
                     'amount' => $receipt->amount / 100,
                     'paymentMethod' => $receipt->payment_method,
                     'paymentReference' => $receipt->payment_reference,
                     'issuedAt' => $receipt->issued_at->format('M d, Y H:i'),
                     'transactionStatus' => $receipt->paymentTransaction->status ?? 'N/A',
+                    'items' => ($receipt->receiptItems ?? collect())->map(fn($item) => [
+                        'name'   => $item->name,
+                        'amount' => $item->amount / 100,
+                    ])->toArray(),
                 ];
             });
 

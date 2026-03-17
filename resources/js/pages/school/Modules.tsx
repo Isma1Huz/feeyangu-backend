@@ -1,11 +1,9 @@
 import React from 'react';
-import { Head, usePage, router } from '@inertiajs/react';
+import { Head, usePage } from '@inertiajs/react';
 import type { InertiaSharedProps } from '@/types/inertia';
 import AppLayout from '@/layouts/AppLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Switch } from '@/components/ui/switch';
-import { useToast } from '@/hooks/use-toast';
 import {
   GraduationCap, CreditCard, UserCheck, Megaphone, ShieldCheck, Users,
   BookOpen, Briefcase, ShoppingCart, Building, Award, ClipboardList,
@@ -30,35 +28,20 @@ interface SchoolModule {
 }
 
 interface Props extends InertiaSharedProps {
-  modules?: SchoolModule[];
+  schoolModules?: SchoolModule[];
 }
 
 const SchoolModules: React.FC<Props> = () => {
-  const { modules = [] } = usePage<Props>().props;
-  const { toast } = useToast();
-
-  const handleToggle = (moduleKey: string, currentEnabled: boolean) => {
-    router.patch(
-      `/school/modules/${moduleKey}`,
-      { is_enabled: !currentEnabled },
-      {
-        preserveScroll: true,
-        onSuccess: () =>
-          toast({ title: `Module ${!currentEnabled ? 'enabled' : 'disabled'} successfully` }),
-        onError: () =>
-          toast({ title: 'Failed to update module. Check dependencies.', variant: 'destructive' }),
-      }
-    );
-  };
+  const { schoolModules: modules = [] } = usePage<Props>().props;
 
   return (
     <AppLayout>
-      <Head title="Module Management" />
+      <Head title="Modules" />
       <div className="space-y-6">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Module Management</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Modules</h1>
           <p className="text-muted-foreground text-sm mt-1">
-            Enable or disable features for your school. Core modules are always active.
+            View the modules available with your current subscription plan.
           </p>
         </div>
 
@@ -66,10 +49,10 @@ const SchoolModules: React.FC<Props> = () => {
           {modules.map((mod) => {
             const Icon = iconMap[mod.icon] ?? GraduationCap;
             return (
-              <Card key={mod.id} className="shadow-sm">
+              <Card key={mod.id} className={`shadow-sm ${!mod.is_enabled ? 'opacity-60' : ''}`}>
                 <CardHeader className="pb-2 flex flex-row items-start gap-3">
-                  <div className="mt-0.5 p-2 rounded-md bg-primary/10 shrink-0">
-                    <Icon className="h-5 w-5 text-primary" />
+                  <div className={`mt-0.5 p-2 rounded-md shrink-0 ${mod.is_enabled ? 'bg-primary/10' : 'bg-gray-100'}`}>
+                    <Icon className={`h-5 w-5 ${mod.is_enabled ? 'text-primary' : 'text-gray-400'}`} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
@@ -81,19 +64,13 @@ const SchoolModules: React.FC<Props> = () => {
                         variant={mod.is_enabled ? 'default' : 'outline'}
                         className="text-[10px] px-1.5 py-0"
                       >
-                        {mod.is_enabled ? 'Enabled' : 'Disabled'}
+                        {mod.is_enabled ? 'Active' : 'Inactive'}
                       </Badge>
                     </div>
                     <CardDescription className="text-xs mt-0.5 line-clamp-2">
                       {mod.description}
                     </CardDescription>
                   </div>
-                  <Switch
-                    checked={mod.is_enabled}
-                    disabled={mod.is_core}
-                    onCheckedChange={() => handleToggle(mod.key, mod.is_enabled)}
-                    className="shrink-0"
-                  />
                 </CardHeader>
                 {mod.dependencies.length > 0 && (
                   <CardContent className="pt-0 pb-3">

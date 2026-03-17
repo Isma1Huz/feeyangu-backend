@@ -42,7 +42,7 @@ class ModuleController extends Controller
             });
 
         return Inertia::render('school/Modules', [
-            'modules' => $modules,
+            'schoolModules' => $modules,
         ]);
     }
 
