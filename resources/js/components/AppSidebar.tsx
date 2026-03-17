@@ -7,6 +7,7 @@ import {
   Scale, ArrowLeftRight, BarChart3, Plug, ShieldCheck,
 } from 'lucide-react';
 import { useT } from '@/contexts/LanguageContext';
+import { useModuleAccess } from '@/hooks/useModuleAccess';
 import { cn } from '@/lib/utils';
 import feeyanguLogo from '@/assets/feeyangu-logo.png';
 import {
@@ -21,8 +22,8 @@ const iconMap: Record<string, React.ElementType> = {
   Megaphone, UserCheck, FolderOpen, Scale, ArrowLeftRight, BarChart3, Plug, ShieldCheck,
 };
 
-interface SidebarNavItem { title: string; url: string; icon: string; }
-interface SidebarNavSection { label: string; items: SidebarNavItem[]; }
+interface SidebarNavItem { title: string; url: string; icon: string; moduleKey?: string; }
+interface SidebarNavSection { label: string; moduleKey?: string; items: SidebarNavItem[]; }
 
 const AppSidebar: React.FC = () => {
   const { auth } = usePage().props as { auth: { user: { name: string; role: string } } };
@@ -31,12 +32,14 @@ const AppSidebar: React.FC = () => {
   const collapsed = state === 'collapsed';
   const { url } = usePage();
   const t = useT();
+  const { isEnabled } = useModuleAccess();
 
   const superAdminNav: SidebarNavSection[] = [
     { label: t.SIDEBAR_TEXT.superAdmin.label, items: [
       { title: t.SIDEBAR_TEXT.superAdmin.items.dashboard, url: '/admin/dashboard', icon: 'LayoutDashboard' },
       { title: t.SIDEBAR_TEXT.superAdmin.items.schools, url: '/admin/schools', icon: 'Building2' },
       { title: t.SIDEBAR_TEXT.superAdmin.items.users, url: '/admin/users', icon: 'Users' },
+      { title: 'Modules', url: '/admin/modules', icon: 'Layers' },
       { title: t.SIDEBAR_TEXT.superAdmin.items.settings, url: '/admin/settings', icon: 'Settings' },
     ]},
   ];
@@ -45,19 +48,29 @@ const AppSidebar: React.FC = () => {
     { label: 'Overview', items: [
       { title: 'Dashboard', url: '/school/dashboard', icon: 'LayoutDashboard' },
     ]},
-    { label: 'Academics', items: [
-      { title: 'Grades & Classes', url: '/school/grades', icon: 'GraduationCap' },
-      { title: 'Terms', url: '/school/terms', icon: 'Calendar' },
-      { title: 'Students', url: '/school/students', icon: 'Users' },
+    { label: 'Academics', moduleKey: 'academics', items: [
+      { title: 'Grades & Classes', url: '/school/grades', icon: 'GraduationCap', moduleKey: 'academics' },
+      { title: 'Terms', url: '/school/terms', icon: 'Calendar', moduleKey: 'academics' },
+      { title: 'Students', url: '/school/students', icon: 'Users', moduleKey: 'academics' },
     ]},
-    { label: t.SIDEBAR_TEXT.schoolAdmin.finance.label, items: [
-      { title: t.SIDEBAR_TEXT.schoolAdmin.finance.items.feeStructures, url: '/school/fee-structures', icon: 'FileText' },
-      { title: 'Payment Methods', url: '/school/payment-methods', icon: 'Wallet' },
-      { title: t.SIDEBAR_TEXT.schoolAdmin.finance.items.payments, url: '/school/payments', icon: 'CreditCard' },
-      { title: t.SIDEBAR_TEXT.schoolAdmin.finance.items.receipts, url: '/school/receipts', icon: 'Receipt' },
+    { label: t.SIDEBAR_TEXT.schoolAdmin.finance.label, moduleKey: 'finance', items: [
+      { title: t.SIDEBAR_TEXT.schoolAdmin.finance.items.feeStructures, url: '/school/fee-structures', icon: 'FileText', moduleKey: 'finance' },
+      { title: 'Payment Methods', url: '/school/payment-methods', icon: 'Wallet', moduleKey: 'finance' },
+      { title: t.SIDEBAR_TEXT.schoolAdmin.finance.items.payments, url: '/school/payments', icon: 'CreditCard', moduleKey: 'finance' },
+      { title: t.SIDEBAR_TEXT.schoolAdmin.finance.items.receipts, url: '/school/receipts', icon: 'Receipt', moduleKey: 'finance' },
+    ]},
+    { label: 'Health', moduleKey: 'health', items: [
+      { title: 'Health Records', url: '/school/health', icon: 'Heart', moduleKey: 'health' },
+    ]},
+    { label: 'PT Meetings', moduleKey: 'pt_meetings', items: [
+      { title: 'PT Meetings', url: '/school/pt-meetings', icon: 'Calendar', moduleKey: 'pt_meetings' },
+    ]},
+    { label: 'Portfolio', moduleKey: 'academics', items: [
+      { title: 'Portfolio', url: '/school/portfolio', icon: 'FolderOpen', moduleKey: 'academics' },
     ]},
     { label: t.SIDEBAR_TEXT.schoolAdmin.settings.label, items: [
       { title: 'Staff', url: '/school/users', icon: 'UserCheck' },
+      { title: 'Modules', url: '/school/modules', icon: 'Layers' },
       { title: t.SIDEBAR_TEXT.schoolAdmin.settings.items.settings, url: '/school/settings', icon: 'Settings' },
       { title: 'Billing', url: '/school/billing', icon: 'Sparkles' },
     ]},
@@ -69,7 +82,7 @@ const AppSidebar: React.FC = () => {
       { title: t.SIDEBAR_TEXT.parent.items.children, url: '/parent/children', icon: 'Users' },
       { title: t.SIDEBAR_TEXT.parent.items.payments, url: '/parent/payments', icon: 'CreditCard' },
       { title: t.SIDEBAR_TEXT.parent.items.receipts, url: '/parent/receipts', icon: 'Receipt' },
-      { title: t.SIDEBAR_TEXT.parent.items.ptMeetings, url: '/parent/pt-meetings', icon: 'Calendar' },
+      { title: t.SIDEBAR_TEXT.parent.items.ptMeetings, url: '/parent/pt-meetings', icon: 'Calendar', moduleKey: 'pt_meetings' },
     ]},
   ];
 
@@ -87,10 +100,23 @@ const AppSidebar: React.FC = () => {
     ]},
   ];
 
-  const navSections = user?.role === 'super_admin' ? superAdminNav
+  const rawNav = user?.role === 'super_admin' ? superAdminNav
     : user?.role === 'school_admin' ? schoolAdminNav
     : user?.role === 'accountant' ? accountantNav
     : parentNav;
+
+  // Filter sections and items based on enabled modules.
+  // Super admin always sees everything.
+  const navSections: SidebarNavSection[] = user?.role === 'super_admin'
+    ? rawNav
+    : rawNav
+        .map((section) => ({
+          ...section,
+          items: section.items.filter(
+            (item) => !item.moduleKey || isEnabled(item.moduleKey as any)
+          ),
+        }))
+        .filter((section) => section.items.length > 0);
 
   return (
     <Sidebar collapsible="icon" className="border-r border-sidebar-border">

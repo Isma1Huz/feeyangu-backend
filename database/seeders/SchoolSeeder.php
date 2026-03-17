@@ -6,10 +6,15 @@ use App\Models\School;
 use App\Models\Grade;
 use App\Models\GradeClass;
 use App\Models\AcademicTerm;
+use App\Services\TenantService;
 use Illuminate\Database\Seeder;
 
 class SchoolSeeder extends Seeder
 {
+    public function __construct(private readonly TenantService $tenantService)
+    {
+    }
+
     public function run(): void
     {
         $schools = [
@@ -50,13 +55,16 @@ class SchoolSeeder extends Seeder
 
             $this->createGradesAndClasses($school);
             $this->createAcademicTerms($school);
+
+            // Assign default modules (standard plan)
+            $this->tenantService->assignModulesToSchool($school, 'standard');
         }
     }
 
     private function createGradesAndClasses(School $school): void
     {
         $gradeNames = ['Grade 1', 'Grade 2', 'Grade 3', 'Form 1', 'Form 2'];
-        
+
         foreach ($gradeNames as $index => $gradeName) {
             $grade = Grade::create([
                 'school_id' => $school->id,
@@ -111,7 +119,7 @@ class SchoolSeeder extends Seeder
     {
         $firstNames = ['John', 'Mary', 'Peter', 'Jane', 'David', 'Sarah', 'Joseph', 'Grace', 'Daniel', 'Faith'];
         $lastNames = ['Kamau', 'Wanjiru', 'Ochieng', 'Akinyi', 'Kipchoge', 'Muthoni', 'Otieno', 'Njeri', 'Mutua', 'Chebet'];
-        
+
         return $firstNames[array_rand($firstNames)] . ' ' . $lastNames[array_rand($lastNames)];
     }
 }

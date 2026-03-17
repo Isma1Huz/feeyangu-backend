@@ -1,0 +1,58 @@
+{
+    "auth": {
+        "failed": "These credentials do not match our records.",
+        "password": "The provided password is incorrect.",
+        "throttle": "Too many login attempts. Please try again in :seconds seconds."
+    },
+    "validation": {
+        "required": "The :attribute field is required.",
+        "email": "The :attribute must be a valid email address.",
+        "min": {
+            "string": "The :attribute must be at least :min characters."
+        },
+        "max": {
+            "string": "The :attribute must not exceed :max characters."
+        },
+        "unique": "The :attribute has already been taken.",
+        "confirmed": "The :attribute confirmation does not match.",
+        "numeric": "The :attribute must be a number.",
+        "integer": "The :attribute must be an integer.",
+        "exists": "The selected :attribute is invalid.",
+        "in": "The selected :attribute is invalid.",
+        "date": "The :attribute is not a valid date."
+    },
+    "pagination": {
+        "previous": "Previous",
+        "next": "Next"
+    },
+    "passwords": {
+        "reset": "Your password has been reset.",
+        "sent": "We have emailed your password reset link.",
+        "throttled": "Please wait before retrying.",
+        "token": "This password reset token is invalid.",
+        "user": "We can't find a user with that email address."
+    },
+    "tenant": {
+        "not_found": "School not found.",
+        "suspended": "Your school account has been suspended. Please contact support.",
+        "inactive": "Your school account is inactive.",
+        "no_school": "No school is assigned to your account."
+    },
+    "module": {
+        "not_enabled": "The :module module is not enabled for your school.",
+        "dependency_missing": "Cannot enable :module because :dependency is not enabled.",
+        "cannot_disable_core": "Core modules cannot be disabled.",
+        "has_dependents": "Cannot disable :module because :dependents depend on it.",
+        "enabled": "Module :module has been enabled.",
+        "disabled": "Module :module has been disabled."
+    },
+    "general": {
+        "unauthorized": "You are not authorized to perform this action.",
+        "not_found": "The requested resource was not found.",
+        "server_error": "An unexpected error occurred. Please try again later.",
+        "success": "Operation completed successfully.",
+        "created": ":resource created successfully.",
+        "updated": ":resource updated successfully.",
+        "deleted": ":resource deleted successfully."
+    }
+}

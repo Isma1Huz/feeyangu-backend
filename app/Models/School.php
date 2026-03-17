@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class School extends Model
 {
@@ -104,5 +105,41 @@ class School extends Model
     public function reconciliationItems(): HasMany
     {
         return $this->hasMany(ReconciliationItem::class);
+    }
+
+    /**
+     * All modules registered for this school (via pivot table).
+     */
+    public function modules(): BelongsToMany
+    {
+        return $this->belongsToMany(Module::class, 'module_school')
+            ->withPivot(['is_enabled', 'settings', 'permissions_override'])
+            ->withTimestamps();
+    }
+
+    /**
+     * Only the modules that are enabled for this school.
+     */
+    public function enabledModules(): BelongsToMany
+    {
+        return $this->modules()->wherePivot('is_enabled', true);
+    }
+
+    /**
+     * Check whether a given module key is enabled for this school.
+     */
+    public function isModuleEnabled(string $moduleKey): bool
+    {
+        return $this->enabledModules()->where('key', $moduleKey)->exists();
+    }
+
+    /**
+     * Retrieve the settings for a specific module on this school.
+     */
+    public function getModuleSettings(string $moduleKey): array
+    {
+        $module = $this->modules()->where('key', $moduleKey)->first();
+
+        return $module ? ($module->pivot->settings ?? []) : [];
     }
 }

@@ -2,7 +2,14 @@
     "name": "feeyangu/backend",
     "type": "project",
     "description": "FeeYangu - Kenyan School Fee Management SaaS Platform Backend",
-    "keywords": ["laravel", "inertia", "school", "fee", "management", "kenya"],
+    "keywords": [
+        "laravel",
+        "inertia",
+        "school",
+        "fee",
+        "management",
+        "kenya"
+    ],
     "license": "MIT",
     "require": {
         "php": "^8.2",
@@ -34,7 +41,10 @@
             "App\\": "app/",
             "Database\\Factories\\": "database/factories/",
             "Database\\Seeders\\": "database/seeders/"
-        }
+        },
+        "files": [
+            "app/Helpers/TenantHelper.php"
+        ]
     },
     "autoload-dev": {
         "psr-4": {

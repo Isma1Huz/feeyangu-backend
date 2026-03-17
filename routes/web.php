@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\SchoolController as AdminSchoolController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Admin\SettingsController as AdminSettingsController;
+use App\Http\Controllers\Admin\ModuleController as AdminModuleController;
 use App\Http\Controllers\School\DashboardController as SchoolDashboardController;
 use App\Http\Controllers\School\StudentController as SchoolStudentController;
 use App\Http\Controllers\School\GradeController as SchoolGradeController;
@@ -17,6 +18,10 @@ use App\Http\Controllers\School\SettingsController as SchoolSettingsController;
 use App\Http\Controllers\School\BillingController as SchoolBillingController;
 use App\Http\Controllers\School\UserController as SchoolUserController;
 use App\Http\Controllers\School\BankApiCredentialController as SchoolBankApiCredentialController;
+use App\Http\Controllers\School\PTMeetingController as SchoolPTMeetingController;
+use App\Http\Controllers\School\HealthController as SchoolHealthController;
+use App\Http\Controllers\School\PortfolioController as SchoolPortfolioController;
+use App\Http\Controllers\School\ModuleController as SchoolModuleController;
 use App\Http\Controllers\Accountant\DashboardController as AccountantDashboardController;
 use App\Http\Controllers\Accountant\InvoiceController as AccountantInvoiceController;
 use App\Http\Controllers\Accountant\PaymentController as AccountantPaymentController;
@@ -50,6 +55,9 @@ Route::prefix('admin')
         Route::delete('/users/{user}', [AdminUserController::class, 'destroy'])->name('users.destroy');
         Route::get('/settings', [AdminSettingsController::class, 'index'])->name('settings.index');
         Route::put('/settings', [AdminSettingsController::class, 'update'])->name('settings.update');
+        // Module management
+        Route::get('/modules', [AdminModuleController::class, 'index'])->name('modules.index');
+        Route::patch('/modules/{key}', [AdminModuleController::class, 'update'])->name('modules.update');
     });
 
 // School Admin Routes
@@ -113,6 +121,10 @@ Route::prefix('school')
 
         // Portfolio
         Route::get('/portfolio', [SchoolPortfolioController::class, 'index'])->name('portfolio.index');
+
+        // Module management for this school
+        Route::get('/modules', [SchoolModuleController::class, 'index'])->name('modules.index');
+        Route::patch('/modules/{key}', [SchoolModuleController::class, 'update'])->name('modules.update');
     });
 
 // Accountant Routes
