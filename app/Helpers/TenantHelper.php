@@ -56,11 +56,11 @@ if (! function_exists('formatMoney')) {
     /**
      * Format an amount in Kenya Shillings.
      *
-     * @param  int|float  $amount  Amount in cents (smallest unit)
+     * @param  int  $amountCents  Amount in cents (smallest currency unit, e.g. 1500 = KES 15.00)
      */
-    function formatMoney(int|float $amount, string $currency = 'KES'): string
+    function formatMoney(int $amountCents, string $currency = 'KES'): string
     {
-        $value = $amount / 100;
+        $value = $amountCents / 100;
 
         return $currency . ' ' . number_format($value, 2);
     }

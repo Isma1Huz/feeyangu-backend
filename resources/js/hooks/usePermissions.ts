@@ -1,21 +1,18 @@
 import { usePage } from '@inertiajs/react';
 import type { PageProps } from '@/types/inertia';
+import type { User } from '@/types';
 
 /**
  * Returns helpers for checking Spatie role/permission data
- * that is shared via Inertia props.
- *
- * Note: The full permission list is provided by AppServiceProvider and
- * shared on the `auth.user` object. This hook provides convenient accessors.
+ * that is shared via Inertia props on the auth.user object.
  */
 export function usePermissions() {
   const { auth } = usePage<PageProps>().props;
-  const user = auth.user;
+  const user = auth.user as (User & { permissions?: string[] }) | null;
 
-  // The role is a single string (first role assigned)
-  const role = (user as any)?.role ?? null;
+  const role = user?.role ?? null;
   const roles: string[] = role ? [role] : [];
-  const permissions: string[] = (user as any)?.permissions ?? [];
+  const permissions: string[] = user?.permissions ?? [];
 
   const hasRole = (roleName: string | string[]): boolean => {
     if (Array.isArray(roleName)) {

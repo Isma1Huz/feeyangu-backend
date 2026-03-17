@@ -55,6 +55,9 @@ export interface User {
   avatar?: string;
   schoolId?: string;
   schoolName?: string;
+  school?: { id: number; name: string } | null;
+  /** All permission names assigned to this user */
+  permissions?: string[];
 }
 
 export interface Student {

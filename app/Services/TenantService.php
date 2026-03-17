@@ -26,20 +26,20 @@ class TenantService
      */
     public function assignModulesToSchool(School $school, string $plan = 'basic'): void
     {
-        $allModules   = Module::active()->get();
-        $coreModules  = $allModules->where('is_core', true)->pluck('id')->toArray();
+        $activeModules  = Module::active()->get();
+        $coreModules  = $activeModules->where('is_core', true)->pluck('id')->toArray();
         $planKeys     = $this->planModules[$plan] ?? $this->planModules['basic'];
 
         // Enterprise plan gets everything
         if ($plan === 'enterprise') {
-            $enabledIds = $allModules->pluck('id')->toArray();
+            $enabledIds = $activeModules->pluck('id')->toArray();
         } else {
-            $planModuleIds = $allModules->whereIn('key', $planKeys)->pluck('id')->toArray();
+            $planModuleIds = $activeModules->whereIn('key', $planKeys)->pluck('id')->toArray();
             $enabledIds    = array_unique(array_merge($coreModules, $planModuleIds));
         }
 
         $syncData = [];
-        foreach ($allModules as $module) {
+        foreach ($activeModules as $module) {
             $syncData[$module->id] = [
                 'is_enabled' => in_array($module->id, $enabledIds),
                 'settings'   => null,

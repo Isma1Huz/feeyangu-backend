@@ -9,6 +9,7 @@ import {
 import { useT } from '@/contexts/LanguageContext';
 import { useModuleAccess } from '@/hooks/useModuleAccess';
 import { cn } from '@/lib/utils';
+import type { ModuleKey } from '@/types';
 import feeyanguLogo from '@/assets/feeyangu-logo.png';
 import {
   Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent,
@@ -22,8 +23,8 @@ const iconMap: Record<string, React.ElementType> = {
   Megaphone, UserCheck, FolderOpen, Scale, ArrowLeftRight, BarChart3, Plug, ShieldCheck,
 };
 
-interface SidebarNavItem { title: string; url: string; icon: string; moduleKey?: string; }
-interface SidebarNavSection { label: string; moduleKey?: string; items: SidebarNavItem[]; }
+interface SidebarNavItem { title: string; url: string; icon: string; moduleKey?: ModuleKey; }
+interface SidebarNavSection { label: string; moduleKey?: ModuleKey; items: SidebarNavItem[]; }
 
 const AppSidebar: React.FC = () => {
   const { auth } = usePage().props as { auth: { user: { name: string; role: string } } };
@@ -113,7 +114,7 @@ const AppSidebar: React.FC = () => {
         .map((section) => ({
           ...section,
           items: section.items.filter(
-            (item) => !item.moduleKey || isEnabled(item.moduleKey as any)
+            (item) => !item.moduleKey || isEnabled(item.moduleKey)
           ),
         }))
         .filter((section) => section.items.length > 0);
