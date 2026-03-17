@@ -5,6 +5,7 @@ import {
   Layers, CreditCard, Receipt, FileText, Wallet, Calendar, BookOpen, Sparkles,
   Heart, ClipboardList, Megaphone, UserCheck, FolderOpen,
   Scale, ArrowLeftRight, BarChart3, Plug, ShieldCheck,
+  Package, Activity, Monitor, KeyRound,
 } from 'lucide-react';
 import { useT } from '@/contexts/LanguageContext';
 import { useModuleAccess } from '@/hooks/useModuleAccess';
@@ -21,6 +22,7 @@ const iconMap: Record<string, React.ElementType> = {
   LayoutDashboard, Users, Building2, Settings, GraduationCap, Layers, CreditCard,
   Receipt, FileText, Wallet, Calendar, BookOpen, Sparkles, Heart, ClipboardList,
   Megaphone, UserCheck, FolderOpen, Scale, ArrowLeftRight, BarChart3, Plug, ShieldCheck,
+  Package, Activity, Monitor, KeyRound,
 };
 
 interface SidebarNavItem { title: string; url: string; icon: string; moduleKey?: ModuleKey; }
@@ -42,6 +44,11 @@ const AppSidebar: React.FC = () => {
       { title: t.SIDEBAR_TEXT.superAdmin.items.users, url: '/admin/users', icon: 'Users' },
       { title: 'Modules', url: '/admin/modules', icon: 'Layers' },
       { title: t.SIDEBAR_TEXT.superAdmin.items.settings, url: '/admin/settings', icon: 'Settings' },
+    ]},
+    { label: 'Subscription & Usage', items: [
+      { title: 'Module Management', url: '/admin/module-management', icon: 'Package' },
+      { title: 'Subscription Plans', url: '/admin/subscription-plans', icon: 'Sparkles' },
+      { title: 'School Usage', url: '/admin/schools/usage', icon: 'Activity' },
     ]},
   ];
 
@@ -71,9 +78,12 @@ const AppSidebar: React.FC = () => {
     ]},
     { label: t.SIDEBAR_TEXT.schoolAdmin.settings.label, items: [
       { title: 'Staff', url: '/school/users', icon: 'UserCheck' },
+      { title: 'Roles', url: '/school/roles', icon: 'KeyRound' },
       { title: 'Modules', url: '/school/modules', icon: 'Layers' },
+      { title: 'Dashboard Config', url: '/school/dashboard-config', icon: 'Monitor' },
       { title: t.SIDEBAR_TEXT.schoolAdmin.settings.items.settings, url: '/school/settings', icon: 'Settings' },
-      { title: 'Billing', url: '/school/billing', icon: 'Sparkles' },
+      { title: 'Subscription', url: '/school/subscription', icon: 'Sparkles' },
+      { title: 'Billing', url: '/school/billing', icon: 'CreditCard' },
     ]},
   ];
 

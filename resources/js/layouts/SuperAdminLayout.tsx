@@ -2,7 +2,7 @@ import React from 'react';
 import { Link, usePage } from '@inertiajs/react';
 import {
   LayoutDashboard, Building2, Users, Settings, Package,
-  LogOut, ChevronRight,
+  LogOut, ChevronRight, Layers, Sparkles, Activity,
 } from 'lucide-react';
 import { useT } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
@@ -16,7 +16,10 @@ const superAdminNav = [
   { title: 'Dashboard', url: '/admin/dashboard', icon: LayoutDashboard },
   { title: 'Schools', url: '/admin/schools', icon: Building2 },
   { title: 'Users', url: '/admin/users', icon: Users },
-  { title: 'Modules', url: '/admin/modules', icon: Package },
+  { title: 'Modules', url: '/admin/modules', icon: Layers },
+  { title: 'Module Management', url: '/admin/module-management', icon: Package },
+  { title: 'Subscription Plans', url: '/admin/subscription-plans', icon: Sparkles },
+  { title: 'School Usage', url: '/admin/schools/usage', icon: Activity },
   { title: 'Settings', url: '/admin/settings', icon: Settings },
 ];
 
