@@ -9,12 +9,12 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('plan_modules', function (Blueprint $table) {
-            $table->foreignId('plan_id')->constrained('subscription_plans')->cascadeOnDelete();
+            $table->foreignId('subscription_plan_id')->constrained()->cascadeOnDelete();
             $table->foreignId('module_id')->constrained()->cascadeOnDelete();
-            $table->boolean('is_included')->default(true); // true = included, false = add-on available
+            $table->boolean('is_included')->default(true);
             $table->timestamps();
 
-            $table->unique(['plan_id', 'module_id']);
+            $table->unique(['subscription_plan_id', 'module_id']);
         });
     }
 

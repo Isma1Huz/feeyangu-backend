@@ -45,7 +45,7 @@ class SubscriptionPlan extends Model
             ->withPivot('is_included')
             ->withTimestamps();
     }
-
+    
     public function includedModules(): BelongsToMany
     {
         return $this->modules()->wherePivot('is_included', true);
