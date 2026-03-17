@@ -22,9 +22,8 @@ interface Props extends InertiaSharedProps {
 const AdminSchools: React.FC<Props> = () => {
   const { toast } = useToast();
   const { ADMIN_SCHOOLS_TEXT: t, COMMON_TEXT } = useT();
-  const { schools: initialSchools = [] } = usePage<Props>().props;
+  const { schools = [] } = usePage<Props>().props;
   
-  const [schools, setSchools] = useState<School[]>(initialSchools);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [formOpen, setFormOpen] = useState(false);
@@ -41,13 +40,38 @@ const AdminSchools: React.FC<Props> = () => {
 
   const handleSave = () => {
     if (!form.name || !form.owner) return;
-    if (editing) { setSchools(prev => prev.map(s => s.id === editing.id ? { ...s, ...form } : s)); toast({ title: 'School updated' }); }
-    else { setSchools(prev => [...prev, { id: `s${Date.now()}`, ...form, studentCount: 0, feesCollected: 0 }]); toast({ title: 'School created' }); }
-    setFormOpen(false);
+    const data = { name: form.name, owner_name: form.owner, location: form.location, status: form.status };
+    if (editing) {
+      router.put(`/admin/schools/${editing.id}`, data, {
+        preserveScroll: true,
+        onSuccess: () => { toast({ title: 'School updated' }); setFormOpen(false); },
+        onError: () => toast({ title: 'Failed to update school', variant: 'destructive' }),
+      });
+    } else {
+      router.post('/admin/schools', data, {
+        preserveScroll: true,
+        onSuccess: () => { toast({ title: 'School created' }); setFormOpen(false); },
+        onError: () => toast({ title: 'Failed to create school', variant: 'destructive' }),
+      });
+    }
   };
 
-  const handleStatusChange = (id: string, status: School['status']) => { setSchools(prev => prev.map(s => s.id === id ? { ...s, status } : s)); toast({ title: `School ${status}` }); };
-  const handleDelete = (id: string) => { setSchools(prev => prev.filter(s => s.id !== id)); toast({ title: 'School deleted' }); };
+  const handleStatusChange = (id: string, status: School['status']) => {
+    const school = schools.find(s => s.id === id);
+    if (!school) return;
+    router.put(`/admin/schools/${id}`, { name: school.name, owner_name: school.owner, location: school.location, status }, {
+      preserveScroll: true,
+      onSuccess: () => toast({ title: `School ${status}` }),
+      onError: () => toast({ title: 'Failed to update school status', variant: 'destructive' }),
+    });
+  };
+  const handleDelete = (id: string) => {
+    router.delete(`/admin/schools/${id}`, {
+      preserveScroll: true,
+      onSuccess: () => toast({ title: 'School deleted' }),
+      onError: () => toast({ title: 'Failed to delete school', variant: 'destructive' }),
+    });
+  };
 
   const columns: DataTableColumn<School>[] = [
     { key: 'name', header: t.table.name, render: s => <span className="font-medium">{s.name}</span> },
@@ -67,7 +91,10 @@ const AdminSchools: React.FC<Props> = () => {
   ];
 
   const bulkActions: DataTableBulkAction[] = [
-    { label: t.actions.delete, icon: <Trash2 className="h-3.5 w-3.5" />, variant: 'destructive', confirm: true, confirmTitle: 'Delete Schools', confirmDescription: 'Are you sure you want to delete the selected schools? This cannot be undone.', onClick: (ids) => { setSchools(prev => prev.filter(s => !ids.includes(s.id))); toast({ title: `${ids.length} schools deleted` }); }},
+    { label: t.actions.delete, icon: <Trash2 className="h-3.5 w-3.5" />, variant: 'destructive', confirm: true, confirmTitle: 'Delete Schools', confirmDescription: 'Are you sure you want to delete the selected schools? This cannot be undone.', onClick: (ids) => {
+      ids.forEach(id => router.delete(`/admin/schools/${id}`, { preserveScroll: true }));
+      toast({ title: `${ids.length} schools deleted` });
+    }},
   ];
 
   const exportCsv = (data: School[]) => {

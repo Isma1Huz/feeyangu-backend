@@ -42,7 +42,6 @@ const AppSidebar: React.FC = () => {
       { title: t.SIDEBAR_TEXT.superAdmin.items.dashboard, url: '/admin/dashboard', icon: 'LayoutDashboard' },
       { title: t.SIDEBAR_TEXT.superAdmin.items.schools, url: '/admin/schools', icon: 'Building2' },
       { title: t.SIDEBAR_TEXT.superAdmin.items.users, url: '/admin/users', icon: 'Users' },
-      { title: 'Modules', url: '/admin/modules', icon: 'Layers' },
       { title: t.SIDEBAR_TEXT.superAdmin.items.settings, url: '/admin/settings', icon: 'Settings' },
     ]},
     { label: 'Subscription & Usage', items: [
@@ -73,17 +72,12 @@ const AppSidebar: React.FC = () => {
     { label: 'PT Meetings', moduleKey: 'pt_meetings', items: [
       { title: 'PT Meetings', url: '/school/pt-meetings', icon: 'Calendar', moduleKey: 'pt_meetings' },
     ]},
-    { label: 'Portfolio', moduleKey: 'academics', items: [
-      { title: 'Portfolio', url: '/school/portfolio', icon: 'FolderOpen', moduleKey: 'academics' },
-    ]},
     { label: t.SIDEBAR_TEXT.schoolAdmin.settings.label, items: [
-      { title: 'Staff', url: '/school/users', icon: 'UserCheck' },
-      { title: 'Roles', url: '/school/roles', icon: 'KeyRound' },
+      { title: 'Staff Management', url: '/school/users', icon: 'UserCheck' },
       { title: 'Modules', url: '/school/modules', icon: 'Layers' },
       { title: 'Dashboard Config', url: '/school/dashboard-config', icon: 'Monitor' },
       { title: t.SIDEBAR_TEXT.schoolAdmin.settings.items.settings, url: '/school/settings', icon: 'Settings' },
       { title: 'Subscription', url: '/school/subscription', icon: 'Sparkles' },
-      { title: 'Billing', url: '/school/billing', icon: 'CreditCard' },
     ]},
   ];
 

@@ -89,6 +89,26 @@ class ModuleManagementController extends Controller
     }
 
     /**
+     * Set a per-tenant module override via Inertia POST (school_id + status in body).
+     */
+    public function setTenantOverridePost(Request $request, string $moduleKey): RedirectResponse
+    {
+        $request->validate([
+            'school_id' => 'required|integer|exists:schools,id',
+            'status'    => 'required|in:enabled,disabled,inherit',
+        ]);
+
+        $school  = School::findOrFail($request->integer('school_id'));
+        $success = $this->moduleService->setTenantOverride($school, $moduleKey, $request->status);
+
+        if (!$success) {
+            return back()->with('error', 'Module not found.');
+        }
+
+        return back()->with('success', "Override set to '{$request->status}' for school '{$school->name}'.");
+    }
+
+    /**
      * Set a per-tenant module override via API.
      */
     public function setTenantOverride(Request $request, int $tenantId, string $moduleKey): JsonResponse

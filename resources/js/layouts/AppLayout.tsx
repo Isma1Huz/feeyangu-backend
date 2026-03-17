@@ -4,6 +4,7 @@ import AppSidebar from '@/components/AppSidebar';
 import Header from '@/components/Header';
 import BottomNav from '@/components/BottomNav';
 import OnboardingTour from '@/components/OnboardingTour';
+import FlashMessages from '@/components/FlashMessages';
 import { AuthProvider } from '@/contexts/AuthContext';
 
 interface Props {
@@ -28,6 +29,8 @@ const AppLayout: React.FC<Props> = ({ children }) => {
         <BottomNav />
         {/* Onboarding tour */}
         <OnboardingTour />
+        {/* Flash messages from Laravel session */}
+        <FlashMessages />
       </SidebarProvider>
     </AuthProvider>
   );

@@ -76,6 +76,7 @@ Route::prefix('admin')
         Route::get('/module-management', [AdminModuleManagementController::class, 'index'])->name('module-management.index');
         Route::post('/module-management/{moduleKey}/toggle-global', [AdminModuleManagementController::class, 'toggleGlobal'])->name('module-management.toggle-global');
         Route::get('/module-management/{moduleKey}/tenant-overrides', [AdminModuleManagementController::class, 'showTenantOverrides'])->name('module-management.tenant-overrides');
+        Route::post('/module-management/{moduleKey}/tenant-overrides', [AdminModuleManagementController::class, 'setTenantOverridePost'])->name('module-management.set-tenant-override');
         Route::post('/module-management/{moduleKey}/reset-overrides', [AdminModuleManagementController::class, 'resetAllTenantOverrides'])->name('module-management.reset-overrides');
 
         // Subscription plans
