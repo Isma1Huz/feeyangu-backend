@@ -23,12 +23,29 @@ class School extends Model
         'phone',
         'primary_color',
         'secondary_color',
+        'plan_id',
+        'subscription_status',
+        'subscription_start_date',
+        'subscription_end_date',
+        'billing_cycle',
+        'max_students',
+        'max_staff',
+        'max_storage_mb',
+        'addon_modules',
     ];
 
     protected function casts(): array
     {
         return [
-            'status' => 'string',
+            'status'                  => 'string',
+            'subscription_status'     => 'string',
+            'billing_cycle'           => 'string',
+            'subscription_start_date' => 'date',
+            'subscription_end_date'   => 'date',
+            'max_students'            => 'integer',
+            'max_staff'               => 'integer',
+            'max_storage_mb'          => 'integer',
+            'addon_modules'           => 'array',
         ];
     }
 
@@ -105,6 +122,62 @@ class School extends Model
     public function reconciliationItems(): HasMany
     {
         return $this->hasMany(ReconciliationItem::class);
+    }
+
+    public function subscriptionPlan(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(SubscriptionPlan::class, 'plan_id');
+    }
+
+    public function schoolRoles(): HasMany
+    {
+        return $this->hasMany(SchoolRole::class, 'tenant_id');
+    }
+
+    public function dashboardConfigs(): HasMany
+    {
+        return $this->hasMany(DashboardConfig::class, 'tenant_id');
+    }
+
+    public function moduleTenantOverrides(): HasMany
+    {
+        return $this->hasMany(ModuleTenantOverride::class);
+    }
+
+    /**
+     * Get the effective student limit (school override or plan default).
+     */
+    public function getEffectiveStudentLimit(): int
+    {
+        if ($this->max_students > 0) {
+            return $this->max_students;
+        }
+
+        return $this->subscriptionPlan?->student_limit ?? 0;
+    }
+
+    /**
+     * Get the effective staff limit.
+     */
+    public function getEffectiveStaffLimit(): int
+    {
+        if ($this->max_staff > 0) {
+            return $this->max_staff;
+        }
+
+        return $this->subscriptionPlan?->staff_limit ?? 0;
+    }
+
+    /**
+     * Get the effective storage limit in MB.
+     */
+    public function getEffectiveStorageLimit(): int
+    {
+        if ($this->max_storage_mb > 0) {
+            return $this->max_storage_mb;
+        }
+
+        return $this->subscriptionPlan?->storage_limit_mb ?? 0;
     }
 
     /**

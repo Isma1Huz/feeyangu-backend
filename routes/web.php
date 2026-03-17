@@ -5,6 +5,9 @@ use App\Http\Controllers\Admin\SchoolController as AdminSchoolController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Admin\SettingsController as AdminSettingsController;
 use App\Http\Controllers\Admin\ModuleController as AdminModuleController;
+use App\Http\Controllers\Admin\ModuleManagementController as AdminModuleManagementController;
+use App\Http\Controllers\Admin\SubscriptionPlanController as AdminSubscriptionPlanController;
+use App\Http\Controllers\Admin\SchoolUsageController as AdminSchoolUsageController;
 use App\Http\Controllers\School\DashboardController as SchoolDashboardController;
 use App\Http\Controllers\School\StudentController as SchoolStudentController;
 use App\Http\Controllers\School\GradeController as SchoolGradeController;
@@ -22,6 +25,10 @@ use App\Http\Controllers\School\PTMeetingController as SchoolPTMeetingController
 use App\Http\Controllers\School\HealthController as SchoolHealthController;
 use App\Http\Controllers\School\PortfolioController as SchoolPortfolioController;
 use App\Http\Controllers\School\ModuleController as SchoolModuleController;
+use App\Http\Controllers\School\RoleController as SchoolRoleController;
+use App\Http\Controllers\School\StaffPermissionController as SchoolStaffPermissionController;
+use App\Http\Controllers\School\DashboardConfigController as SchoolDashboardConfigController;
+use App\Http\Controllers\School\SubscriptionController as SchoolSubscriptionController;
 use App\Http\Controllers\Accountant\DashboardController as AccountantDashboardController;
 use App\Http\Controllers\Accountant\InvoiceController as AccountantInvoiceController;
 use App\Http\Controllers\Accountant\PaymentController as AccountantPaymentController;
@@ -58,6 +65,24 @@ Route::prefix('admin')
         // Module management
         Route::get('/modules', [AdminModuleController::class, 'index'])->name('modules.index');
         Route::patch('/modules/{key}', [AdminModuleController::class, 'update'])->name('modules.update');
+
+        // Enhanced module management with global/tenant overrides
+        Route::get('/module-management', [AdminModuleManagementController::class, 'index'])->name('module-management.index');
+        Route::post('/module-management/{moduleKey}/toggle-global', [AdminModuleManagementController::class, 'toggleGlobal'])->name('module-management.toggle-global');
+        Route::get('/module-management/{moduleKey}/tenant-overrides', [AdminModuleManagementController::class, 'showTenantOverrides'])->name('module-management.tenant-overrides');
+        Route::post('/module-management/{moduleKey}/reset-overrides', [AdminModuleManagementController::class, 'resetAllTenantOverrides'])->name('module-management.reset-overrides');
+
+        // Subscription plans
+        Route::resource('subscription-plans', AdminSubscriptionPlanController::class)
+            ->except(['show'])
+            ->parameters(['subscription-plans' => 'id']);
+        Route::post('/subscription-plans/{id}/duplicate', [AdminSubscriptionPlanController::class, 'duplicate'])->name('subscription-plans.duplicate');
+        Route::get('/subscription-plans/{id}/preview-update', [AdminSubscriptionPlanController::class, 'previewChanges'])->name('subscription-plans.preview');
+
+        // School usage
+        Route::get('/schools/usage', [AdminSchoolUsageController::class, 'index'])->name('schools.usage');
+        Route::get('/schools/{tenant}/usage', [AdminSchoolUsageController::class, 'show'])->name('schools.usage.show');
+        Route::get('/schools/usage/export', [AdminSchoolUsageController::class, 'exportUsage'])->name('schools.usage.export');
     });
 
 // School Admin Routes
@@ -67,8 +92,11 @@ Route::prefix('school')
     ->group(function () {
         Route::get('/dashboard', [SchoolDashboardController::class, 'index'])->name('dashboard');
         
-        // Student management
-        Route::resource('students', SchoolStudentController::class);
+        // Student management (store route has subscription limit check)
+        Route::resource('students', SchoolStudentController::class)->except(['store']);
+        Route::post('/students', [SchoolStudentController::class, 'store'])
+            ->middleware('subscription.limit:students')
+            ->name('students.store');
         
         // Grade management
         Route::resource('grades', SchoolGradeController::class);
@@ -107,9 +135,11 @@ Route::prefix('school')
         // Billing
         Route::get('/billing', [SchoolBillingController::class, 'index'])->name('billing.index');
         
-        // User/Accountant management
+        // User/Accountant management (store route has subscription limit check)
         Route::get('/users', [SchoolUserController::class, 'index'])->name('users.index');
-        Route::post('/users', [SchoolUserController::class, 'store'])->name('users.store');
+        Route::post('/users', [SchoolUserController::class, 'store'])
+            ->middleware('subscription.limit:staff')
+            ->name('users.store');
         Route::put('/users/{user}', [SchoolUserController::class, 'update'])->name('users.update');
         Route::delete('/users/{user}', [SchoolUserController::class, 'destroy'])->name('users.destroy');
 
@@ -125,6 +155,28 @@ Route::prefix('school')
         // Module management for this school
         Route::get('/modules', [SchoolModuleController::class, 'index'])->name('modules.index');
         Route::patch('/modules/{key}', [SchoolModuleController::class, 'update'])->name('modules.update');
+
+        // Role management
+        Route::resource('roles', SchoolRoleController::class)->parameters(['roles' => 'id']);
+        Route::post('/roles/{id}/duplicate', [SchoolRoleController::class, 'duplicate'])->name('roles.duplicate');
+
+        // Staff permission management
+        Route::get('/staff/{staff}/permissions', [SchoolStaffPermissionController::class, 'index'])->name('staff.permissions');
+        Route::post('/staff/{staff}/roles/{role}', [SchoolStaffPermissionController::class, 'assignRole'])->name('staff.roles.assign');
+        Route::delete('/staff/{staff}/roles/{role}', [SchoolStaffPermissionController::class, 'removeRole'])->name('staff.roles.remove');
+        Route::post('/staff/{staff}/permissions/{permission}', [SchoolStaffPermissionController::class, 'addDirectPermission'])->name('staff.permissions.add');
+        Route::delete('/staff/{staff}/permissions/{permission}', [SchoolStaffPermissionController::class, 'removeDirectPermission'])->name('staff.permissions.remove');
+
+        // Dashboard configuration
+        Route::get('/dashboard-config', [SchoolDashboardConfigController::class, 'index'])->name('dashboard-config.index');
+        Route::put('/dashboard-config/{userType}', [SchoolDashboardConfigController::class, 'updateForUserType'])->name('dashboard-config.update');
+        Route::post('/dashboard-config/user/{user}', [SchoolDashboardConfigController::class, 'overrideForUser'])->name('dashboard-config.override');
+        Route::post('/dashboard-config/reset/{userType}', [SchoolDashboardConfigController::class, 'resetToDefault'])->name('dashboard-config.reset');
+
+        // Subscription management
+        Route::get('/subscription', [SchoolSubscriptionController::class, 'index'])->name('subscription.index');
+        Route::get('/subscription/upgrade', [SchoolSubscriptionController::class, 'upgrade'])->name('subscription.upgrade');
+        Route::post('/subscription/upgrade', [SchoolSubscriptionController::class, 'processUpgrade'])->name('subscription.process-upgrade');
     });
 
 // Accountant Routes
