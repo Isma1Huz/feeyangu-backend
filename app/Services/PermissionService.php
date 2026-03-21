@@ -11,6 +11,35 @@ use Illuminate\Support\Collection;
 class PermissionService
 {
     /**
+     * Get all effective permissions for a user (alias matching architecture spec).
+     * Returns the same result as getUserPermissions().
+     */
+    public function getUserEffectivePermissions(User $user, School $school): \Illuminate\Support\Collection
+    {
+        return $this->getUserPermissions($user, $school);
+    }
+
+    /**
+     * Check if a user has a specific permission (alias matching architecture spec).
+     */
+    public function checkUserPermission(User $user, School $school, string $permission): bool
+    {
+        return $this->userHasPermission($user, $school, $permission);
+    }
+
+    /**
+     * Sync all permissions for a Spatie role by name.
+     *
+     * @param  string   $roleName    Spatie role name
+     * @param  string[] $permissions Array of permission names to assign
+     */
+    public function syncRolePermissions(string $roleName, array $permissions): void
+    {
+        $role = \Spatie\Permission\Models\Role::findByName($roleName);
+        $role->syncPermissions($permissions);
+    }
+
+    /**
      * Get all permission names assigned to a user (via direct permissions and role assignments).
      */
     public function getUserPermissions(User $user, School $school): Collection

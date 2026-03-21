@@ -5,8 +5,10 @@ namespace App\Services;
 use App\Models\Module;
 use App\Models\School;
 use App\Models\SubscriptionPlan;
+use App\Models\User;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class TenantService
 {
@@ -21,6 +23,41 @@ class TenantService
                          'student_portal', 'transport', 'health', 'examination', 'tasks'],
         'enterprise' => [], // all modules
     ];
+
+    /**
+     * Create a new tenant (school) with an admin user and default module assignments.
+     *
+     * @param  array{name: string, owner_name: string, email: string, phone?: string, location?: string, plan?: string} $data
+     */
+    public function createTenant(array $data): School
+    {
+        return DB::transaction(function () use ($data) {
+            $plan = $data['plan'] ?? 'basic';
+
+            $school = School::create([
+                'name'        => $data['name'],
+                'owner_name'  => $data['owner_name'],
+                'email'       => $data['email'],
+                'phone'       => $data['phone'] ?? null,
+                'location'    => $data['location'] ?? null,
+                'status'      => 'active',
+                'billing_cycle' => $data['billing_cycle'] ?? 'monthly',
+            ]);
+
+            $this->assignModulesToTenant($school, $plan);
+
+            return $school->fresh();
+        });
+    }
+
+    /**
+     * Assign default modules to a tenant (school) based on its subscription plan.
+     * Alias for assignModulesToSchool() to match the architecture naming convention.
+     */
+    public function assignModulesToTenant(School $school, string $plan = 'basic'): void
+    {
+        $this->assignModulesToSchool($school, $plan);
+    }
 
     /**
      * Assign default modules to a school based on its subscription plan.
