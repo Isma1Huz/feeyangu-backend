@@ -22,4 +22,5 @@ class AcademicExam extends Model
 
     public function school(): BelongsTo { return $this->belongsTo(School::class); }
     public function papers(): HasMany { return $this->hasMany(ExamPaper::class, 'exam_id'); }
+    public function results(): HasMany { return $this->hasMany(ExamResult::class, 'exam_id'); }
 }

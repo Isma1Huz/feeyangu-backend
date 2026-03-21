@@ -9,8 +9,9 @@ import { ArrowLeft } from 'lucide-react';
 import AppLayout from '@/layouts/AppLayout';
 
 interface ExamPaper { id: number; name: string; subject: { id: number; name: string }; max_marks: number; marks_entered: number; average: number; }
+interface ExamResultRow { student_id: number; student_name: string; admission_number: string; total_marks: number; percentage: number; grade: string; rank: number; }
 interface Exam { id: number; name: string; type: string; term: number; year: number; start_date: string | null; end_date: string | null; status: string; papers: ExamPaper[]; }
-interface Props extends InertiaSharedProps { exam: Exam; }
+interface Props extends InertiaSharedProps { exam: Exam; results: ExamResultRow[] | null; }
 
 const statusVariant = (s: string): 'default' | 'secondary' => {
   if (s === 'published' || s === 'in_progress') return 'default';
@@ -18,7 +19,7 @@ const statusVariant = (s: string): 'default' | 'secondary' => {
 };
 
 const ExamShow: React.FC = () => {
-  const { exam } = usePage<Props>().props;
+  const { exam, results } = usePage<Props>().props;
 
   return (
     <AppLayout>
@@ -59,6 +60,38 @@ const ExamShow: React.FC = () => {
             </Table>
           </CardContent>
         </Card>
+
+        {results && results.length > 0 && (
+          <Card>
+            <CardHeader><CardTitle>Published Results</CardTitle></CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Rank</TableHead>
+                    <TableHead>Admission No</TableHead>
+                    <TableHead>Student Name</TableHead>
+                    <TableHead>Total Marks</TableHead>
+                    <TableHead>Percentage</TableHead>
+                    <TableHead>Grade</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {results.map(r => (
+                    <TableRow key={r.student_id}>
+                      <TableCell className="font-medium">{r.rank}</TableCell>
+                      <TableCell>{r.admission_number}</TableCell>
+                      <TableCell>{r.student_name}</TableCell>
+                      <TableCell>{r.total_marks}</TableCell>
+                      <TableCell>{r.percentage?.toFixed(1)}%</TableCell>
+                      <TableCell><Badge variant="secondary">{r.grade}</Badge></TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </AppLayout>
   );

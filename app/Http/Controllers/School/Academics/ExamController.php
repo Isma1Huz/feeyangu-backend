@@ -6,11 +6,14 @@ use App\Http\Controllers\Controller;
 use App\Models\AcademicExam;
 use App\Models\AcademicSubject;
 use App\Models\ExamPaper;
+use App\Services\Academics\ExamService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
 class ExamController extends Controller
 {
+    public function __construct(private ExamService $examService) {}
+
     public function index()
     {
         $school = auth()->user()->school;
@@ -47,6 +50,23 @@ class ExamController extends Controller
 
         $exam->load(['papers.subject', 'papers.marks.student']);
 
+        $publishedResults = null;
+        if ($exam->status === 'published') {
+            $publishedResults = $exam->results()
+                ->with('student:id,first_name,last_name,admission_number')
+                ->orderBy('rank')
+                ->get()
+                ->map(fn($r) => [
+                    'student_id'       => $r->student_id,
+                    'student_name'     => $r->student->first_name . ' ' . $r->student->last_name,
+                    'admission_number' => $r->student->admission_number,
+                    'total_marks'      => $r->total_marks,
+                    'percentage'       => $r->percentage,
+                    'grade'            => $r->grade,
+                    'rank'             => $r->rank,
+                ]);
+        }
+
         return Inertia::render('school/academics/ExamShow', [
             'exam' => [
                 'id' => $exam->id,
@@ -66,6 +86,7 @@ class ExamController extends Controller
                     'average' => round($p->getAverage(), 2),
                 ]),
             ],
+            'results' => $publishedResults,
         ]);
     }
 
@@ -149,8 +170,19 @@ class ExamController extends Controller
             abort(403);
         }
 
-        $exam->update(['status' => 'published']);
+        $this->examService->publishResults($exam->id);
 
         return redirect()->back()->with('success', 'Exam results published.');
+    }
+
+    public function results(AcademicExam $exam)
+    {
+        if ($exam->school_id !== auth()->user()->school_id) {
+            abort(403);
+        }
+
+        $results = $this->examService->calculateResults($exam->id);
+
+        return response()->json($results);
     }
 }
