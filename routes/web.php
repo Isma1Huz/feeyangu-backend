@@ -235,9 +235,11 @@ Route::prefix('school')
             Route::put('/exams/{exam}', [SchoolExamController::class, 'update'])->name('exams.update');
             Route::delete('/exams/{exam}', [SchoolExamController::class, 'destroy'])->name('exams.destroy');
             Route::post('/exams/{exam}/publish', [SchoolExamController::class, 'publish'])->name('exams.publish');
+            Route::get('/exams/{exam}/results', [SchoolExamController::class, 'results'])->name('exams.results');
 
             Route::get('/exam-papers/{examPaper}/marks', [SchoolMarkEntryController::class, 'index'])->name('marks.index');
             Route::post('/exam-papers/{examPaper}/marks', [SchoolMarkEntryController::class, 'save'])->name('marks.save');
+            Route::get('/exam-papers/{examPaper}/stats', [SchoolMarkEntryController::class, 'getStats'])->name('marks.stats');
 
             Route::get('/timetable', [SchoolTimetableController::class, 'index'])->name('timetable.index');
             Route::post('/timetable', [SchoolTimetableController::class, 'store'])->name('timetable.store');
