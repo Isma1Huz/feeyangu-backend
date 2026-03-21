@@ -22,6 +22,7 @@ class Curriculum extends Model
     public function learningAreas(): HasMany { return $this->hasMany(LearningArea::class); }
     public function subjects(): HasMany { return $this->hasMany(AcademicSubject::class); }
     public function gradeScales(): HasMany { return $this->hasMany(GradeScale::class); }
+    public function academicClasses(): HasMany { return $this->hasMany(AcademicClass::class); }
 
     public function scopeActive($query) { return $query->where('is_active', true); }
     public function scopeByType($query, $type) { return $query->where('type', $type); }

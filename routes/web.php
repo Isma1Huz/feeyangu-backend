@@ -19,6 +19,8 @@ use App\Http\Controllers\School\Academics\GradeScaleController as SchoolGradeSca
 use App\Http\Controllers\School\Academics\LearningAreaController as SchoolLearningAreaController;
 use App\Http\Controllers\School\Academics\ClassSubjectController as SchoolClassSubjectController;
 use App\Http\Controllers\School\Academics\LessonPlanController as SchoolLessonPlanController;
+use App\Http\Controllers\School\Academics\ClassController as SchoolAcademicClassController;
+use App\Http\Controllers\School\Academics\StreamController as SchoolStreamController;
 use App\Http\Controllers\School\DashboardController as SchoolDashboardController;
 use App\Http\Controllers\School\StudentController as SchoolStudentController;
 use App\Http\Controllers\School\GradeController as SchoolGradeController;
@@ -258,6 +260,17 @@ Route::prefix('school')
             Route::post('/lesson-plans', [SchoolLessonPlanController::class, 'store'])->name('lesson-plans.store');
             Route::put('/lesson-plans/{lessonPlan}', [SchoolLessonPlanController::class, 'update'])->name('lesson-plans.update');
             Route::delete('/lesson-plans/{lessonPlan}', [SchoolLessonPlanController::class, 'destroy'])->name('lesson-plans.destroy');
+
+            // Academic Classes
+            Route::get('/academic-classes', [SchoolAcademicClassController::class, 'index'])->name('academic-classes.index');
+            Route::post('/academic-classes', [SchoolAcademicClassController::class, 'store'])->name('academic-classes.store');
+            Route::put('/academic-classes/{academicClass}', [SchoolAcademicClassController::class, 'update'])->name('academic-classes.update');
+            Route::delete('/academic-classes/{academicClass}', [SchoolAcademicClassController::class, 'destroy'])->name('academic-classes.destroy');
+
+            // Streams (nested under academic-classes)
+            Route::post('/academic-classes/{academicClass}/streams', [SchoolStreamController::class, 'store'])->name('streams.store');
+            Route::put('/academic-classes/{academicClass}/streams/{stream}', [SchoolStreamController::class, 'update'])->name('streams.update');
+            Route::delete('/academic-classes/{academicClass}/streams/{stream}', [SchoolStreamController::class, 'destroy'])->name('streams.destroy');
         });
     });
 
