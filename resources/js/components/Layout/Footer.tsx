@@ -8,9 +8,9 @@ const Footer: React.FC = () => {
             <div className="flex flex-col sm:flex-row items-center justify-between gap-2 text-sm text-muted-foreground">
                 <p>&copy; {year} FeeYangu. All rights reserved.</p>
                 <div className="flex gap-4">
-                    <a href="#" className="hover:text-foreground transition-colors">Privacy Policy</a>
-                    <a href="#" className="hover:text-foreground transition-colors">Terms of Service</a>
-                    <a href="#" className="hover:text-foreground transition-colors">Support</a>
+                    <span className="hover:text-foreground transition-colors cursor-default">Privacy Policy</span>
+                    <span className="hover:text-foreground transition-colors cursor-default">Terms of Service</span>
+                    <span className="hover:text-foreground transition-colors cursor-default">Support</span>
                 </div>
             </div>
         </footer>

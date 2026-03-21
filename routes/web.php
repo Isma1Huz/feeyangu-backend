@@ -290,7 +290,7 @@ Route::prefix('school')
             Route::get('/report-cards', [\App\Modules\Academics\Controllers\ReportCardController::class, 'index'])->name('report-cards.index');
             Route::get('/report-cards/{exam}/{student}', [\App\Modules\Academics\Controllers\ReportCardController::class, 'show'])->name('report-cards.show');
             Route::post('/report-cards/generate', [\App\Modules\Academics\Controllers\ReportCardController::class, 'generate'])->name('report-cards.generate');
-            Route::post('/report-cards/bulk-generate', [\App\Modules\Academics\Controllers\ReportCardController::class, 'generate'])->name('report-cards.bulk-generate');
+            Route::post('/report-cards/bulk-generate', [\App\Modules\Academics\Controllers\ReportCardController::class, 'bulkGenerate'])->name('report-cards.bulk-generate');
         });
 
         // Staff management

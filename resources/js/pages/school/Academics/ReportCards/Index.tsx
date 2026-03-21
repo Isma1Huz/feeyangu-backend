@@ -83,7 +83,7 @@ const ReportCardsIndex: React.FC = () => {
                                 {(exams ?? []).map(exam => (
                                     <TableRow key={exam.id}>
                                         <TableCell className="font-medium">{exam.name}</TableCell>
-                                        <TableCell className="capitalize">{exam.type.replace('_', ' ')}</TableCell>
+                                        <TableCell className="capitalize">{exam.type.replace(/_/g, ' ')}</TableCell>
                                         <TableCell>Term {exam.term}</TableCell>
                                         <TableCell>{exam.year}</TableCell>
                                         <TableCell>

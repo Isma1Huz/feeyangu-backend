@@ -59,4 +59,24 @@ class ReportCardController extends Controller
 
         return response()->json(['message' => 'Report card generation has been queued.']);
     }
+
+    /**
+     * Queue bulk generation of report cards for multiple exams.
+     */
+    public function bulkGenerate(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $validated = $request->validate([
+            'exam_ids'   => 'required|array|min:1',
+            'exam_ids.*' => 'integer|exists:academic_exams,id',
+        ]);
+
+        $school = auth()->user()->school;
+
+        foreach ($validated['exam_ids'] as $examId) {
+            AcademicExam::where('school_id', $school->id)->findOrFail($examId);
+            GenerateReportCards::dispatch($examId);
+        }
+
+        return response()->json(['message' => count($validated['exam_ids']) . ' report card generation job(s) queued.']);
+    }
 }
