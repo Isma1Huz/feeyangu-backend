@@ -279,16 +279,18 @@ Route::prefix('school')
             Route::delete('/academic-classes/{academicClass}/streams/{stream}', [SchoolStreamController::class, 'destroy'])->name('streams.destroy');
 
             // Promotion
-            Route::get('/promotion', [\App\Http\Controllers\School\Academics\PromotionController::class, 'index'])->name('promotion.index');
-            Route::post('/promotion/preview', [\App\Http\Controllers\School\Academics\PromotionController::class, 'preview'])->name('promotion.preview');
-            Route::post('/promotion', [\App\Http\Controllers\School\Academics\PromotionController::class, 'store'])->name('promotion.store');
-            Route::get('/promotion/{batch}', [\App\Http\Controllers\School\Academics\PromotionController::class, 'show'])->name('promotion.show');
+            Route::get('/promotion', [\App\Modules\Academics\Controllers\PromotionController::class, 'index'])->name('promotion.index');
+            Route::post('/promotion/preview', [\App\Modules\Academics\Controllers\PromotionController::class, 'preview'])->name('promotion.preview');
+            Route::post('/promotion', [\App\Modules\Academics\Controllers\PromotionController::class, 'store'])->name('promotion.store');
+            Route::get('/promotion/{batch}', [\App\Modules\Academics\Controllers\PromotionController::class, 'show'])->name('promotion.show');
+            Route::post('/promotion/{batch}/execute', [\App\Modules\Academics\Controllers\PromotionController::class, 'execute'])->name('promotion.execute');
+            Route::post('/promotion/{batch}/rollback', [\App\Modules\Academics\Controllers\PromotionController::class, 'rollback'])->name('promotion.rollback');
 
             // Report Cards
-            Route::get('/report-cards', [\App\Http\Controllers\School\Academics\ReportCardController::class, 'index'])->name('report-cards.index');
-            Route::get('/report-cards/{student}', [\App\Http\Controllers\School\Academics\ReportCardController::class, 'show'])->name('report-cards.show');
-            Route::post('/report-cards/generate', [\App\Http\Controllers\School\Academics\ReportCardController::class, 'generate'])->name('report-cards.generate');
-            Route::post('/report-cards/bulk-generate', [\App\Http\Controllers\School\Academics\ReportCardController::class, 'bulkGenerate'])->name('report-cards.bulk-generate');
+            Route::get('/report-cards', [\App\Modules\Academics\Controllers\ReportCardController::class, 'index'])->name('report-cards.index');
+            Route::get('/report-cards/{exam}/{student}', [\App\Modules\Academics\Controllers\ReportCardController::class, 'show'])->name('report-cards.show');
+            Route::post('/report-cards/generate', [\App\Modules\Academics\Controllers\ReportCardController::class, 'generate'])->name('report-cards.generate');
+            Route::post('/report-cards/bulk-generate', [\App\Modules\Academics\Controllers\ReportCardController::class, 'generate'])->name('report-cards.bulk-generate');
         });
 
         // Staff management
