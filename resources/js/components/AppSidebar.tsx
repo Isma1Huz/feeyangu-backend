@@ -42,6 +42,7 @@ const AppSidebar: React.FC = () => {
       { title: t.SIDEBAR_TEXT.superAdmin.items.dashboard, url: '/admin/dashboard', icon: 'LayoutDashboard' },
       { title: t.SIDEBAR_TEXT.superAdmin.items.schools, url: '/admin/schools', icon: 'Building2' },
       { title: t.SIDEBAR_TEXT.superAdmin.items.users, url: '/admin/users', icon: 'Users' },
+      { title: 'Roles & Permissions', url: '/admin/roles', icon: 'ShieldCheck' },
       { title: t.SIDEBAR_TEXT.superAdmin.items.settings, url: '/admin/settings', icon: 'Settings' },
     ]},
     { label: 'Subscription & Usage', items: [
