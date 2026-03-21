@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\SchoolController as AdminSchoolController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
+use App\Http\Controllers\Admin\RoleController as AdminRoleController;
 use App\Http\Controllers\Admin\SettingsController as AdminSettingsController;
 use App\Http\Controllers\Admin\ModuleController as AdminModuleController;
 use App\Http\Controllers\Admin\ModuleManagementController as AdminModuleManagementController;
@@ -76,6 +77,20 @@ Route::prefix('admin')
         Route::post('/users', [AdminUserController::class, 'store'])->name('users.store');
         Route::put('/users/{user}', [AdminUserController::class, 'update'])->name('users.update');
         Route::delete('/users/{user}', [AdminUserController::class, 'destroy'])->name('users.destroy');
+        // User role & permission management
+        Route::get('/users/{user}/roles', [AdminUserController::class, 'getUserRoles'])->name('users.roles.get');
+        Route::post('/users/{user}/roles', [AdminUserController::class, 'attachRole'])->name('users.roles.attach');
+        Route::delete('/users/{user}/roles/{role}', [AdminUserController::class, 'detachRole'])->name('users.roles.detach');
+        Route::post('/users/{user}/permissions', [AdminUserController::class, 'attachPermission'])->name('users.permissions.attach');
+        Route::delete('/users/{user}/permissions/{permission}', [AdminUserController::class, 'detachPermission'])->name('users.permissions.detach');
+        // Platform roles & permissions management
+        Route::get('/roles', [AdminRoleController::class, 'index'])->name('roles.index');
+        Route::post('/roles', [AdminRoleController::class, 'store'])->name('roles.store');
+        Route::put('/roles/{id}', [AdminRoleController::class, 'update'])->name('roles.update');
+        Route::delete('/roles/{id}', [AdminRoleController::class, 'destroy'])->name('roles.destroy');
+        Route::post('/roles/{id}/permissions', [AdminRoleController::class, 'syncPermissions'])->name('roles.permissions.sync');
+        Route::post('/permissions', [AdminRoleController::class, 'storePermission'])->name('permissions.store');
+        Route::delete('/permissions/{id}', [AdminRoleController::class, 'destroyPermission'])->name('permissions.destroy');
         Route::get('/settings', [AdminSettingsController::class, 'index'])->name('settings.index');
         Route::put('/settings', [AdminSettingsController::class, 'update'])->name('settings.update');
         // Module management

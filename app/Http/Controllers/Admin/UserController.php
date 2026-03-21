@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\School;
 use App\Models\User;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -12,6 +13,7 @@ use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 use Inertia\Inertia;
 use Inertia\Response;
+use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
 class UserController extends Controller
@@ -60,13 +62,18 @@ class UserController extends Controller
         // Get all assignable roles (excluding super_admin)
         $availableRoles = Role::where('name', '!=', 'super_admin')
             ->orderBy('name')
-            ->pluck('name');
+            ->get()
+            ->map(fn ($r) => ['id' => $r->id, 'name' => $r->name]);
+
+        $availablePermissions = Permission::orderBy('name')->get()
+            ->map(fn ($p) => ['id' => $p->id, 'name' => $p->name]);
 
         return Inertia::render('admin/Users', [
             'users' => $users->items(),
             'filters' => $request->only(['role', 'search']),
             'schools' => $schools,
             'availableRoles' => $availableRoles,
+            'availablePermissions' => $availablePermissions,
         ]);
     }
 
@@ -142,5 +149,83 @@ class UserController extends Controller
 
         return redirect()->route('admin.users.index')
             ->with('success', 'User deleted successfully.');
+    }
+
+    /**
+     * Get a user's roles and direct permissions.
+     */
+    public function getUserRoles(User $user): JsonResponse
+    {
+        return response()->json([
+            'roles' => $user->roles->map(fn ($r) => ['id' => $r->id, 'name' => $r->name]),
+            'directPermissions' => $user->getDirectPermissions()->map(fn ($p) => ['id' => $p->id, 'name' => $p->name]),
+            'allPermissions' => $user->getAllPermissions()->map(fn ($p) => ['id' => $p->id, 'name' => $p->name, 'via' => $user->getDirectPermissions()->contains('id', $p->id) ? 'direct' : 'role']),
+        ]);
+    }
+
+    /**
+     * Attach a role to a user.
+     */
+    public function attachRole(Request $request, User $user): JsonResponse
+    {
+        $validated = $request->validate([
+            'role' => ['required', 'string', Rule::notIn(['super_admin']), Rule::exists('roles', 'name')],
+        ]);
+
+        if (!$user->hasRole($validated['role'])) {
+            $user->assignRole($validated['role']);
+        }
+
+        return response()->json([
+            'message' => 'Role attached successfully.',
+            'roles' => $user->roles->map(fn ($r) => ['id' => $r->id, 'name' => $r->name]),
+        ]);
+    }
+
+    /**
+     * Detach a role from a user.
+     */
+    public function detachRole(Request $request, User $user, string $roleName): JsonResponse
+    {
+        if ($roleName === 'super_admin') {
+            return response()->json(['message' => 'Cannot remove super_admin role.'], 403);
+        }
+
+        $user->removeRole($roleName);
+
+        return response()->json([
+            'message' => 'Role detached successfully.',
+            'roles' => $user->roles->map(fn ($r) => ['id' => $r->id, 'name' => $r->name]),
+        ]);
+    }
+
+    /**
+     * Attach a direct permission to a user.
+     */
+    public function attachPermission(Request $request, User $user): JsonResponse
+    {
+        $validated = $request->validate([
+            'permission' => ['required', 'string', Rule::exists('permissions', 'name')],
+        ]);
+
+        $user->givePermissionTo($validated['permission']);
+
+        return response()->json([
+            'message' => 'Permission attached successfully.',
+            'directPermissions' => $user->getDirectPermissions()->map(fn ($p) => ['id' => $p->id, 'name' => $p->name]),
+        ]);
+    }
+
+    /**
+     * Detach a direct permission from a user.
+     */
+    public function detachPermission(Request $request, User $user, string $permissionName): JsonResponse
+    {
+        $user->revokePermissionTo($permissionName);
+
+        return response()->json([
+            'message' => 'Permission detached successfully.',
+            'directPermissions' => $user->getDirectPermissions()->map(fn ($p) => ['id' => $p->id, 'name' => $p->name]),
+        ]);
     }
 }
