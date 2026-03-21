@@ -2,6 +2,7 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\MpesaController;
 use App\Http\Controllers\Api\PaymentCallbackController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\SearchController;
@@ -22,25 +23,43 @@ Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
 });
 
 // Payment API routes
-Route::prefix('payments')->group(function () {
+Route::prefix('payments')->name('api.payments.')->group(function () {
     // Payment callback webhooks (no auth required, verified by IP and signature)
     Route::post('/callback/{provider}', [PaymentCallbackController::class, 'handle'])
-        ->name('api.payment.callback')
+        ->name('callback')
         ->middleware('payment.callback');
 
     // School-aware callback: includes school ID so webhooks work without subdomain routing
     Route::post('/callback/{provider}/{school}', [PaymentCallbackController::class, 'handle'])
-        ->name('api.payment.callback.school')
+        ->name('callback.school')
         ->middleware('payment.callback');
 
     // Authenticated payment status and confirmation endpoints
     Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/{transaction}/status', [PaymentCallbackController::class, 'status'])
-            ->name('api.payment.status');
-        
+            ->name('status');
+
         Route::post('/{transaction}/confirm', [PaymentCallbackController::class, 'confirmManual'])
-            ->name('api.payment.confirm');
+            ->name('confirm');
     });
+});
+
+// Webhook routes (alias group for payment webhooks)
+Route::prefix('webhooks')->name('api.webhooks.')->group(function () {
+    Route::post('/mpesa/{school?}', [MpesaController::class, 'callback'])
+        ->name('mpesa')
+        ->middleware('payment.callback');
+
+    Route::post('/payment/{provider}/{school?}', [PaymentCallbackController::class, 'handle'])
+        ->name('payment')
+        ->middleware('payment.callback');
+});
+
+// M-Pesa specific routes
+Route::prefix('mpesa')->name('api.mpesa.')->middleware(['auth:sanctum'])->group(function () {
+    Route::post('/stk-push', [MpesaController::class, 'stkPush'])->name('stk-push');
+    Route::get('/status/{transactionId}', [MpesaController::class, 'queryStatus'])->name('status');
+    Route::get('/transactions', [MpesaController::class, 'transactions'])->name('transactions');
 });
 
 // Notification API routes (authenticated)

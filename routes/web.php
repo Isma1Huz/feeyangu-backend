@@ -277,7 +277,28 @@ Route::prefix('school')
             Route::post('/academic-classes/{academicClass}/streams', [SchoolStreamController::class, 'store'])->name('streams.store');
             Route::put('/academic-classes/{academicClass}/streams/{stream}', [SchoolStreamController::class, 'update'])->name('streams.update');
             Route::delete('/academic-classes/{academicClass}/streams/{stream}', [SchoolStreamController::class, 'destroy'])->name('streams.destroy');
+
+            // Promotion
+            Route::get('/promotion', [\App\Http\Controllers\School\Academics\PromotionController::class, 'index'])->name('promotion.index');
+            Route::post('/promotion/preview', [\App\Http\Controllers\School\Academics\PromotionController::class, 'preview'])->name('promotion.preview');
+            Route::post('/promotion', [\App\Http\Controllers\School\Academics\PromotionController::class, 'store'])->name('promotion.store');
+            Route::get('/promotion/{batch}', [\App\Http\Controllers\School\Academics\PromotionController::class, 'show'])->name('promotion.show');
+
+            // Report Cards
+            Route::get('/report-cards', [\App\Http\Controllers\School\Academics\ReportCardController::class, 'index'])->name('report-cards.index');
+            Route::get('/report-cards/{student}', [\App\Http\Controllers\School\Academics\ReportCardController::class, 'show'])->name('report-cards.show');
+            Route::post('/report-cards/generate', [\App\Http\Controllers\School\Academics\ReportCardController::class, 'generate'])->name('report-cards.generate');
+            Route::post('/report-cards/bulk-generate', [\App\Http\Controllers\School\Academics\ReportCardController::class, 'bulkGenerate'])->name('report-cards.bulk-generate');
         });
+
+        // Staff management
+        Route::get('/staff', [\App\Http\Controllers\School\StaffManagementController::class, 'index'])->name('staff.index');
+        Route::get('/staff/create', [\App\Http\Controllers\School\StaffManagementController::class, 'create'])->name('staff.create');
+        Route::post('/staff', [\App\Http\Controllers\School\StaffManagementController::class, 'store'])->name('staff.store');
+        Route::get('/staff/{staff}', [\App\Http\Controllers\School\StaffManagementController::class, 'show'])->name('staff.show');
+        Route::get('/staff/{staff}/edit', [\App\Http\Controllers\School\StaffManagementController::class, 'edit'])->name('staff.edit');
+        Route::put('/staff/{staff}', [\App\Http\Controllers\School\StaffManagementController::class, 'update'])->name('staff.update');
+        Route::delete('/staff/{staff}', [\App\Http\Controllers\School\StaffManagementController::class, 'destroy'])->name('staff.destroy');
     });
 
 // Accountant Routes
