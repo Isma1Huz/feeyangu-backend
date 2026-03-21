@@ -16,6 +16,23 @@ import { MoreHorizontal, Trash2, UserCheck, UserX, Plus, Shield, Key, X } from '
 import { useToast } from '@/hooks/use-toast';
 import AppLayout from '@/layouts/AppLayout';
 
+/** Extract the XSRF-TOKEN cookie value for CSRF protection on fetch calls. */
+function getCsrfToken(): string | undefined {
+  const match = document.cookie.match(/XSRF-TOKEN=([^;]+)/);
+  return match ? decodeURIComponent(match[1]) : undefined;
+}
+
+/** Build headers for authenticated JSON fetch requests. */
+function jsonHeaders(): HeadersInit {
+  const csrfToken = getCsrfToken();
+  return {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+    'X-Requested-With': 'XMLHttpRequest',
+    ...(csrfToken ? { 'X-XSRF-TOKEN': csrfToken } : {}),
+  };
+}
+
 interface AdminUser extends User {
   school: string;
   school_id?: string | null;
@@ -169,15 +186,9 @@ const AdminUsers: React.FC = () => {
     if (!managingUser || !attachRoleValue) return;
     setPermActionLoading(true);
     try {
-      const csrfToken = document.cookie.match(/XSRF-TOKEN=([^;]+)/)?.[1];
       const resp = await fetch(`/admin/users/${managingUser.id}/roles`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest',
-          ...(csrfToken ? { 'X-XSRF-TOKEN': decodeURIComponent(csrfToken) } : {}),
-        },
+        headers: jsonHeaders(),
         credentials: 'same-origin',
         body: JSON.stringify({ role: attachRoleValue }),
       });
@@ -200,14 +211,9 @@ const AdminUsers: React.FC = () => {
     if (!managingUser) return;
     setPermActionLoading(true);
     try {
-      const csrfToken = document.cookie.match(/XSRF-TOKEN=([^;]+)/)?.[1];
       const resp = await fetch(`/admin/users/${managingUser.id}/roles/${encodeURIComponent(roleName)}`, {
         method: 'DELETE',
-        headers: {
-          'Accept': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest',
-          ...(csrfToken ? { 'X-XSRF-TOKEN': decodeURIComponent(csrfToken) } : {}),
-        },
+        headers: jsonHeaders(),
         credentials: 'same-origin',
       });
       const data = await resp.json();
@@ -228,15 +234,9 @@ const AdminUsers: React.FC = () => {
     if (!managingUser || !attachPermValue) return;
     setPermActionLoading(true);
     try {
-      const csrfToken = document.cookie.match(/XSRF-TOKEN=([^;]+)/)?.[1];
       const resp = await fetch(`/admin/users/${managingUser.id}/permissions`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest',
-          ...(csrfToken ? { 'X-XSRF-TOKEN': decodeURIComponent(csrfToken) } : {}),
-        },
+        headers: jsonHeaders(),
         credentials: 'same-origin',
         body: JSON.stringify({ permission: attachPermValue }),
       });
@@ -259,14 +259,9 @@ const AdminUsers: React.FC = () => {
     if (!managingUser) return;
     setPermActionLoading(true);
     try {
-      const csrfToken = document.cookie.match(/XSRF-TOKEN=([^;]+)/)?.[1];
       const resp = await fetch(`/admin/users/${managingUser.id}/permissions/${encodeURIComponent(permName)}`, {
         method: 'DELETE',
-        headers: {
-          'Accept': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest',
-          ...(csrfToken ? { 'X-XSRF-TOKEN': decodeURIComponent(csrfToken) } : {}),
-        },
+        headers: jsonHeaders(),
         credentials: 'same-origin',
       });
       const data = await resp.json();

@@ -159,6 +159,6 @@ class RoleController extends Controller
         $permission = Permission::findOrFail($id);
         $permission->delete();
 
-        return response()->json(['message' => "Permission deleted successfully."]);
+        return response()->json(['message' => "Permission deleted successfully."], 200);
     }
 }

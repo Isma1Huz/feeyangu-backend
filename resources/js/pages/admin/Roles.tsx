@@ -138,16 +138,16 @@ const AdminRoles: React.FC = () => {
         {/* Roles Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {roles.map(role => (
-            <div key={role.id} className="border rounded-lg p-4 bg-card hover:shadow-sm transition-shadow">
+            <div key={role.id} className="border rounded-lg p-4 bg-card hover:shadow-sm transition-shadow focus-within:ring-2 focus-within:ring-ring">
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center gap-2">
-                  <div className="p-2 bg-primary/10 rounded-lg">
+                  <div className="p-2 bg-primary/10 rounded-lg" aria-hidden="true">
                     <Shield className="h-4 w-4 text-primary" />
                   </div>
                   <div>
                     <h3 className="font-semibold capitalize">{role.name.replace(/_/g, ' ')}</h3>
                     <div className="flex items-center gap-1 mt-0.5 text-xs text-muted-foreground">
-                      <Users className="h-3 w-3" />
+                      <Users className="h-3 w-3" aria-hidden="true" />
                       <span>{role.users_count} user{role.users_count !== 1 ? 's' : ''}</span>
                     </div>
                   </div>
@@ -155,7 +155,7 @@ const AdminRoles: React.FC = () => {
                 {role.name !== 'super_admin' && (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button>
+                      <Button variant="ghost" size="icon" aria-label={`Actions for ${role.name} role`}><MoreHorizontal className="h-4 w-4" /></Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem onClick={() => openEditRole(role)}>
@@ -165,8 +165,10 @@ const AdminRoles: React.FC = () => {
                         className="text-destructive"
                         onClick={() => handleDeleteRole(role)}
                         disabled={role.users_count > 0}
+                        title={role.users_count > 0 ? `Cannot delete: ${role.users_count} user(s) assigned to this role` : undefined}
                       >
-                        <Trash2 className="h-3.5 w-3.5 mr-2" />Delete
+                        <Trash2 className="h-3.5 w-3.5 mr-2" />
+                        Delete{role.users_count > 0 && <span className="ml-1 text-xs opacity-60">({role.users_count} users)</span>}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
