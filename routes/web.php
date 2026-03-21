@@ -245,6 +245,10 @@ Route::prefix('school')
             Route::post('/timetable', [SchoolTimetableController::class, 'store'])->name('timetable.store');
             Route::put('/timetable/{timetableEntry}', [SchoolTimetableController::class, 'update'])->name('timetable.update');
             Route::delete('/timetable/{timetableEntry}', [SchoolTimetableController::class, 'destroy'])->name('timetable.destroy');
+            Route::get('/timetable/class/{gradeClass}', [SchoolTimetableController::class, 'classTimetable'])->name('timetable.class');
+            Route::get('/timetable/teacher/{teacher}', [SchoolTimetableController::class, 'teacherTimetable'])->name('timetable.teacher');
+            Route::post('/timetable/check-conflicts', [SchoolTimetableController::class, 'checkConflicts'])->name('timetable.check-conflicts');
+            Route::post('/timetable/reorder', [SchoolTimetableController::class, 'reorder'])->name('timetable.reorder');
 
             Route::get('/grade-scales', [SchoolGradeScaleController::class, 'index'])->name('grade-scales.index');
             Route::post('/grade-scales', [SchoolGradeScaleController::class, 'store'])->name('grade-scales.store');
