@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { Head, usePage, router } from '@inertiajs/react';
 import {
     DndContext,
@@ -111,7 +111,7 @@ function DraggableEntryCard({
                     )}
                     {entry.room && <div className="text-muted-foreground truncate">{entry.room}</div>}
                     <div className="text-muted-foreground mt-0.5">
-                        {entry.start_time?.slice(0, 5)}
+                        {entry.start_time?.slice(0, 5) || entry.time_slot?.slice(0, 5)}
                         {entry.end_time ? `–${entry.end_time.slice(0, 5)}` : ''}
                     </div>
                 </div>
@@ -145,16 +145,18 @@ function TimetableGrid({
     onDelete: (id: number) => void;
 }) {
     const gridMap: Record<string, Record<string, TimetableEntryRow[]>> = {};
+    
     entries.forEach(e => {
-        const slot = (e.start_time ?? e.time_slot)?.slice(0, 5);
+        const slot = (e.start_time || e.time_slot)?.slice(0, 5);
         if (!slot) return;
         if (!gridMap[e.day_of_week]) gridMap[e.day_of_week] = {};
         if (!gridMap[e.day_of_week][slot]) gridMap[e.day_of_week][slot] = [];
         gridMap[e.day_of_week][slot].push(e);
     });
 
-    // Collect all unique time slots from entries plus the default slots
-    const allSlots = [...new Set([...timeSlots, ...entries.map(e => (e.start_time ?? e.time_slot)?.slice(0, 5)).filter(Boolean)])].sort();
+    const allSlots = useMemo(() => {
+        return [...new Set([...timeSlots, ...entries.map(e => (e.start_time || e.time_slot)?.slice(0, 5)).filter(Boolean)])].sort();
+    }, [entries, timeSlots]);
 
     return (
         <div className="border rounded-lg overflow-x-auto">
@@ -200,10 +202,16 @@ const Timetable: React.FC = () => {
     const { toast } = useToast();
     const { entries: initialEntries, classes, subjects, teachers, timeSlots, days } = usePage<Props>().props;
 
+    const sensors = useSensors(
+        useSensor(PointerSensor, {
+            activationConstraint: { distance: 8 },
+        })
+    );
+
     const [entries, setEntries] = useState<TimetableEntryRow[]>(initialEntries ?? []);
     const [view, setView] = useState<'all' | 'class' | 'teacher'>('all');
-    const [selectedClass, setSelectedClass] = useState('');
-    const [selectedTeacher, setSelectedTeacher] = useState('');
+    const [selectedClass, setSelectedClass] = useState<string>('');
+    const [selectedTeacher, setSelectedTeacher] = useState<string>('');
     const [filteredEntries, setFilteredEntries] = useState<TimetableEntryRow[] | null>(null);
     const [loadingView, setLoadingView] = useState(false);
 
@@ -214,14 +222,12 @@ const Timetable: React.FC = () => {
     const [formErrors, setFormErrors] = useState<Record<string, string>>({});
     const [activeEntry, setActiveEntry] = useState<TimetableEntryRow | null>(null);
 
-    const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
-
     const displayedEntries = view === 'all' ? entries : (filteredEntries ?? entries);
     const displayedDays = days?.length ? days : DAYS;
     const displayedSlots = timeSlots?.length ? timeSlots : ['08:00', '09:00', '10:00', '11:00', '12:00', '14:00', '15:00', '16:00'];
 
     // --- Load filtered timetable ---
-    const loadClassTimetable = async (classId: string) => {
+    const loadClassTimetable = useCallback(async (classId: string) => {
         if (!classId) return;
         setLoadingView(true);
         try {
@@ -229,13 +235,13 @@ const Timetable: React.FC = () => {
             const flat: TimetableEntryRow[] = Object.values(res.data.timetable).flat() as TimetableEntryRow[];
             setFilteredEntries(flat);
         } catch {
-            toast({ title: 'Error', description: 'Failed to load class timetable.', variant: 'destructive' } as any);
+            toast({ title: 'Error', description: 'Failed to load class timetable.', variant: 'destructive' });
         } finally {
             setLoadingView(false);
         }
-    };
+    }, [toast]);
 
-    const loadTeacherTimetable = async (teacherId: string) => {
+    const loadTeacherTimetable = useCallback(async (teacherId: string) => {
         if (!teacherId) return;
         setLoadingView(true);
         try {
@@ -243,11 +249,11 @@ const Timetable: React.FC = () => {
             const flat: TimetableEntryRow[] = Object.values(res.data.timetable).flat() as TimetableEntryRow[];
             setFilteredEntries(flat);
         } catch {
-            toast({ title: 'Error', description: 'Failed to load teacher timetable.', variant: 'destructive' } as any);
+            toast({ title: 'Error', description: 'Failed to load teacher timetable.', variant: 'destructive' });
         } finally {
             setLoadingView(false);
         }
-    };
+    }, [toast]);
 
     // --- Drag & Drop ---
     const handleDragStart = useCallback((event: DragStartEvent) => {
@@ -264,9 +270,8 @@ const Timetable: React.FC = () => {
         const targetEntry = entries.find(e => e.id === over.id);
         if (!draggedEntry || !targetEntry) return;
 
-        // Swap time slots between entries
-        const newTime = targetEntry.start_time ?? targetEntry.time_slot;
-        const newEndTime = targetEntry.end_time ?? newTime;
+        const newTime = targetEntry.start_time || targetEntry.time_slot;
+        const newEndTime = targetEntry.end_time || newTime;
         if (!newTime) return;
 
         try {
@@ -285,39 +290,56 @@ const Timetable: React.FC = () => {
 
             toast({ title: 'Entry moved' });
         } catch {
-            toast({ title: 'Error', description: 'Failed to move entry.', variant: 'destructive' } as any);
+            toast({ title: 'Error', description: 'Failed to move entry.', variant: 'destructive' });
         }
     }, [entries, toast]);
 
     // --- Form Helpers ---
-    const set = (key: string, val: string) => setForm(f => ({ ...f, [key]: val }));
+    const setFormField = useCallback((key: string, val: string) => {
+        setForm(f => ({ ...f, [key]: val }));
+    }, []);
 
-    const openCreate = () => {
+    const openCreate = useCallback(() => {
         setEditing(null);
         setForm(emptyForm);
         setFormErrors({});
         setOpen(true);
-    };
+    }, []);
 
-    const openEdit = (e: TimetableEntryRow) => {
-        setEditing(e);
+    const openEdit = useCallback((entry: TimetableEntryRow) => {
+        setEditing(entry);
         setForm({
-            grade_class_id: e.class?.id?.toString() ?? '',
-            stream_id: e.stream?.id?.toString() ?? '',
-            subject_id: e.subject.id.toString(),
-            teacher_id: e.teacher?.id?.toString() ?? '',
-            day_of_week: e.day_of_week,
-            start_time: (e.start_time ?? e.time_slot)?.slice(0, 5) ?? '08:00',
-            end_time: e.end_time?.slice(0, 5) ?? '09:00',
-            room: e.room ?? '',
+            grade_class_id: entry.class?.id?.toString() ?? '',
+            stream_id: entry.stream?.id?.toString() ?? '',
+            subject_id: entry.subject.id.toString(),
+            teacher_id: entry.teacher?.id?.toString() ?? '',
+            day_of_week: entry.day_of_week,
+            start_time: (entry.start_time || entry.time_slot)?.slice(0, 5) ?? '08:00',
+            end_time: entry.end_time?.slice(0, 5) ?? '09:00',
+            room: entry.room ?? '',
             effective_from: new Date().toISOString().split('T')[0],
             effective_to: '',
         });
         setFormErrors({});
         setOpen(true);
-    };
+    }, []);
 
-    const handleSave = () => {
+    const handleSave = useCallback(() => {
+        // Validate required fields
+        if (!form.subject_id) {
+            setFormErrors({ subject_id: 'Subject is required' });
+            toast({ title: 'Validation Error', description: 'Please select a subject.', variant: 'destructive' });
+            return;
+        }
+        if (!form.start_time || !form.end_time) {
+            toast({ title: 'Validation Error', description: 'Start and end times are required.', variant: 'destructive' });
+            return;
+        }
+        if (!form.effective_from) {
+            toast({ title: 'Validation Error', description: 'Effective from date is required.', variant: 'destructive' });
+            return;
+        }
+
         const payload = {
             ...form,
             grade_class_id: form.grade_class_id || null,
@@ -331,7 +353,13 @@ const Timetable: React.FC = () => {
                 onSuccess: () => { toast({ title: 'Entry updated' }); setOpen(false); },
                 onError: (errors) => {
                     setFormErrors(errors);
-                    if (errors.conflicts) toast({ title: 'Conflict detected', description: Array.isArray(errors.conflicts) ? errors.conflicts.join(', ') : errors.conflicts, variant: 'destructive' } as any);
+                    if (errors.conflicts) {
+                        toast({ 
+                            title: 'Conflict detected', 
+                            description: Array.isArray(errors.conflicts) ? errors.conflicts.join(', ') : errors.conflicts, 
+                            variant: 'destructive' 
+                        });
+                    }
                 },
                 preserveState: false,
             });
@@ -340,20 +368,30 @@ const Timetable: React.FC = () => {
                 onSuccess: () => { toast({ title: 'Entry added' }); setOpen(false); },
                 onError: (errors) => {
                     setFormErrors(errors);
-                    if (errors.conflicts) toast({ title: 'Conflict detected', description: Array.isArray(errors.conflicts) ? errors.conflicts.join(', ') : errors.conflicts, variant: 'destructive' } as any);
+                    if (errors.conflicts) {
+                        toast({ 
+                            title: 'Conflict detected', 
+                            description: Array.isArray(errors.conflicts) ? errors.conflicts.join(', ') : errors.conflicts, 
+                            variant: 'destructive' 
+                        });
+                    }
                 },
                 preserveState: false,
             });
         }
-    };
+    }, [form, editing, toast]);
 
-    const handleDelete = (id: number) => {
+    const handleDelete = useCallback((id: number) => {
         router.delete(`/school/academics/timetable/${id}`, {
-            onSuccess: () => { toast({ title: 'Entry removed' }); setDeleteId(null); setEntries(prev => prev.filter(e => e.id !== id)); },
-            onError: () => toast({ title: 'Error', description: 'Failed to delete.', variant: 'destructive' } as any),
+            onSuccess: () => { 
+                toast({ title: 'Entry removed' }); 
+                setDeleteId(null); 
+                setEntries(prev => prev.filter(e => e.id !== id)); 
+            },
+            onError: () => toast({ title: 'Error', description: 'Failed to delete.', variant: 'destructive' }),
             preserveState: false,
         });
-    };
+    }, [toast]);
 
     return (
         <AppLayout>
@@ -429,7 +467,7 @@ const Timetable: React.FC = () => {
                                 {activeEntry && (
                                     <div className="bg-primary/20 border border-primary rounded p-2 text-xs shadow-lg w-32">
                                         <div className="font-medium">{activeEntry.subject.name}</div>
-                                        <div className="text-muted-foreground">{activeEntry.start_time?.slice(0, 5)}</div>
+                                        <div className="text-muted-foreground">{activeEntry.start_time?.slice(0, 5) || activeEntry.time_slot?.slice(0, 5)}</div>
                                     </div>
                                 )}
                             </DragOverlay>
@@ -461,7 +499,7 @@ const Timetable: React.FC = () => {
                                 {(entries ?? []).map(e => (
                                     <TableRow key={e.id}>
                                         <TableCell className="capitalize">{e.day_of_week}</TableCell>
-                                        <TableCell>{(e.start_time ?? e.time_slot)?.slice(0, 5)}</TableCell>
+                                        <TableCell>{(e.start_time || e.time_slot)?.slice(0, 5)}</TableCell>
                                         <TableCell>{e.end_time?.slice(0, 5) ?? '—'}</TableCell>
                                         <TableCell>{e.subject.name}</TableCell>
                                         <TableCell>
@@ -492,7 +530,6 @@ const Timetable: React.FC = () => {
                         <DialogDescription>Fill in the timetable entry details.</DialogDescription>
                     </DialogHeader>
                     <div className="space-y-3">
-                        {/* Conflict/error display */}
                         {formErrors.conflicts && (
                             <div className="flex items-start gap-2 rounded border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
                                 <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
@@ -506,10 +543,12 @@ const Timetable: React.FC = () => {
 
                         <div>
                             <Label>Class (optional)</Label>
-                            <Select value={form.grade_class_id} onValueChange={v => set('grade_class_id', v)}>
+                            <Select 
+                                value={form.grade_class_id || undefined} 
+                                onValueChange={v => setFormField('grade_class_id', v)}
+                            >
                                 <SelectTrigger><SelectValue placeholder="All classes" /></SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="">All classes</SelectItem>
                                     {(classes ?? []).map(c => <SelectItem key={c.id} value={c.id.toString()}>{c.name}</SelectItem>)}
                                 </SelectContent>
                             </Select>
@@ -517,7 +556,11 @@ const Timetable: React.FC = () => {
 
                         <div>
                             <Label>Subject *</Label>
-                            <Select value={form.subject_id} onValueChange={v => set('subject_id', v)}>
+                            <Select 
+                                value={form.subject_id || undefined} 
+                                onValueChange={v => setFormField('subject_id', v)}
+                                required
+                            >
                                 <SelectTrigger><SelectValue placeholder="Select subject" /></SelectTrigger>
                                 <SelectContent>
                                     {(subjects ?? []).map(s => <SelectItem key={s.id} value={s.id.toString()}>{s.name}</SelectItem>)}
@@ -528,10 +571,12 @@ const Timetable: React.FC = () => {
 
                         <div>
                             <Label>Teacher (optional)</Label>
-                            <Select value={form.teacher_id} onValueChange={v => set('teacher_id', v)}>
+                            <Select 
+                                value={form.teacher_id || undefined} 
+                                onValueChange={v => setFormField('teacher_id', v)}
+                            >
                                 <SelectTrigger><SelectValue placeholder="Select teacher" /></SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="">No teacher assigned</SelectItem>
                                     {(teachers ?? []).map(t => <SelectItem key={t.id} value={t.id.toString()}>{t.name}</SelectItem>)}
                                 </SelectContent>
                             </Select>
@@ -540,7 +585,7 @@ const Timetable: React.FC = () => {
                         <div className="grid grid-cols-2 gap-3">
                             <div>
                                 <Label>Day *</Label>
-                                <Select value={form.day_of_week} onValueChange={v => set('day_of_week', v)}>
+                                <Select value={form.day_of_week} onValueChange={v => setFormField('day_of_week', v)}>
                                     <SelectTrigger><SelectValue /></SelectTrigger>
                                     <SelectContent>
                                         {DAYS.map(d => <SelectItem key={d} value={d} className="capitalize">{d.charAt(0).toUpperCase() + d.slice(1)}</SelectItem>)}
@@ -549,19 +594,19 @@ const Timetable: React.FC = () => {
                             </div>
                             <div>
                                 <Label>Room (optional)</Label>
-                                <Input value={form.room} onChange={e => set('room', e.target.value)} placeholder="e.g. Room 1A" />
+                                <Input value={form.room} onChange={e => setFormField('room', e.target.value)} placeholder="e.g. Room 1A" />
                             </div>
                         </div>
 
                         <div className="grid grid-cols-2 gap-3">
                             <div>
                                 <Label>Start Time *</Label>
-                                <Input type="time" value={form.start_time} onChange={e => set('start_time', e.target.value)} />
+                                <Input type="time" value={form.start_time} onChange={e => setFormField('start_time', e.target.value)} />
                                 {formErrors.start_time && <p className="text-xs text-destructive mt-1">{formErrors.start_time}</p>}
                             </div>
                             <div>
                                 <Label>End Time *</Label>
-                                <Input type="time" value={form.end_time} onChange={e => set('end_time', e.target.value)} />
+                                <Input type="time" value={form.end_time} onChange={e => setFormField('end_time', e.target.value)} />
                                 {formErrors.end_time && <p className="text-xs text-destructive mt-1">{formErrors.end_time}</p>}
                             </div>
                         </div>
@@ -569,12 +614,12 @@ const Timetable: React.FC = () => {
                         <div className="grid grid-cols-2 gap-3">
                             <div>
                                 <Label>Effective From *</Label>
-                                <Input type="date" value={form.effective_from} onChange={e => set('effective_from', e.target.value)} />
+                                <Input type="date" value={form.effective_from} onChange={e => setFormField('effective_from', e.target.value)} />
                                 {formErrors.effective_from && <p className="text-xs text-destructive mt-1">{formErrors.effective_from}</p>}
                             </div>
                             <div>
                                 <Label>Effective To (optional)</Label>
-                                <Input type="date" value={form.effective_to} onChange={e => set('effective_to', e.target.value)} />
+                                <Input type="date" value={form.effective_to} onChange={e => setFormField('effective_to', e.target.value)} />
                             </div>
                         </div>
                     </div>

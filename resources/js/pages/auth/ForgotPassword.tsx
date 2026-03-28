@@ -3,7 +3,7 @@ import { Link, Head, router, usePage } from '@inertiajs/react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Mail, ArrowLeft, KeyRound } from 'lucide-react';
+import { Mail, ArrowLeft, KeyRound, MailCheck } from 'lucide-react';
 import { useT } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -31,66 +31,64 @@ const ForgotPassword: React.FC = () => {
   };
 
   return (
-    <div className="animate-fade-in">
+    <div className="min-h-screen flex items-center justify-center px-4 py-12" style={{ backgroundColor: 'hsl(39, 33%, 92%)', fontFamily: "'Geist', system-ui, sans-serif" }}>
       <Head title="Forgot Password" />
-      
-      <div className="flex items-center gap-3 mb-10">
-        <img src={feeyanguLogo} alt="Feeyangu" className="h-10 w-10 rounded-xl object-contain" />
-        <span className="font-bold text-xl tracking-tight">{T.APP_NAME}</span>
-      </div>
 
-      {sent ? (
-        <div className="text-center">
-          <div className="flex justify-center mb-6">
-            <div className="h-20 w-20 rounded-full bg-primary/10 flex items-center justify-center">
-              <Mail className="h-10 w-10 text-primary" />
-            </div>
+      <div className="w-full max-w-md">
+        <div className="text-center mb-8">
+          <div className="flex items-center justify-center gap-2">
+            <img src={feeyanguLogo} alt="Feeyangu" className="h-8 w-8" />
+            <h2 className="text-2xl font-bold" style={{ color: 'hsl(180, 18%, 17%)', fontFamily: "'Instrument Serif', serif" }}>{T.APP_NAME}</h2>
           </div>
-          <h2 className="text-2xl font-bold tracking-tight mb-2">Check your email</h2>
-          <p className="text-muted-foreground text-sm mb-6">{t.successMessage}</p>
-          <Link href="/login">
-            <Button variant="ghost" className="gap-2">
-              <ArrowLeft className="h-4 w-4" />
-              {t.backToLogin}
-            </Button>
-          </Link>
         </div>
-      ) : (
-        <>
-          <div className="flex justify-center mb-6 lg:justify-start">
-            <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
-              <KeyRound className="h-8 w-8 text-primary" />
-            </div>
-          </div>
 
-          <div className="mb-6">
-            <h2 className="text-2xl font-bold tracking-tight">{t.title}</h2>
-            <p className="text-muted-foreground text-sm mt-1">{t.subtitle}</p>
-          </div>
-
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-            <div className="space-y-2">
-              <Label htmlFor="fp-email">{t.emailLabel}</Label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input id="fp-email" type="email" placeholder={t.emailPlaceholder} {...register('email')} className="h-11 pl-10" />
+        <div className="rounded-2xl p-8 shadow-lg border" style={{ backgroundColor: 'hsl(39, 25%, 90%)', borderColor: 'hsl(39, 15%, 82%)' }}>
+          {sent ? (
+            <div className="text-center space-y-4">
+              <div className="w-16 h-16 rounded-full mx-auto flex items-center justify-center" style={{ backgroundColor: 'hsl(8, 72%, 55% / 0.1)' }}>
+                <MailCheck className="w-8 h-8" style={{ color: 'hsl(8, 72%, 55%)' }} />
               </div>
-              {errors.email && <p className="text-xs text-destructive">{String(errors.email.message)}</p>}
+              <h1 className="text-3xl" style={{ color: 'hsl(180, 18%, 17%)', fontFamily: "'Instrument Serif', serif" }}>Check your email</h1>
+              <p className="text-sm" style={{ color: 'hsl(180, 10%, 45%)' }}>{t.successMessage}</p>
+              <Link href="/login" className="inline-flex items-center gap-2 text-sm font-semibold hover:underline" style={{ color: 'hsl(8, 72%, 55%)' }}>
+                <ArrowLeft className="w-4 h-4" />
+                {t.backToLogin}
+              </Link>
             </div>
+          ) : (
+            <>
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 rounded-full mx-auto flex items-center justify-center mb-4" style={{ backgroundColor: 'hsl(8, 72%, 55% / 0.1)' }}>
+                  <KeyRound className="w-8 h-8" style={{ color: 'hsl(8, 72%, 55%)' }} />
+                </div>
+                <h1 className="text-3xl mb-2" style={{ color: 'hsl(180, 18%, 17%)', fontFamily: "'Instrument Serif', serif" }}>{t.title}</h1>
+                <p className="text-sm" style={{ color: 'hsl(180, 10%, 45%)' }}>{t.subtitle}</p>
+              </div>
 
-            <Button type="submit" className="w-full h-11 font-semibold text-base rounded-lg" disabled={processing}>
-              {processing ? '...' : t.submitButton}
-            </Button>
-          </form>
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+                <div className="space-y-2">
+                  <Label style={{ color: 'hsl(180, 18%, 17%)' }}>{t.emailLabel}</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'hsl(180, 10%, 45%)' }} />
+                    <Input {...register('email')} className="h-11 pl-10 rounded-xl border-none" style={{ backgroundColor: 'hsl(39, 20%, 88%)', color: 'hsl(180, 18%, 17%)' }} />
+                  </div>
+                  {errors.email && <p className="text-xs" style={{ color: 'hsl(0, 84%, 60%)' }}>{String(errors.email.message)}</p>}
+                </div>
+                <Button type="submit" disabled={processing} className="w-full h-11 rounded-xl text-white font-semibold" style={{ backgroundColor: 'hsl(8, 72%, 55%)' }}>
+                  {processing ? '...' : t.submitButton}
+                </Button>
+              </form>
 
-          <div className="mt-6 text-center">
-            <Link href="/login" className="text-sm text-primary font-medium hover:underline inline-flex items-center gap-1.5">
-              <ArrowLeft className="h-3.5 w-3.5" />
-              {t.backToLogin}
-            </Link>
-          </div>
-        </>
-      )}
+              <div className="mt-6 text-center">
+                <Link href="/login" className="inline-flex items-center gap-2 text-sm font-semibold hover:underline" style={{ color: 'hsl(8, 72%, 55%)' }}>
+                  <ArrowLeft className="w-4 h-4" />
+                  {t.backToLogin}
+                </Link>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
     </div>
   );
 };

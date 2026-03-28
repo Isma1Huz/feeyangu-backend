@@ -39,101 +39,73 @@ const ResetPassword: React.FC = () => {
   });
 
   const onSubmit = (data: ResetPasswordForm) => {
-    router.post('/reset-password', {
-      ...data,
-      token,
-    });
+    router.post('/reset-password', { ...data, token });
   };
 
   return (
-    <div className="animate-fade-in">
+    <div className="min-h-screen flex items-center justify-center px-4 py-12" style={{ backgroundColor: 'hsl(39, 33%, 92%)', fontFamily: "'Geist', system-ui, sans-serif" }}>
       <Head title="Reset Password" />
-      
-      <div className="flex items-center gap-3 mb-10">
-        <img src={feeyanguLogo} alt="Feeyangu" className="h-10 w-10 rounded-xl object-contain" />
-        <span className="font-bold text-xl tracking-tight">{T.APP_NAME}</span>
-      </div>
 
-      <div className="flex justify-center mb-6 lg:justify-start">
-        <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
-          <KeyRound className="h-8 w-8 text-primary" />
-        </div>
-      </div>
-
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold tracking-tight">Reset Password</h2>
-        <p className="text-muted-foreground text-sm mt-1">Enter your new password below</p>
-      </div>
-
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-        <div className="space-y-2">
-          <Label htmlFor="email">Email</Label>
-          <div className="relative">
-            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input 
-              id="email" 
-              type="email" 
-              placeholder="your@email.com" 
-              {...register('email')} 
-              className="h-11 pl-10" 
-            />
+      <div className="w-full max-w-md">
+        <div className="text-center mb-8">
+          <div className="flex items-center justify-center gap-2">
+            <img src={feeyanguLogo} alt="Feeyangu" className="h-8 w-8" />
+            <h2 className="text-2xl font-bold" style={{ color: 'hsl(180, 18%, 17%)', fontFamily: "'Instrument Serif', serif" }}>{T.APP_NAME}</h2>
           </div>
-          {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="password">New Password</Label>
-          <div className="relative">
-            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input 
-              id="password" 
-              type={showPassword ? 'text' : 'password'} 
-              placeholder="Enter new password" 
-              {...register('password')} 
-              className="h-11 pl-10 pr-10" 
-            />
-            <button 
-              type="button" 
-              onClick={() => setShowPassword(!showPassword)} 
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-            >
-              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            </button>
+        <div className="rounded-2xl p-8 shadow-lg border" style={{ backgroundColor: 'hsl(39, 25%, 90%)', borderColor: 'hsl(39, 15%, 82%)' }}>
+          <div className="text-center mb-6">
+            <div className="w-16 h-16 rounded-full mx-auto flex items-center justify-center mb-4" style={{ backgroundColor: 'hsl(8, 72%, 55% / 0.1)' }}>
+              <KeyRound className="w-8 h-8" style={{ color: 'hsl(8, 72%, 55%)' }} />
+            </div>
+            <h1 className="text-3xl mb-2" style={{ color: 'hsl(180, 18%, 17%)', fontFamily: "'Instrument Serif', serif" }}>Reset Password</h1>
+            <p className="text-sm" style={{ color: 'hsl(180, 10%, 45%)' }}>Enter your new password below</p>
           </div>
-          {errors.password && <p className="text-xs text-destructive">{errors.password.message}</p>}
-        </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="password_confirmation">Confirm Password</Label>
-          <div className="relative">
-            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input 
-              id="password_confirmation" 
-              type={showConfirmPassword ? 'text' : 'password'} 
-              placeholder="Confirm new password" 
-              {...register('password_confirmation')} 
-              className="h-11 pl-10 pr-10" 
-            />
-            <button 
-              type="button" 
-              onClick={() => setShowConfirmPassword(!showConfirmPassword)} 
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-            >
-              {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            </button>
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <div className="space-y-2">
+              <Label style={{ color: 'hsl(180, 18%, 17%)' }}>Email</Label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'hsl(180, 10%, 45%)' }} />
+                <Input {...register('email')} className="h-11 pl-10 rounded-xl border-none" style={{ backgroundColor: 'hsl(39, 20%, 88%)', color: 'hsl(180, 18%, 17%)' }} />
+              </div>
+              {errors.email && <p className="text-xs" style={{ color: 'hsl(0, 84%, 60%)' }}>{errors.email.message}</p>}
+            </div>
+
+            <div className="space-y-2">
+              <Label style={{ color: 'hsl(180, 18%, 17%)' }}>New Password</Label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'hsl(180, 10%, 45%)' }} />
+                <Input type={showPassword ? 'text' : 'password'} {...register('password')} className="h-11 pl-10 pr-10 rounded-xl border-none" style={{ backgroundColor: 'hsl(39, 20%, 88%)', color: 'hsl(180, 18%, 17%)' }} />
+                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2" style={{ color: 'hsl(180, 10%, 45%)' }}>
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+              {errors.password && <p className="text-xs" style={{ color: 'hsl(0, 84%, 60%)' }}>{errors.password.message}</p>}
+            </div>
+
+            <div className="space-y-2">
+              <Label style={{ color: 'hsl(180, 18%, 17%)' }}>Confirm Password</Label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'hsl(180, 10%, 45%)' }} />
+                <Input type={showConfirmPassword ? 'text' : 'password'} {...register('password_confirmation')} className="h-11 pl-10 pr-10 rounded-xl border-none" style={{ backgroundColor: 'hsl(39, 20%, 88%)', color: 'hsl(180, 18%, 17%)' }} />
+                <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-3 top-1/2 -translate-y-1/2" style={{ color: 'hsl(180, 10%, 45%)' }}>
+                  {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+              {errors.password_confirmation && <p className="text-xs" style={{ color: 'hsl(0, 84%, 60%)' }}>{errors.password_confirmation.message}</p>}
+            </div>
+
+            <Button type="submit" disabled={processing} className="w-full h-11 rounded-xl text-white font-semibold" style={{ backgroundColor: 'hsl(8, 72%, 55%)' }}>
+              {processing ? 'Resetting...' : 'Reset Password'}
+            </Button>
+          </form>
+
+          <div className="mt-6 text-center">
+            <Link href="/login" className="text-sm font-semibold hover:underline" style={{ color: 'hsl(8, 72%, 55%)' }}>Back to Login</Link>
           </div>
-          {errors.password_confirmation && <p className="text-xs text-destructive">{errors.password_confirmation.message}</p>}
         </div>
-
-        <Button type="submit" className="w-full h-11 font-semibold text-base rounded-lg" disabled={processing}>
-          {processing ? 'Resetting...' : 'Reset Password'}
-        </Button>
-      </form>
-
-      <div className="mt-6 text-center">
-        <Link href="/login" className="text-sm text-primary font-medium hover:underline">
-          Back to Login
-        </Link>
       </div>
     </div>
   );

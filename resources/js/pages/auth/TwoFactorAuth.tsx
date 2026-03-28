@@ -17,10 +17,7 @@ const TwoFactorAuth: React.FC = () => {
     newCode[index] = value.slice(-1);
     setCode(newCode);
     setError('');
-
-    if (value && index < 5) {
-      inputRefs.current[index + 1]?.focus();
-    }
+    if (value && index < 5) inputRefs.current[index + 1]?.focus();
   };
 
   const handleKeyDown = (index: number, e: React.KeyboardEvent) => {
@@ -35,73 +32,71 @@ const TwoFactorAuth: React.FC = () => {
     const newCode = [...code];
     pasted.split('').forEach((char, i) => { newCode[i] = char; });
     setCode(newCode);
-    const nextEmpty = Math.min(pasted.length, 5);
-    inputRefs.current[nextEmpty]?.focus();
+    inputRefs.current[Math.min(pasted.length, 5)]?.focus();
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const fullCode = code.join('');
-    if (fullCode.length < 6) {
-      setError('Please enter the full 6-digit code');
-      return;
-    }
+    if (fullCode.length < 6) { setError('Please enter the full 6-digit code'); return; }
     router.post('/verify-2fa', { code: fullCode });
   };
 
   return (
-    <div className="animate-fade-in text-center">
+    <div className="min-h-screen flex items-center justify-center px-4 py-12" style={{ backgroundColor: 'hsl(39, 33%, 92%)', fontFamily: "'Geist', system-ui, sans-serif" }}>
       <Head title="Two-Factor Authentication" />
-      
-      <div className="flex items-center gap-3 mb-10 justify-center lg:justify-start">
-        <img src={feeyanguLogo} alt="Feeyangu" className="h-10 w-10 rounded-xl object-contain" />
-        <span className="font-bold text-xl tracking-tight">Feeyangu</span>
-      </div>
 
-      <div className="flex justify-center mb-6">
-        <div className="h-20 w-20 rounded-full bg-primary/10 flex items-center justify-center">
-          <ShieldCheck className="h-10 w-10 text-primary" />
+      <div className="w-full max-w-md">
+        <div className="text-center mb-8">
+          <div className="flex items-center justify-center gap-2">
+            <img src={feeyanguLogo} alt="Feeyangu" className="h-8 w-8" />
+            <h2 className="text-2xl font-bold" style={{ color: 'hsl(180, 18%, 17%)', fontFamily: "'Instrument Serif', serif" }}>Feeyangu</h2>
+          </div>
+        </div>
+
+        <div className="rounded-2xl p-8 shadow-lg border" style={{ backgroundColor: 'hsl(39, 25%, 90%)', borderColor: 'hsl(39, 15%, 82%)' }}>
+          <div className="text-center mb-6">
+            <div className="w-16 h-16 rounded-full mx-auto flex items-center justify-center mb-4" style={{ backgroundColor: 'hsl(8, 72%, 55% / 0.1)' }}>
+              <ShieldCheck className="w-8 h-8" style={{ color: 'hsl(8, 72%, 55%)' }} />
+            </div>
+            <h1 className="text-3xl mb-2" style={{ color: 'hsl(180, 18%, 17%)', fontFamily: "'Instrument Serif', serif" }}>Two-Factor Authentication</h1>
+            <p className="text-sm" style={{ color: 'hsl(180, 10%, 45%)' }}>Enter the 6-digit verification code sent to your email or authenticator app.</p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="flex justify-center gap-2" onPaste={handlePaste}>
+              {code.map((digit, i) => (
+                <Input
+                  key={i}
+                  ref={el => { inputRefs.current[i] = el; }}
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={1}
+                  value={digit}
+                  onChange={e => handleChange(i, e.target.value)}
+                  onKeyDown={e => handleKeyDown(i, e)}
+                  className="h-14 w-12 text-center text-xl font-bold rounded-xl border-2 focus:ring-2"
+                  style={{ backgroundColor: 'hsl(39, 20%, 88%)', color: 'hsl(180, 18%, 17%)', borderColor: digit ? 'hsl(8, 72%, 55%)' : 'hsl(39, 15%, 82%)' }}
+                />
+              ))}
+            </div>
+
+            {error && <p className="text-center text-xs" style={{ color: 'hsl(0, 84%, 60%)' }}>{error}</p>}
+
+            <Button type="submit" disabled={processing} className="w-full h-11 rounded-xl text-white font-semibold" style={{ backgroundColor: 'hsl(8, 72%, 55%)' }}>
+              {processing ? 'Verifying...' : 'Verify Code'}
+            </Button>
+
+            <div className="space-y-2">
+              <button type="button" className="text-sm hover:underline w-full text-center" style={{ color: 'hsl(8, 72%, 55%)' }}>Resend code</button>
+              <Button onClick={() => router.visit('/login')} variant="ghost" className="w-full h-11 gap-2 rounded-xl" style={{ color: 'hsl(180, 18%, 17%)' }}>
+                <ArrowLeft className="w-4 h-4" />
+                Back to sign in
+              </Button>
+            </div>
+          </form>
         </div>
       </div>
-
-      <h2 className="text-2xl font-bold tracking-tight mb-2">Two-Factor Authentication</h2>
-      <p className="text-muted-foreground text-sm max-w-sm mx-auto mb-8">
-        Enter the 6-digit verification code sent to your email or authenticator app.
-      </p>
-
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="flex justify-center gap-2 sm:gap-3" onPaste={handlePaste}>
-          {code.map((digit, i) => (
-            <Input
-              key={i}
-              ref={el => { inputRefs.current[i] = el; }}
-              type="text"
-              inputMode="numeric"
-              maxLength={1}
-              value={digit}
-              onChange={e => handleChange(i, e.target.value)}
-              onKeyDown={e => handleKeyDown(i, e)}
-              className="h-12 w-10 sm:h-14 sm:w-12 text-center text-xl font-bold rounded-lg"
-            />
-          ))}
-        </div>
-
-        {error && <p className="text-xs text-destructive">{error}</p>}
-
-        <Button type="submit" className="w-full h-11 font-semibold text-base rounded-lg" disabled={processing}>
-          {processing ? 'Verifying...' : 'Verify Code'}
-        </Button>
-
-        <div className="space-y-2 text-sm">
-          <button type="button" className="text-primary hover:underline font-medium">
-            Resend code
-          </button>
-          <Button onClick={() => router.visit('/login')} variant="ghost" className="w-full h-11 gap-2">
-            <ArrowLeft className="h-4 w-4" />
-            Back to sign in
-          </Button>
-        </div>
-      </form>
     </div>
   );
 };
